@@ -6,3 +6,6 @@ db.sqlite3
 
 #pycache
 */__pycache__/*
+
+#migrations
+*/migrations/*
