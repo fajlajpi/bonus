@@ -1,5 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+import os
+
+#Utility functions
+def get_upload_path(instance, filename):
+    # Files will me uploaded to MEDIA_ROOT/uploads/YYYY/MM/DD/
+    return os.path.join(
+        'uploads',
+        instance.uploaded_at.strftime('%Y/%d/%d'),
+        filename
+    )
 
 # Create your models here.
 class User(AbstractUser):
@@ -83,3 +93,23 @@ class BrandBonus(models.Model):
 
     def __str__(self):
         return f'{self.name} | {self.brand_id} | {self.points_ratio} points per '
+
+class FileUpload(models.Model):
+    PROCESSING_STATUS = (
+        ('PENDING', 'Pending'),
+        ('PROCESSING', 'Processing'),
+        ('COMPLETED', 'Completed'),
+        ('FAILED', 'Failed'),
+    )
+    file = models.FileField(upload_to=get_upload_path)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=PROCESSING_STATUS, default='PENDING')
+    error_message = models.TextField(blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f'Upload {self.id} | {self.uploaded_at} | {self.status} | by {self.uploaded_by}'
