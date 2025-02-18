@@ -101,7 +101,7 @@ class FileUpload(models.Model):
         ('COMPLETED', 'Completed'),
         ('FAILED', 'Failed'),
     )
-    file = models.FileField(upload_to=get_upload_path)
+    file = models.FileField(upload_to="uploads/%Y/%m/%d/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=PROCESSING_STATUS, default='PENDING')
