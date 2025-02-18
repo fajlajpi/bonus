@@ -18,6 +18,9 @@ class Brand(models.Model):
     class Meta:
         ordering = ['name']
 
+    def __str__(self):
+        return self.name
+
 
 class UserContract(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -29,6 +32,11 @@ class UserContract(models.Model):
 
     class Meta:
         ordering = ['-contract_date_from']
+
+    def __str__(self):
+        user_name = self.user_id.last_name + ' ' + self.user_id.first_name
+
+        return user_name + f' ({self.contract_date_from})'
     
 
 class PointsTransaction(models.Model):
@@ -55,6 +63,9 @@ class PointsTransaction(models.Model):
 
     class Meta:
         ordering = ['-date', '-created_at']
+    
+    def __str__(self):
+        return f'{self.user} | {self.date} | {self.type} | {self.value}'
 
 class ContractBrands(models.Model):
     contract_id = models.ForeignKey(UserContract, on_delete=models.CASCADE)
@@ -69,3 +80,6 @@ class BrandBonus(models.Model):
     name = models.CharField(max_length=100)
     points_ratio = models.FloatField()
     brand_id = models.ForeignKey(Brand, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.name} | {self.brand_id} | {self.points_ratio} points per '
