@@ -11,6 +11,14 @@ class User(AbstractUser):
     user_number = models.CharField(max_length=20, unique=True)
     user_phone = models.CharField(max_length=10, unique=True)
 
+class Brand(models.Model):
+    name = models.CharField(max_length=50)
+    prefix = models.CharField(max_length=10)
+
+    class Meta:
+        ordering = ['name']
+
+
 class UserContract(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     contract_date_from = models.DateField()
@@ -47,13 +55,6 @@ class PointsTransaction(models.Model):
 
     class Meta:
         ordering = ['-date', '-created_at']
-
-class Brand(models.Model):
-    name = models.CharField(max_length=50)
-    prefix = models.CharField(max_length=10)
-
-    class Meta:
-        ordering = ['name']
 
 class ContractBrands(models.Model):
     contract_id = models.ForeignKey(UserContract, on_delete=models.CASCADE)

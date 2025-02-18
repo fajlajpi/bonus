@@ -1,2 +1,6 @@
 # Virtual environment
 venv/
+
+#SQLite
+db.sqlite3
+
