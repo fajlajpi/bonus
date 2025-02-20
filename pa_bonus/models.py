@@ -39,6 +39,7 @@ class UserContract(models.Model):
     extra_goal_12m = models.IntegerField()
     extra_goal_base = models.IntegerField()
     is_active = models.BooleanField(default=True)
+    brands = models.ManyToManyField('BrandBonus', related_name="user_contract")
 
     class Meta:
         ordering = ['-contract_date_from']
@@ -76,10 +77,6 @@ class PointsTransaction(models.Model):
     
     def __str__(self):
         return f'{self.user} | {self.date} | {self.type} | {self.value}'
-
-class ContractBrands(models.Model):
-    contract_id = models.ForeignKey(UserContract, on_delete=models.CASCADE)
-    brand_id = models.ForeignKey(Brand, on_delete=models.CASCADE)
 
 class PointsBalance(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
