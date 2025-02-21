@@ -17,6 +17,17 @@ def upload_file(request):
             upload.save()
 
             # Process the uploaded file
+            try:
+                process_uploaded_file(upload.id)
+                messages.success(
+                    request, 
+                    'File uploaded successfully and is being processed'
+                )
+            except Exception as e:
+                messages.error(
+                    request, 
+                    f'Error processing file: {str(e)}'
+                )
 
             return redirect('upload_history')
     else:
