@@ -46,7 +46,16 @@ Django-based system for tracking and using loyalty points
     - Reward Catalogue
     - Reward Request
     - Reward Request status and review
+- Move to PostgreSQL
 - Client notifications
     - When points are added via email
     - Look into SMS options
 - Basic styling
+
+## Nice to have
+- Custom views instead of Django Admin for Managers
+- Internationalization prepared (but postponed due to Hungary launch being shelved for now)
+- Proper Template structure
+- Anything resembling Front-end
+- Proper verification
+    - Transaction "fingerprinting" to prevent duplicate transactions
