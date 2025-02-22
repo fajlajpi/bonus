@@ -54,7 +54,7 @@ class PointsTransaction(models.Model):
     TRANSACTION_TYPES = (
         ('STANDARD_POINTS', 'Standard Points added'),
         ('REWARD_CLAIM', 'Reward Claim'),
-        ('CREDIT_NOTE_ADJUSTMENT', 'Credit Note (dobropis) adjustment')
+        ('CREDIT_NOTE_ADJUST', 'Credit Note (dobropis) adjustment'),
         ('EXTRA_POINTS', 'Extra Points added'),
         ('ADJUSTMENT', 'Manual Adjustment'),
     )
