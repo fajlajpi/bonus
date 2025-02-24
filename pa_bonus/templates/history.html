@@ -1,0 +1,25 @@
+{% block content %}
+<div class="history-container">
+    <h2>Transaction History</h2>
+    
+    <div class="transactions-list">
+        {% for transaction in transactions %}
+        <div class="transaction-item">
+            <a href="{% url 'history_detail' transaction.id %}">
+                <div class="transaction-header">
+                    <span class="date">{{ transaction.date }}</span>
+                    <span class="brand">{{ transaction.brand.name }}</span>
+                </div>
+                <div class="transaction-details">
+                    <span class="value">{{ transaction.value }} points</span>
+                    <span class="type">{{ transaction.get_type_display }}</span>
+                    <span class="status">{{ transaction.get_status_display }}</span>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <p>No transactions found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
