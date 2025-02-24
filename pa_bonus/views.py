@@ -77,8 +77,15 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['total_points'] = total_points
         return context
 
-class HistoryView(LoginRequiredMixin, TemplateView):
-    pass
+class HistoryView(LoginRequiredMixin, ListView):
+    template_name = 'history.html'
+    context_object_name = 'transactions'
+    login_url = 'login'
+
+    def get_queryset(self):
+        return PointsTransaction.objects.filter(
+            user = self.request.user
+        ).select_related('brand')
 
 class HistoryDetailView(LoginRequiredMixin, TemplateView):
     pass
