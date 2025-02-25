@@ -98,10 +98,32 @@ class HistoryDetailView(LoginRequiredMixin, DetailView):
         ).select_related('brand')
 
 class RewardsView(LoginRequiredMixin, TemplateView):
-    pass
+    template_name = 'rewards.html'
+    login_url = 'login'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #PLACEHOLDER MESSAGE
+        context['message'] = "Rewards system coming soon!"
+        return context
+        
 
 class RewardsRequestsView(LoginRequiredMixin, TemplateView):
-    pass
+    template_name = 'reward_requests.html'
+    login_url = 'login'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #PLACEHOLDER MESSAGE
+        context['message'] = "Rewards system coming soon!"
+        return context
 
 class RequestsDetailView(LoginRequiredMixin, TemplateView):
-    pass
+    template_name = 'request_detail.html'
+    login_url = 'login'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        #PLACEHOLDER MESSAGE
+        context['message'] = "Rewards system coming soon!"
+        return context
