@@ -87,8 +87,15 @@ class HistoryView(LoginRequiredMixin, ListView):
             user = self.request.user
         ).select_related('brand')
 
-class HistoryDetailView(LoginRequiredMixin, TemplateView):
-    pass
+class HistoryDetailView(LoginRequiredMixin, DetailView):
+    template_name = 'history_detail.html'
+    context_object_name = 'transaction'
+    login_url = 'login'
+
+    def get_queryset(self):
+        return PointsTransaction.objects.filter(
+            user = self.request.user
+        ).select_related('brand')
 
 class RewardsView(LoginRequiredMixin, TemplateView):
     pass
