@@ -1,6 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.contenttypes.models import ContentType
 import os
+import logging
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 #Utility functions
 def get_upload_path(instance, filename):
@@ -13,13 +18,11 @@ def get_upload_path(instance, filename):
 
 # Create your models here.
 class User(AbstractUser):
-    USER_TYPES = (
-        ('CLIENT', 'Client'),
-        ('ADMIN', 'Admin')
-    )
-    user_type = models.CharField(max_length=10, choices=USER_TYPES, default='CLIENT')
     user_number = models.CharField(max_length=20, unique=True)
     user_phone = models.CharField(max_length=10, unique=True)
+
+    def __str__(self):
+        return self.username + ' | ' + (self.first_name + ' ' + self.last_name if self.first_name or self.last_name else '')
 
 class Brand(models.Model):
     name = models.CharField(max_length=50)
@@ -108,6 +111,37 @@ class FileUpload(models.Model):
 
     class Meta:
         ordering = ['-uploaded_at']
+        permissions = [
+            ('can_manage', 'Can manage file uploads')
+        ]
 
     def __str__(self):
         return f'Upload {self.id} | {self.uploaded_at} | {self.status} | by {self.uploaded_by}'
+    
+# Utility function to create group and permissions
+def create_manager_group_and_permissions():
+    """
+    Creates the 'Managers' group and assigns the 'can_manage' permission.
+    This function should be called after migrations, like in a data migration.
+    """
+    try:
+        #Create group
+        manager_group, created = Group.objects.get_or_create(name='Managers')
+        logger.info("Manager group created/retrieved")
+
+        #Get permission object
+        content_type = ContentType.objects.get_for_model(FileUpload)
+        can_manage_perm = Permission.objects.get(
+            codename='can_manage',
+            content_type=content_type,
+        )
+        logger.info("Can manage permission retrieved")
+
+        #Add permission to group
+        manager_group.permissions.add(can_manage_perm)
+        logger.info("Can manage permission assigned to Manager group")
+
+        print("Manager group and permissions setup successfully")
+    except Exception as e:
+        logger.error(f"Error creating Manager group and permissions: {e}", exc_info=True)
+        print(f"Error creating Manager group and permissions: {e}")
