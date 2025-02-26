@@ -10,5 +10,8 @@ db.sqlite3
 #uploads
 */uploads/*
 
+# media files
+*media*
+
 #logs
 *.log
