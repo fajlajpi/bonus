@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load pa_bonus_extras %}
+
+{% block content %}
+  <h1>Reward Request Confirmation</h1>
+
+  <p>Request ID: {{ request.id }}</p>
+  <p>Requested By: {{ request.user.username }}</p>
+  <p>Requested At: {{ request.requested_at }}</p>
+  <p>Total cost: {{ request.total_points }} pts</p>
+
+  <h2>Items Requested:</h2>
+  <ul>
+    {% for item in items %}
+      <li>
+        {{ item.quantity }} x {{ item.reward.name }} ({{ item.point_cost }} pts each) = {{ item.quantity|multiply:item.point_cost }} pts
+      </li>
+    {% endfor %}
+  </ul>
+
+  <p>Your available points: {{ user_balance }}</p>
+
+  {% if request.total_points <= user_balance %}
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit">Confirm Request</button>
+      </form>
+  {% else %}
+      <p>You don't have enough points to complete this request.</p>
+  {% endif %}
+  
+
+  <style>
+    .hidden{
+      display: none;
+    }
+  </style>
+{% endblock %}

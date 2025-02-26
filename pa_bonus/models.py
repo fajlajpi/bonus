@@ -73,7 +73,7 @@ class PointsTransaction(models.Model):
     description = models.CharField(max_length=100)
     type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS)
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE)
+    brand = models.ForeignKey(Brand, null=True, blank=True,on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -136,6 +136,7 @@ class Reward(models.Model):
 
 class RewardRequest(models.Model):
     REQUEST_STATUS = (
+        ('DRAFT', 'Draft'),
         ('PENDING', 'Pending'),
         ('ACCEPTED', 'Accepted'),
         ('REJECTED', 'Rejected'),
@@ -144,7 +145,7 @@ class RewardRequest(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     requested_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='PENDING')
+    status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='DRAFT')
     description = models.TextField()
     total_points = models.IntegerField(default=0)
 
@@ -153,7 +154,10 @@ class RewardRequest(models.Model):
 
     def save(self, *args, **kwargs):
         # When saving to model, save the total points 
-        self.total_points = sum(item.quantity * item.point_cost for item in self.rewardrequestitem_set.all())
+        try:
+            self.total_points = sum(item.quantity * item.point_cost for item in self.rewardrequestitem_set.all())
+        except ValueError:
+            self.total_points = 0
         super().save(*args, **kwargs)
 
 class RewardRequestItem(models.Model):
