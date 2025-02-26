@@ -119,7 +119,7 @@ class FileUpload(models.Model):
         return f'Upload {self.id} | {self.uploaded_at} | {self.status} | by {self.uploaded_by}'
     
 # Utility function to create group and permissions
-def create_manager_group_and_permissions():
+def create_manager_group_and_permissions(*args, **options):
     """
     Creates the 'Managers' group and assigns the 'can_manage' permission.
     This function should be called after migrations, like in a data migration.
