@@ -150,7 +150,7 @@ class RewardsView(LoginRequiredMixin, View):
         # Save the request and update total points
         try:
             reward_request.save()  # This calculates the point total as well
-        except Exception:
+        except Exception as e:
             messages.error(request, f"Error: {e}")
             return redirect('rewards')
         
