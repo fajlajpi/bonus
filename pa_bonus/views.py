@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.utils import timezone
@@ -10,7 +10,7 @@ from .tasks import process_uploaded_file
 from .models import FileUpload, PointsTransaction, UserContract
 
 # Create your views here.
-@login_required
+@permission_required('pa_bonus.can_manage', raise_exception=True)
 def upload_file(request):
     if request.method == "POST":
         form = FileUploadForm(request.POST, request.FILES)
@@ -38,7 +38,7 @@ def upload_file(request):
     
     return render(request, 'upload.html', {'form': form})
 
-@login_required
+@permission_required('pa_bonus.can_manage', raise_exception=True)
 def upload_history(request):
     uploads = FileUpload.objects.all().order_by('-uploaded_at')
     return render(request, 'upload_history.html', {'uploads': uploads})
