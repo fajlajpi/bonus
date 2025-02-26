@@ -30,7 +30,7 @@ urlpatterns = [
     path('history/detail/<int:pk>/', views.HistoryDetailView.as_view(), name='history_detail'),
     path('rewards/', views.RewardsView.as_view(), name='rewards'),
     path('rewards/requests/', views.RewardsRequestsView.as_view(), name='reward_requests'),
-    path('rewards/requests/detail/<int:pk>', views.RewardsRequestDetailView.as_view(), name='rewards_request_detail'),
+    path('rewards/requests/detail/<int:pk>', views.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'),
 ]
 
 from django.conf import settings

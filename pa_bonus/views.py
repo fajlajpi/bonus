@@ -178,7 +178,7 @@ class RequestsDetailView(LoginRequiredMixin, TemplateView):
         context['message'] = "Rewards system coming soon!"
         return context
     
-class RewardsRequestDetailView(View):
+class RewardsRequestConfirmationView(View):
     template_name = 'rewards_request_detail.html'
 
     def get(self, request, pk):
@@ -207,6 +207,7 @@ class RewardsRequestDetailView(View):
             description="Reward claim",
             type="REWARD_CLAIM",
             status="CONFIRMED",
+            reward_request=reward_request,
         )
 
         messages.success(request, f"Request {reward_request.id} confirmed successfully.")

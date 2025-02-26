@@ -86,6 +86,7 @@ class PointsTransaction(models.Model):
     type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS)
     brand = models.ForeignKey(Brand, null=True, blank=True,on_delete=models.CASCADE)
+    reward_request = models.ForeignKey('RewardRequest', null=True, blank=True, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
