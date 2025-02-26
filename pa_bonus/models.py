@@ -118,6 +118,22 @@ class FileUpload(models.Model):
     def __str__(self):
         return f'Upload {self.id} | {self.uploaded_at} | {self.status} | by {self.uploaded_by}'
     
+class Reward(models.Model):
+    abra_code = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=100)
+    point_cost = models.IntegerField()
+    description = models.TextField()
+    brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
+    image = models.ImageField(upload_to='reward_images/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.brand.prefix} | {self.name}'
+    
+    class Meta:
+        ordering = ['abra_code']
+    
 # Utility function to create group and permissions
 def create_manager_group_and_permissions(*args, **options):
     """
