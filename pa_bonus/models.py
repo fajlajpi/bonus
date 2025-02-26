@@ -129,10 +129,46 @@ class Reward(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.brand.prefix} | {self.name}'
+        return f'{self.brand.prefix if self.brand is not None else 'no brand'} | {self.name}'
     
     class Meta:
         ordering = ['abra_code']
+
+class RewardRequest(models.Model):
+    REQUEST_STATUS = (
+        ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+        ('FINISHED', 'Finished'),
+        ('CANCELLED', 'Cancelled'),
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='PENDING')
+    description = models.TextField()
+    total_points = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"Request {self.id} | by {self.user} | on {self.requested_at.strftime('%Y-%m-%d')} | TOTAL: {self.total_points} pts"
+
+    def save(self, *args, **kwargs):
+        # When saving to model, save the total points 
+        self.total_points = sum(item.quantity * item.point_cost for item in self.rewardrequestitem_set.all())
+        super().save(*args, **kwargs)
+
+class RewardRequestItem(models.Model):
+    reward_request = models.ForeignKey(RewardRequest, on_delete=models.CASCADE)
+    reward = models.ForeignKey(Reward, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    point_cost = models.IntegerField()  # Storing point cost at the time of request, in case it changes over time
+
+    def __str__(self):
+        return f"{self.quantity} x {self.reward.name} | {self.reward_request}"
+    
+    def save(self, *args, **kwargs):
+        #Set point cost from Reward before saving.
+        self.point_cost = self.reward.point_cost
+        super().save(*args, **kwargs)
     
 # Utility function to create group and permissions
 def create_manager_group_and_permissions(*args, **options):
