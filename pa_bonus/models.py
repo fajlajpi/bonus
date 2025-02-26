@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.contrib.contenttypes.models import ContentType
 import os
@@ -23,6 +24,17 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username + ' | ' + (self.first_name + ' ' + self.last_name if self.first_name or self.last_name else '')
+
+    def get_balance(self):
+        total_points = PointsTransaction.objects.filter(
+            user = self.id,
+            status = 'CONFIRMED'
+        ).aggregate(
+            total = Sum('value')
+        )
+        return total_points['total'] if total_points['total'] is not None else 0
+
+
 
 class Brand(models.Model):
     name = models.CharField(max_length=50)

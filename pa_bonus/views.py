@@ -68,12 +68,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         
         # Calculate current point total
         # TODO: Use PointsBalance model to avoid this calculation
-        total_points = PointsTransaction.objects.filter(
-            user = user,
-            status = 'CONFIRMED'
-        ).aggregate(
-            total = Sum('value')
-        )['total'] or 0
+        total_points = user.get_balance()
 
         context['total_points'] = total_points
         return context
@@ -116,19 +111,12 @@ class RewardsView(LoginRequiredMixin, View):
         available_rewards = Reward.objects.filter(is_active=True).filter(Q(brand__in=user_brands) | Q(brand__isnull=True)).distinct()
         
         # Get user's point balance
-        # TODO: Make this a model method
-        # Calculate current point total
         # TODO: Use PointsBalance model to avoid this calculation
-        total_points = PointsTransaction.objects.filter(
-            user = user,
-            status = 'CONFIRMED'
-        ).aggregate(
-            total = Sum('value')
-        )
+        total_points = user.get_balance()
 
         context = {
             'rewards': available_rewards,
-            'user_balance': total_points['total'] or 0,
+            'user_balance': total_points,
         }
 
         return render(request, self.template_name, context)
@@ -146,7 +134,7 @@ class RewardsView(LoginRequiredMixin, View):
         
         # Create reward request
         reward_request = RewardRequest(user=user)
-        reward_request.save() # SAVE IT HERE, to create the PK!
+        reward_request.save()
 
         # Create reward request items
         for reward_id, quantity in reward_quantities.items():
@@ -196,10 +184,7 @@ class RewardsRequestDetailView(View):
     def get(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         reward_request_items = RewardRequestItem.objects.filter(reward_request=reward_request)
-        try:
-            user_balance = PointsBalance.objects.filter(user_id=request.user).latest('date').points
-        except PointsBalance.DoesNotExist:
-            user_balance = 0
+        user_balance = request.user.get_balance()
 
         context = {
             'request': reward_request,
@@ -222,14 +207,6 @@ class RewardsRequestDetailView(View):
             description="Reward claim",
             type="REWARD_CLAIM",
             status="CONFIRMED",
-        )
-
-        # Add new Points Balance with current balance
-        current_balance = PointsBalance.objects.filter(user_id=request.user).latest('date').points
-        PointsBalance.objects.create(
-            user_id = request.user,
-            date = reward_request.requested_at,
-            points = current_balance - reward_request.total_points,
         )
 
         messages.success(request, f"Request {reward_request.id} confirmed successfully.")
