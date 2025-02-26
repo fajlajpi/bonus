@@ -36,22 +36,26 @@ Django-based system for tracking and using loyalty points
 
 ## TODO
 Please note that **[DONE]** really doesn't mean DONE DONE, but _done_ in the MVP sense.
-- [DONE] Basic Models layout
-- [DONE] Upload functionality
-- [DONE] Invoice data processing
+- **[DONE]** Basic Models layout
+- **[DONE]** Upload functionality
+- **[DONE]** Invoice data processing
 - Credit Note processing
-- [DONE] User Views
-    - [DONE] Current Point Balance
-    - [DONE] Individual Transactions
+- **[DONE]** User Views
+    - **[DONE]** Current Point Balance
+    - **[DONE]** Individual Transactions
 - Reward Claims
-    - [DONE] Reward Catalogue
-    - [DONE] Reward Request
+    - **[DONE]** Reward Catalogue
+    - **[DONE]** Reward Request
     - Reward Request status and review
 - Move to PostgreSQL
 - Client notifications
     - When points are added via email
     - Look into SMS options
-- [DONE] Basic styling
+- **[DONE]** Basic styling
+- Add a landing page for unregistered / logged out visitors
+- Add registrations for new clients
+- Add custom 404
+- Add Managers functionality to dashboard or a separate management view
 
 ## Nice to have
 - Custom views instead of Django Admin for Managers
