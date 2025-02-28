@@ -13,6 +13,18 @@ from .models import FileUpload, PointsTransaction, PointsBalance, UserContract, 
 # Create your views here.
 @permission_required('pa_bonus.can_manage', raise_exception=True)
 def upload_file(request):
+    """
+    Handles file uploads for processing invoice data.
+
+    This view allows users with the correct permission to upload invoice data files.
+    After a successful upload, the file is processed accordingly.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing the file upload.
+
+    Returns:
+        HttpResponse: Renders the upload form (GET) or redirects to the upload history (POST).
+    """
     if request.method == "POST":
         form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -41,12 +53,33 @@ def upload_file(request):
 
 @permission_required('pa_bonus.can_manage', raise_exception=True)
 def upload_history(request):
+    """
+    Displays the history of uploaded files.
+
+    This view lists all uploaded files in the order of uploading.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        HttpResponse: Renders the upload history template with the list of uploads.
+    """
     uploads = FileUpload.objects.all().order_by('-uploaded_at')
     return render(request, 'upload_history.html', {'uploads': uploads})
 
 
 # Client-facing views
 class DashboardView(LoginRequiredMixin, TemplateView):
+    """
+    Main dashboard view with current point balance and links for logged-in users.
+
+    This dashboard provides an overview of the users point balance, active contract
+    and its parameters, and links to other parts of the system. It's a central hub.
+
+    Attributes:
+        template_name (str): Template to render the dashboard.
+        login_url (str): Redirect url for non-authenticated users.
+    """
     template_name = 'dashboard.html'
     login_url = 'login'
 
@@ -74,6 +107,16 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 class HistoryView(LoginRequiredMixin, ListView):
+    """
+    Displays a history of the user's point transactions.
+
+    This view lists all the user's transactions in descending chronological order.
+
+    Attributes:
+        template_name (str): Template to render the transaction history page.
+        context_object_name (str): Name of the context object for the template.
+        login_url (str): Redirect url for non-authenticated users.
+    """
     template_name = 'history.html'
     context_object_name = 'transactions'
     login_url = 'login'
@@ -84,6 +127,14 @@ class HistoryView(LoginRequiredMixin, ListView):
         ).select_related('brand')
 
 class HistoryDetailView(LoginRequiredMixin, DetailView):
+    """
+    Displays the details of one point transaction.
+
+    Attributes:
+        template_name (str): Template to render the transaction detail page.
+        context_object_name (str): Name of the context object for the template.
+        login_url (str): Redirect url for non-authenticated users.
+    """
     template_name = 'history_detail.html'
     context_object_name = 'transaction'
     login_url = 'login'
@@ -94,6 +145,16 @@ class HistoryDetailView(LoginRequiredMixin, DetailView):
         ).select_related('brand')
 
 class RewardsView(LoginRequiredMixin, View):
+    """
+    Displays the available rewards as a simple list.
+
+    This view will list the rewards available to the currently logged-in user. It also serves
+    as a form to make a request for rewards.
+
+    Attributes:
+        template_name (str): Name of the template to render the view.
+        login_url (str): Redirect url for non-authenticated users.
+    """
     template_name = 'rewards.html'
     login_url = 'login'
 
@@ -159,6 +220,13 @@ class RewardsView(LoginRequiredMixin, View):
 
 
 class RewardsRequestsView(LoginRequiredMixin, TemplateView):
+    """
+    Displays a list of user's requests for rewards.
+
+    Attributes:
+        template_name (str): Name of the template to render the view.
+        login_url (str): Redirect url for non-authenticated users.
+    """
     template_name = 'reward_requests.html'
     login_url = 'login'
 
@@ -169,6 +237,13 @@ class RewardsRequestsView(LoginRequiredMixin, TemplateView):
         return context
 
 class RequestsDetailView(LoginRequiredMixin, TemplateView):
+    """
+    Displays the detail of one specific request for rewards.
+
+    Attributes:
+        template_name (str): Name of the template to render the view.
+        login_url (str): Redirect url for non-authenticated users.
+    """
     template_name = 'request_detail.html'
     login_url = 'login'
 
@@ -178,7 +253,13 @@ class RequestsDetailView(LoginRequiredMixin, TemplateView):
         context['message'] = "Rewards system coming soon!"
         return context
     
-class RewardsRequestConfirmationView(View):
+class RewardsRequestConfirmationView(LoginRequiredMixin, View):
+    """
+    Asks the user to confirm their request for rewards.
+
+    Attributes:
+        template_name (str): Name of the template to render the view.
+    """
     template_name = 'rewards_request_detail.html'
 
     def get(self, request, pk):
