@@ -49,6 +49,11 @@ class UserResource(resources.ModelResource):
         instance.password = make_password(instance.password)
         super().before_save_instance(instance, *args, **kwargs)
 
+# INLINES
+class RewardRequestItemInline(admin.TabularInline):
+    model = RewardRequestItem
+    extra = 1  # Number of empty forms shown
+
 # CUSTOM ACTIONS
 def approve_requests(modeladmin, request, queryset):
     queryset.update(status='ACCEPTED')
@@ -123,6 +128,7 @@ class RewardRequestAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     search_fields = ('user__username', 'user__email')
     actions = [approve_requests, reject_requests]
+    inlines = [RewardRequestItemInline]
 
 @admin.register(RewardRequestItem)
 class RewardRequestItemAdmin(admin.ModelAdmin):
