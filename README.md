@@ -32,7 +32,7 @@ Django-based system for tracking and using loyalty points
 - [x] Users can log in and see their points totals as well as transactions history
 - [x] Users can see a list of available rewards
 - [x] Users can send a reward request
-- [ ] TESTS!
+- [x] TESTS!
 - [x] Basic styling
 
 ## TODO
@@ -48,8 +48,8 @@ Please note that **[DONE]** really doesn't mean DONE DONE, but _done_ in the MVP
     - [x] Reward Catalogue
     - [x] Reward Request
     - [ ] Reward Request status and review
-- [ ] Move to PostgreSQL
-- [ ] Add tests as per CodersLab project specs
+- [x] Move to PostgreSQL
+- [x] Add tests as per CodersLab project specs
 - [ ] Client notifications
     - [ ] When points are added via email
     - [ ] Look into SMS options
