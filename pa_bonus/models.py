@@ -98,8 +98,8 @@ class UserContract(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     contract_date_from = models.DateField()
     contract_date_to = models.DateField()
-    extra_goal_12m = models.IntegerField()
-    extra_goal_base = models.IntegerField()
+    extra_goal_12m = models.IntegerField(null=True, blank=True)
+    extra_goal_base = models.IntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     brandbonuses = models.ManyToManyField('BrandBonus', related_name="user_contract")
 
