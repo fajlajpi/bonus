@@ -4,6 +4,7 @@ from import_export import resources, fields
 from import_export.widgets import DateWidget
 from import_export.admin import ExportMixin, ImportExportMixin
 from django.contrib.auth.hashers import make_password
+from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, PointsTransaction, BrandBonus, PointsBalance, 
     FileUpload, Reward, RewardRequest, RewardRequestItem
@@ -54,6 +55,18 @@ class RewardRequestItemInline(admin.TabularInline):
     model = RewardRequestItem
     extra = 1  # Number of empty forms shown
 
+class UserContractInlineFormSet(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        kwargs['initial'] = [
+            {'contract_date_from': '2025-01-01', 'contract_date_to': '2025-12-31'}
+        ]
+        super(UserContractInlineFormSet, self).__init__(*args, **kwargs)
+
+class UserContractInline(admin.TabularInline):
+    model = UserContract
+    extra = 1  # Number of empty forms shown
+    formset = UserContractInlineFormSet
+
 # CUSTOM ACTIONS
 def approve_requests(modeladmin, request, queryset):
     queryset.update(status='ACCEPTED')
@@ -85,6 +98,7 @@ class UserAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone')
     search_fields = ('username', 'email', 'last_name', 'user_number')
     list_filter = ('is_staff', 'is_active')
+    inlines = [UserContractInline]
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
