@@ -172,7 +172,6 @@ class RewardsView(LoginRequiredMixin, View):
         available_rewards = Reward.objects.filter(is_active=True).filter(Q(brand__in=user_brands) | Q(brand__isnull=True)).distinct()
         
         # Get user's point balance
-        # TODO: Use PointsBalance model to avoid this calculation
         total_points = user.get_balance()
 
         context = {
