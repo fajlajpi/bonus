@@ -14,13 +14,13 @@
     {% if contract %}
     <div class="contract-details">
         <h3>Aktuální členství v bonusovém programu</h3>
-        <p>Členství od: {{ contract.contract_date_from }}</p>
-        <p>Členství do: {{ contract.contract_date_to }}</p>
+        <p><strong>Členství od:</strong> {{ contract.contract_date_from }}</p>
+        <p><strong>Členství do:</strong> {{ contract.contract_date_to }}</p>
         
         <h4>Bonusy za značky</h4>
         <ul>
         {% for bonus in brand_bonuses %}
-            <li>{{ bonus.brand_id.name }}: {{ bonus.points_ratio }} bodů za 1 Kč</li>
+            <li><strong>{{ bonus.brand_id.name }}</strong>: {{ bonus.points_ratio }} bodů za 1 Kč</li>
         {% endfor %}
         </ul>
     </div>

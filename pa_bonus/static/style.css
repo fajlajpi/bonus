@@ -1,0 +1,132 @@
+:root {
+    --background-color: #D3E2F5;
+    --container-bg: #ffffff;
+    --primary-color: #6B9AC4;
+    --text-color: #333333;
+    --link-color: #4A7CAB;
+    --link-hover: #2C5282;
+    --error-color: #E53E3E;
+    --success-color: #48BB78;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+.site-header {
+    background-color: var(--container-bg);
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.header-content {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.site-title {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.user-nav {
+    display: flex;
+    gap: 1rem;
+}
+
+.main-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background-color: var(--container-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--primary-color);
+    margin-top: 0;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--link-hover);
+}
+
+/* Style for the total points box */
+.points-summary {
+    background-color: var(--container-bg);
+    border-radius: 12px;
+    border: 2px solid var(--primary-color);
+    text-align: center;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.total-points {
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+/* Style for contract details */
+.contract-details {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    margin-top: 1.5rem;
+}
+
+.contract-details ul {
+    padding-left: 1.5rem;
+}
+
+/* Quick links section */
+.quick-links {
+    margin-top: 2rem;
+}
+
+.quick-links ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.quick-links li {
+    background-color: var(--primary-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.quick-links a {
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.quick-links a:hover {
+    background-color: var(--link-hover);
+}
