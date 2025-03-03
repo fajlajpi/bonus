@@ -1,29 +1,44 @@
 {% extends "base.html" %}
 
-{% block title %} Seznam transakcí {% endblock title %}
+{% block title %} Historie transakcí {% endblock title %}
 
 {% block content %}
 <div class="history-container">
-    <h2>Transaction History</h2>
-    
-    <div class="transactions-list">
-        {% for transaction in transactions %}
-        <div class="transaction-item">
-            <a href="{% url 'history_detail' transaction.id %}">
-                <div class="transaction-header">
-                    <span class="date">{{ transaction.date }}</span>
-                    <span class="brand">{{ transaction.brand.name }}</span>
-                </div>
-                <div class="transaction-details">
-                    <span class="value">{{ transaction.value }} points</span>
-                    <span class="type">{{ transaction.get_type_display }}</span>
-                    <span class="status">{{ transaction.get_status_display }}</span>
-                </div>
-            </a>
-        </div>
-        {% empty %}
-        <p>No transactions found.</p>
-        {% endfor %}
-    </div>
+    <h2>Historie bodových transakcí</h2>
+
+    {% if transactions %}
+    <table class="transactions-table">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Značka</th>
+                <th>Hodnota</th>
+                <th>Typ</th>
+                <th>Status</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for transaction in transactions %}
+            <tr>
+                <td>{{ transaction.date }}</td>
+                <td>{{ transaction.brand.name }}</td>
+                <td class="value {% if transaction.value < 0 %}negative{% else %}positive{% endif %}">
+                    {{ transaction.value }} bodů
+                </td>
+                <td>{{ transaction.get_type_display }}</td>
+                <td>
+                    <span class="status-badge {{ transaction.status|lower }}">{{ transaction.get_status_display }}</span>
+                </td>
+                <td>
+                    <a href="{% url 'history_detail' transaction.id %}" class="details-link">Detail</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Žádné transakce nenalezeny.</p>
+    {% endif %}
 </div>
 {% endblock %}
