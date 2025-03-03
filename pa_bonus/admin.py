@@ -1,6 +1,6 @@
 import logging
 from django.contrib import admin
-from import_export import resources, fields
+from import_export import resources, fields, widgets
 from import_export.widgets import DateWidget
 from import_export.admin import ExportMixin, ImportExportMixin
 from django.contrib.auth.hashers import make_password
@@ -12,7 +12,7 @@ from pa_bonus.models import (
 
 logger = logging.getLogger(__name__)
 
-# IMPORT EXPORT FUNCTIONALITY
+# IMPORT EXPORT RESOURCES
 class UserResource(resources.ModelResource):
     """
     Defines import/export settings for the User model.
@@ -49,6 +49,72 @@ class UserResource(resources.ModelResource):
 
         instance.password = make_password(instance.password)
         super().before_save_instance(instance, *args, **kwargs)
+
+class UserContractResource(resources.ModelResource):
+    """
+    Defines import/export settings for UserContract.
+
+    - Uses email instead of user_id for better readability in import/export.
+    - Automatically fetches the user ID during import.
+    """
+
+    user_email = fields.Field(
+        column_name='user_email',
+        attribute='user_id',
+        widget=widgets.ForeignKeyWidget(User, field='email')
+    )
+
+    brand_bonuses = fields.Field(
+        column_name='brand_bonuses',
+        attribute='brandbonuses',
+        widget=widgets.ManyToManyWidget(BrandBonus, field='name', separator=', ')
+    )
+
+    class Meta:
+        model = UserContract
+        import_id_fields = ['user_email']  # Use email instead of ID
+        fields = ('user_email', 'contract_date_from', 'contract_date_to', 'extra_goal_12m', 'extra_goal_base', 'is_active', 'brand_bonuses')
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Ensures that the user exists before importing.
+        Automatically assigns the correct user_id based on the email.
+        Calls the parent method to retain default behavior.
+        """
+        super().before_import_row(row, **kwargs)  # Call parent method
+
+        try:
+            user = User.objects.get(email=row['user_email'])
+            row['user_id'] = user.id  # Assign correct user_id
+        except User.DoesNotExist:
+            raise ValueError(f"User with email {row['user_email']} does not exist.")
+
+    def after_save_instance(self, instance, new, **kwargs):
+        """
+        Handles the ManyToMany relationship for BrandBonus after instance creation.
+
+        - Parses the `brand_bonuses` column from the import file.
+        - Assigns the corresponding BrandBonus objects to the instance.
+        """
+        logger.info(f"after_save_instance called with: instance={instance}, new={new}, kwargs={kwargs}")
+
+        if hasattr(instance, 'brandbonuses') and instance.brandbonuses is not None:
+            logger.info(f"Processing Brand Bonuses for {instance}")
+
+            # Get the original brand bonuses from the imported row
+            row_data = kwargs.get('row', {})
+            brand_bonus_names = row_data.get('brand_bonuses', '')
+
+            if brand_bonus_names:
+                # Convert the comma-separated string into a list
+                bonus_names_list = [name.strip() for name in brand_bonus_names.split(',')]
+                logger.info(f"Parsed brand bonuses: {bonus_names_list}")
+
+                # Find matching BrandBonus objects
+                bonuses = BrandBonus.objects.filter(name__in=bonus_names_list)
+                instance.brandbonuses.set(bonuses)  # Assign ManyToMany relation
+
+
 
 # INLINES
 class RewardRequestItemInline(admin.TabularInline):
@@ -106,13 +172,14 @@ class BrandAdmin(admin.ModelAdmin):
     search_fields = ('name', 'prefix')
 
 @admin.register(UserContract)
-class UserContractAdmin(admin.ModelAdmin):
+class UserContractAdmin(ImportExportMixin, admin.ModelAdmin):
+    resource_class = UserContractResource
     list_display = ('user_id', 'contract_date_from', 'contract_date_to', 'is_active')
     search_fields = ('user_id__username', 'user_id__email', 'user_id__user_number')
     list_filter = ('is_active', 'contract_date_from', 'contract_date_to')
 
 @admin.register(PointsTransaction)
-class PointsTransactionAdmin(admin.ModelAdmin):
+class PointsTransactionAdmin(ExportMixin, admin.ModelAdmin):
     list_display = ('user', 'type', 'value', 'status', 'date', 'description')
     search_fields = ('user__username', 'user__email', 'user__user_number')
     list_filter = ('type', 'status', 'date')
@@ -120,7 +187,7 @@ class PointsTransactionAdmin(admin.ModelAdmin):
     actions = [confirm_transactions, pending_transactions, cancel_transactions]
 
 @admin.register(BrandBonus)
-class BrandBonusAdmin(admin.ModelAdmin):
+class BrandBonusAdmin(ExportMixin, admin.ModelAdmin):
     list_display = ('name', 'brand_id', 'points_ratio')
     search_fields = ('name', 'brand_id__name')
 
