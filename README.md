@@ -36,7 +36,6 @@ Django-based system for tracking and using loyalty points
 - [x] Basic styling
 
 ## TODO
-Please note that **[DONE]** really doesn't mean DONE DONE, but _done_ in the MVP sense.
 - [x] Basic Models layout
 - [x] Upload functionality
 - [x] Invoice data processing
@@ -58,6 +57,9 @@ Please note that **[DONE]** really doesn't mean DONE DONE, but _done_ in the MVP
 - [ ] Add registrations for new clients
 - [ ] Add custom 404
 - [ ] Add Managers functionality to dashboard or a separate management view
+- [ ] Look into splitting the functionality into multiple apps
+- [ ] Refactor tasks.py into more single-responsibility functions rather than one spaghetti function
+
 
 ## Nice to have
 - [ ] Custom views instead of Django Admin for Managers
