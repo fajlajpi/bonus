@@ -3,8 +3,36 @@
 {% block title %} Seznam žádostí o čerpání {% endblock title %}
 
 {% block content %}
-<div class="reward-requests-container">
-    <h2>My Reward Requests</h2>
-    <p>{{ message }}</p>
+<div class="history-container">
+    <h2>Historie bodových transakcí</h2>
+
+    {% if reward_requests %}
+    <table class="transactions-table">
+        <thead>
+            <tr>
+                <th>Datum</th>
+                <th>Hodnota</th>
+                <th>Status</th>
+                <th>Detail</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reward_request in reward_requests %}
+            <tr>
+                <td>{{ reward_request.requested_at }}</td>
+                <td>{{ reward_request.total_points }} bodů</td>
+                <td>
+                    <span class="status-badge {{ reward_request.status|lower }}">{{ reward_request.get_status_display }}</span>
+                </td>
+                <td>
+                    <a href="{% url 'rewards_request_detail' reward_request.id %}" class="details-link">Detail</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Žádné žádosti nenalezeny.</p>
+    {% endif %}
 </div>
 {% endblock %}

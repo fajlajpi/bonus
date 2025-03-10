@@ -218,7 +218,7 @@ class RewardsView(LoginRequiredMixin, View):
         return redirect('rewards_request_detail', pk=reward_request.pk)
 
 
-class RewardsRequestsView(LoginRequiredMixin, TemplateView):
+class RewardsRequestsView(LoginRequiredMixin, ListView):
     """
     Displays a list of user's requests for rewards.
 
@@ -227,14 +227,13 @@ class RewardsRequestsView(LoginRequiredMixin, TemplateView):
         login_url (str): Redirect url for non-authenticated users.
     """
     template_name = 'reward_requests.html'
+    context_object_name = 'reward_requests'
     login_url = 'login'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        #PLACEHOLDER MESSAGE
-        context['message'] = "Rewards system coming soon!"
-        return context
-
+    def get_queryset(self):
+        return RewardRequest.objects.filter(
+            user = self.request.user
+        )
 class RequestsDetailView(LoginRequiredMixin, TemplateView):
     """
     Displays the detail of one specific request for rewards.
