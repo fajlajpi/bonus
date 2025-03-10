@@ -6,7 +6,10 @@
 {% block content %}
   <h1>Dostupné odměny:</h1>
 
-  <p>Váš současný stav bonusového konta: {{ user_balance }}</p>
+  <div class="points-summary">
+    <h3>Aktuální stav bodového konta</h3>
+    <p class="total-points">{{ user_balance }} bodů</p>
+  </div>
 
   {% if messages %}
     <ul class="messages">
@@ -54,7 +57,7 @@
     .reward-item {
         border: 1px solid #ccc;
         padding: 10px;
-        width: 300px;
+        width: 230px;
         text-align: center;
     }
 
