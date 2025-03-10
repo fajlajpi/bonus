@@ -21,14 +21,17 @@
   </ul>
 
   <p>Your available points: {{ user_balance }}</p>
-
-  {% if request.total_points <= user_balance %}
-      <form method="post">
-        {% csrf_token %}
-        <button type="submit">Confirm Request</button>
-      </form>
+  {% if request.status == 'DRAFT' %}
+    {% if request.total_points <= user_balance %}
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit">Confirm Request</button>
+        </form>
+    {% else %}
+        <p>You don't have enough points to complete this request.</p>
+    {% endif %}
   {% else %}
-      <p>You don't have enough points to complete this request.</p>
+  <p>Žádost je ve zpracování.</p>
   {% endif %}
   
 
