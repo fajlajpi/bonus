@@ -1,17 +1,27 @@
 {% extends 'base.html' %}
 {% load pa_bonus_extras %}
 
-{% block title %} Potvrzení žádosti o čerpání {% endblock title %}
+{% block title %}
+  {% if request.status == 'DRAFT' %}
+    Potvrzení žádosti o čerpání
+  {% else %}
+    Detail žádosti o čerpání
+  {% endif %}
+{% endblock title %}
 
 {% block content %}
-  <h1>Reward Request Confirmation</h1>
+  {% if request.status == 'DRAFT' %}
+    <h1>Potvrzení žádosti o čerpání</h1>
+  {% else %}
+    <h1>Detail žádosti o čerpání</h1>
+  {% endif %}
 
-  <p>Request ID: {{ request.id }}</p>
-  <p>Requested By: {{ request.user.username }}</p>
-  <p>Requested At: {{ request.requested_at }}</p>
-  <p>Total cost: {{ request.total_points }} pts</p>
+  <p>Identifikátor: {{ request.id }}</p>
+  <p>Uživatel: {{ request.user.username }}</p>
+  <p>Datum žádosti: {{ request.requested_at }}</p>
+  <p>Celková hodnota: {{ request.total_points }} bodů</p>
 
-  <h2>Items Requested:</h2>
+  <h2>Položky:</h2>
   <ul>
     {% for item in items %}
       <li>
@@ -20,8 +30,8 @@
     {% endfor %}
   </ul>
 
-  <p>Your available points: {{ user_balance }}</p>
   {% if request.status == 'DRAFT' %}
+  <p>Vaše dostupné body: {{ user_balance }}</p>
     {% if request.total_points <= user_balance %}
         <form method="post">
           {% csrf_token %}
