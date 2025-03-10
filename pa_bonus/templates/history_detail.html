@@ -4,18 +4,18 @@
 
 {% block content %}
 <div class="transaction-detail-container">
-    <h2>Transaction Detail</h2>
+    <h2>Podrobnosti bodové transakce</h2>
     
     <div class="transaction-info">
-        <p><strong>Date:</strong> {{ transaction.date }}</p>
-        <p><strong>Brand:</strong> {{ transaction.brand.name }}</p>
-        <p><strong>Points:</strong> {{ transaction.value }}</p>
-        <p><strong>Type:</strong> {{ transaction.get_type_display }}</p>
-        <p><strong>Status:</strong> {{ transaction.get_status_display }}</p>
-        <p><strong>Description:</strong> {{ transaction.description }}</p>
-        <p><strong>Created:</strong> {{ transaction.created_at }}</p>
+        <p><strong>Datum:</strong> {{ transaction.date }}</p>
+        <p><strong>Značka:</strong> {{ transaction.brand.name }}</p>
+        <p><strong>Bodů:</strong> {{ transaction.value }}</p>
+        <p><strong>Typ:</strong> {{ transaction.get_type_display }}</p>
+        <p><strong>Stav:</strong> {{ transaction.get_status_display }}</p>
+        <p><strong>Popis:</strong> {{ transaction.description }}</p>
+        <p><strong>Vytvořeno:</strong> {{ transaction.created_at }}</p>
     </div>
     
-    <a href="{% url 'history' %}" class="back-link">Back to History</a>
+    <a href="{% url 'history' %}" class="back-link">Zpět na seznam transakcí</a>
 </div>
 {% endblock %}

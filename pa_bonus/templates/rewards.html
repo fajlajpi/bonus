@@ -4,9 +4,9 @@
 {% block title %} Nabídka odměn {% endblock title %}
 
 {% block content %}
-  <h1>Available Rewards</h1>
+  <h1>Dostupné odměny:</h1>
 
-  <p>Your current point balance: {{ user_balance }}</p>
+  <p>Váš současný stav bonusového konta: {{ user_balance }}</p>
 
   {% if messages %}
     <ul class="messages">
@@ -27,8 +27,8 @@
             <img src="{% static 'images/default.png' %}" alt="Default Image" class="reward-image">
           {% endif %}
           <h3>{{ reward.name }}</h3>
-          <p class="reward-brand">Brand: {% if reward.brand %}{{ reward.brand.name }}{% else %}All{% endif %}</p>
-          <p class="reward-cost">Cost: {{ reward.point_cost }} points</p>
+          <p class="reward-brand">Značka: {% if reward.brand %}{{ reward.brand.name }}{% else %}Všechny značky{% endif %}</p>
+          <p class="reward-cost">Bodová hodnota: {{ reward.point_cost }} bodů</p>
           <p class="reward-description">{{ reward.description }}</p>
           <div class="quantity-input">
             <label for="reward_quantity_{{ reward.id }}">Quantity:</label>
@@ -36,11 +36,11 @@
           </div>
         </div>
       {% empty %}
-        <p>No rewards available at this time.</p>
+        <p>V tuto chvíli nejsou dostupné žádné odměny.</p>
       {% endfor %}
     </div>
     {% if rewards %}
-      <button type="submit">Create Reward Request</button>
+      <button type="submit">Vytvořit žádost o odměny</button>
     {% endif %}
   </form>
 

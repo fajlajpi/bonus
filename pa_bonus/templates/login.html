@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="login-container">
-    <h2>Login</h2>
+    <h2>Přihlášení</h2>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button type="submit">Login</button>
+        <button type="submit">Přihlásit</button>
     </form>
 </div>
 {% endblock %}
