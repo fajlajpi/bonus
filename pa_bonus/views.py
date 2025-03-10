@@ -274,20 +274,24 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
-        # Update the status to Pending
-        reward_request.status = "PENDING"
-        reward_request.save()
+        if reward_request.status == 'DRAFT':
+            # Update the status to Pending
+            reward_request.status = "PENDING"
+            reward_request.save()
 
-        # Create a claim transaction so that the points are already blocked off
-        points_transaction = PointsTransaction.objects.create(
-            value = -reward_request.total_points,
-            date=reward_request.requested_at,
-            user=request.user,
-            description="Reward claim",
-            type="REWARD_CLAIM",
-            status="CONFIRMED",
-            reward_request=reward_request,
-        )
+            # Create a claim transaction so that the points are already blocked off
+            points_transaction = PointsTransaction.objects.create(
+                value = -reward_request.total_points,
+                date=reward_request.requested_at,
+                user=request.user,
+                description="Reward claim",
+                type="REWARD_CLAIM",
+                status="CONFIRMED",
+                reward_request=reward_request,
+            )
 
-        messages.success(request, f"Request {reward_request.id} confirmed successfully.")
-        return redirect('rewards')
+            messages.success(request, f"Request {reward_request.id} confirmed successfully.")
+            return redirect('rewards')
+        else:
+            messages.warning(request, f"Reward request was already submitted.")
+            return redirect('rewards')
