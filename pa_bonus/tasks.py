@@ -1,8 +1,8 @@
-# points/tasks.py
 import pandas as pd
 from django.utils import timezone
 from django.db.models import Q
 import logging
+from datetime import datetime
 
 from .models import FileUpload, PointsTransaction, User, Brand, UserContract, BrandBonus
 
@@ -10,131 +10,224 @@ from .models import FileUpload, PointsTransaction, User, Brand, UserContract, Br
 logger = logging.getLogger(__name__)
 
 def process_uploaded_file(upload_id):
+    """Main function to process an uploaded file and create points transactions."""
     upload = FileUpload.objects.get(id=upload_id)
     logger.info(f"Starting to process upload {upload_id}")
     
     try:
-        upload.status = 'PROCESSING'
-        upload.save()
+        mark_upload_as_processing(upload)
+        df = read_file(upload.file.path)
+        validate_columns(df)
         
-        # Read the file
-        file_path = upload.file.path
-        if file_path.endswith('.csv'):
-            df = pd.read_csv(file_path)
-        else:
-            df = pd.read_excel(file_path)
+        # Convert and validate dates
+        df = process_dates(df)
         
-        logger.info(f"File read successfully. Shape: {df.shape}")
+        successful_rows = process_data(df, upload)
         
-        # Validate required columns
-        required_columns = ['ZČ', 'Cena', 'Kód', 'Faktura']
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
-        
-        # Process data
-        successful_rows = 0
-        errors = []
-        
-        # Get unique user numbers from the file
-        unique_users = df['ZČ'].unique()
-        logger.info(f"Found {len(unique_users)} unique users in file")
-        
-        # Process each unique user
-        for user_number in unique_users:
-            logger.debug(f"Processing user {user_number}")
-            try:
-                # Find the user and their active contract
-                try:
-                    user = User.objects.get(user_number=user_number)
-                    logger.debug(f"Found user: {user.username}")
-                    
-                    contract = UserContract.objects.get(
-                        user_id=user,
-                        is_active=True,
-                        contract_date_from__lte=upload.uploaded_at,
-                        contract_date_to__gte=upload.uploaded_at
-                    )
-                    logger.debug(f"Found active contract for user: {contract}")
-                    
-                except User.DoesNotExist:
-                    logger.info(f"User {user_number} not found in system - skipping")
-                    continue
-                except UserContract.DoesNotExist:
-                    logger.info(f"No active contract found for user {user_number} - skipping")
-                    continue
-                
-                # Get user's brand bonuses
-                brand_bonuses = contract.brandbonuses.all()
-                logger.debug(f"Found {brand_bonuses.count()} brand bonuses for user")
-                
-                if not brand_bonuses:
-                    logger.info(f"No brand bonuses found for user {user_number} - skipping")
-                    continue
-                
-                # Get user's data
-                user_data = df[df['ZČ'] == user_number]
-                
-                # Get unique invoices for this user
-                unique_invoices = user_data['Faktura'].unique()
-                logger.debug(f"Found {len(unique_invoices)} invoices for user")
-                
-                # Process each invoice
-                for invoice_id in unique_invoices:
-                    logger.debug(f"Processing invoice {invoice_id}")
-                    invoice_data = user_data[user_data['Faktura'] == invoice_id]
-                    
-                    # Process each brand bonus
-                    for bonus in brand_bonuses:
-                        brand = bonus.brand_id
-                        logger.debug(f"Processing brand {brand.name} with prefix {brand.prefix}")
-                        
-                        # Filter rows for this brand
-                        brand_rows = invoice_data[
-                            invoice_data['Kód'].str.startswith(brand.prefix)
-                        ]
-                        
-                        if not brand_rows.empty:
-                            # Sum up all values for this brand in this invoice
-                            total_amount = brand_rows['Cena'].sum()
-                            points = int(total_amount * bonus.points_ratio)
-                            
-                            logger.debug(f"Calculated {points} points for amount {total_amount}")
-                            
-                            # Create transaction if points exist
-                            if points > 0:
-                                transaction = PointsTransaction.objects.create(
-                                    user=user,
-                                    value=points,
-                                    date=upload.uploaded_at.date(),
-                                    description=f'Invoice {invoice_id}',
-                                    type='STANDARD_POINTS',
-                                    status='PENDING',
-                                    brand=brand
-                                )
-                                logger.debug(f"Created transaction: {transaction}")
-                                successful_rows += 1
-                
-            except Exception as e:
-                error_msg = f"Error processing user {user_number}: {str(e)}"
-                logger.error(error_msg, exc_info=True)
-                errors.append(error_msg)
-        
-        # Update upload record
-        upload.status = 'COMPLETED'
-        upload.processed_at = timezone.now()
-        upload.rows_processed = successful_rows
-        if errors:
-            upload.error_message = "\n".join(errors)
-        upload.save()
-        
-        logger.info(f"Processing completed. Successful rows: {successful_rows}, Errors: {len(errors)}")
+        complete_upload(upload, successful_rows)
+        logger.info(f"Processing completed. Successful rows: {successful_rows}")
         
     except Exception as e:
-        error_msg = f"Fatal error processing upload: {str(e)}"
-        logger.error(error_msg, exc_info=True)
-        upload.status = 'FAILED'
-        upload.error_message = error_msg
-        upload.processed_at = timezone.now()
-        upload.save()
+        handle_processing_error(upload, e)
         raise
+
+
+def mark_upload_as_processing(upload):
+    """Mark the upload as being processed."""
+    upload.status = 'PROCESSING'
+    upload.save()
+
+
+def read_file(file_path):
+    """Read the uploaded file and return a dataframe."""
+    if file_path.endswith('.csv'):
+        df = pd.read_csv(file_path)
+    else:
+        df = pd.read_excel(file_path)
+    
+    logger.info(f"File read successfully. Shape: {df.shape}")
+    return df
+
+
+def validate_columns(df):
+    """Validate that the dataframe contains all required columns."""
+    required_columns = ['ZČ', 'Cena', 'Kód', 'Faktura', 'Datum']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+
+def process_dates(df):
+    """Convert date strings in DD.MM.YYYY format to datetime objects."""
+    try:
+        # Convert 'Datum' from string to datetime
+        df['Datum'] = pd.to_datetime(df['Datum'], format='%d.%m.%Y')
+        logger.info("Successfully converted dates")
+        
+        # Check for invalid dates
+        invalid_dates = df[df['Datum'].isnull()]
+        if not invalid_dates.empty:
+            invalid_rows = invalid_dates.index.tolist()
+            logger.warning(f"Found {len(invalid_rows)} rows with invalid dates at indices: {invalid_rows}")
+            # Filter out rows with invalid dates
+            df = df.dropna(subset=['Datum'])
+            logger.info(f"Removed {len(invalid_rows)} rows with invalid dates, new shape: {df.shape}")
+            
+        return df
+    except Exception as e:
+        logger.error(f"Error processing dates: {str(e)}", exc_info=True)
+        raise ValueError(f"Failed to process dates: {str(e)}")
+
+
+def process_data(df, upload):
+    """Process the data in the dataframe and create transactions."""
+    successful_rows = 0
+    errors = []
+    
+    # Get unique user numbers from the file
+    unique_users = df['ZČ'].unique()
+    logger.info(f"Found {len(unique_users)} unique users in file")
+    
+    # Process each unique user
+    for user_number in unique_users:
+        try:
+            user_successful_rows = process_user(user_number, df, upload)
+            successful_rows += user_successful_rows
+        except Exception as e:
+            error_msg = f"Error processing user {user_number}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            errors.append(error_msg)
+    
+    if errors:
+        upload.error_message = "\n".join(errors)
+    
+    return successful_rows
+
+
+def process_user(user_number, df, upload):
+    """Process data for a single user."""
+    logger.debug(f"Processing user {user_number}")
+    
+    # Get user
+    try:
+        user = User.objects.get(user_number=user_number)
+        logger.debug(f"Found user: {user.username}")
+    except User.DoesNotExist:
+        logger.info(f"User {user_number} not found in system - skipping")
+        return 0
+    
+    # Get user's data
+    user_data = df[df['ZČ'] == user_number]
+    
+    return process_user_invoices(user, user_data, upload)
+
+
+def process_user_invoices(user, user_data, upload):
+    """Process all invoices for a user."""
+    successful_rows = 0
+    
+    # Group by invoice
+    invoices = user_data.groupby('Faktura')
+    
+    # Process each invoice
+    for invoice_id, invoice_data in invoices:
+        # Get the invoice date (should be the same for all rows in this invoice)
+        invoice_date = invoice_data['Datum'].iloc[0]
+        logger.debug(f"Processing invoice {invoice_id} with date {invoice_date}")
+        
+        # Check if user had an active contract on the invoice date
+        contract = get_active_contract(user, invoice_date)
+        if not contract:
+            logger.info(f"No active contract found for user {user.user_number} on date {invoice_date} - skipping invoice")
+            continue
+        
+        # Get user's brand bonuses for this contract
+        brand_bonuses = contract.brandbonuses.all()
+        logger.debug(f"Found {brand_bonuses.count()} brand bonuses for user contract")
+        
+        if not brand_bonuses:
+            logger.info(f"No brand bonuses found for user {user.user_number} - skipping invoice")
+            continue
+        
+        # Process each brand bonus for this invoice
+        for bonus in brand_bonuses:
+            transactions_created = process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date)
+            successful_rows += transactions_created
+    
+    return successful_rows
+
+
+def get_active_contract(user, date):
+    """Retrieve user's active contract for the specific date."""
+    try:
+        contract = UserContract.objects.get(
+            user_id=user,
+            is_active=True,
+            contract_date_from__lte=date,
+            contract_date_to__gte=date
+        )
+        logger.debug(f"Found active contract for user on date {date}: {contract}")
+        return contract
+    except UserContract.DoesNotExist:
+        logger.info(f"No active contract found for user {user.user_number} on date {date}")
+        return None
+
+
+def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date):
+    """Process a single brand bonus for an invoice."""
+    brand = bonus.brand_id
+    logger.debug(f"Processing brand {brand.name} with prefix {brand.prefix}")
+    
+    # Filter rows for this brand
+    brand_rows = invoice_data[
+        invoice_data['Kód'].str.startswith(brand.prefix)
+    ]
+    
+    if brand_rows.empty:
+        return 0
+    
+    # Sum up all values for this brand in this invoice
+    total_amount = brand_rows['Cena'].sum()
+    points = int(total_amount * bonus.points_ratio)
+    
+    logger.debug(f"Calculated {points} points for amount {total_amount}")
+    
+    # Create transaction if points exist
+    if points > 0:
+        create_points_transaction(user, points, invoice_date, invoice_id, brand)
+        return 1
+    
+    return 0
+
+
+def create_points_transaction(user, points, invoice_date, invoice_id, brand):
+    """Create a new points transaction using the invoice date."""
+    transaction = PointsTransaction.objects.create(
+        user=user,
+        value=points,
+        date=invoice_date.date(),  # Use invoice date instead of upload date
+        description=f'Invoice {invoice_id}',
+        type='STANDARD_POINTS',
+        status='PENDING',
+        brand=brand
+    )
+    logger.debug(f"Created transaction: {transaction} with date {invoice_date.date()}")
+    return transaction
+
+
+def complete_upload(upload, successful_rows):
+    """Mark the upload as completed and update statistics."""
+    upload.status = 'COMPLETED'
+    upload.processed_at = timezone.now()
+    upload.rows_processed = successful_rows
+    upload.save()
+
+
+def handle_processing_error(upload, exception):
+    """Handle a fatal error during processing."""
+    error_msg = f"Fatal error processing upload: {str(exception)}"
+    logger.error(error_msg, exc_info=True)
+    upload.status = 'FAILED'
+    upload.error_message = error_msg
+    upload.processed_at = timezone.now()
+    upload.save()
