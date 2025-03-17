@@ -155,6 +155,7 @@ class PointsTransaction(models.Model):
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS)
     brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.CASCADE)
     reward_request = models.ForeignKey('RewardRequest', null=True, blank=True, on_delete=models.CASCADE)
+    file_upload = models.ForeignKey('FileUpload', null=True, blank=True, on_delete=models.CASCADE, related_name='Transactions')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -218,6 +219,8 @@ class FileUpload(models.Model):
     status = models.CharField(max_length=20, choices=PROCESSING_STATUS, default='PENDING')
     error_message = models.TextField(blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    processed_rows = models.IntegerField(default=0)
+    total_rows = models.IntegerField(default=0)
 
     class Meta:
         ordering = ['-uploaded_at']

@@ -1,5 +1,6 @@
 import pandas as pd
 from django.utils import timezone
+from django.db import transaction
 from django.db.models import Q
 import logging
 from datetime import datetime
@@ -121,22 +122,19 @@ def process_data(df, upload, filetype):
     return successful_rows
 
 
+@transaction.atomic
 def process_user(user_number, df, upload, filetype):
-    """Process data for a single user."""
-    logger.debug(f"Processing user {user_number}")
-    
-    # Get user
-    try:
-        user = User.objects.get(user_number=user_number)
-        logger.debug(f"Found user: {user.username}")
-    except User.DoesNotExist:
-        logger.info(f"User {user_number} not found in system - skipping")
-        return 0
-    
-    # Get user's data
+    """Process data for a single user within a transaction."""
+    user = User.objects.get(user_number=user_number)
     user_data = df[df['ZČ'] == user_number]
     
-    return process_user_invoices(user, user_data, upload, filetype)
+    successful_rows = process_user_invoices(user, user_data, upload, filetype)
+    
+    # Update progress
+    upload.processed_rows += successful_rows
+    upload.save()
+    
+    return successful_rows
 
 
 def process_user_invoices(user, user_data, upload, filetype):
@@ -173,7 +171,7 @@ def process_user_invoices(user, user_data, upload, filetype):
         
         # Process each brand bonus for this invoice
         for bonus in brand_bonuses:
-            transactions_created = process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype)
+            transactions_created = process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype, upload)
             successful_rows += transactions_created
     
     return successful_rows
@@ -195,7 +193,7 @@ def get_active_contract(user, date):
         return None
 
 
-def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype):
+def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype, upload):
     """Process a single brand bonus for an invoice / credit note."""
     brand = bonus.brand_id
     logger.debug(f"Processing brand {brand.name} with prefix {brand.prefix}")
@@ -216,37 +214,50 @@ def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, fil
     
     # Create transaction if points exist
     if points > 0:
-        create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype)
+        create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype, upload)
         return 1
     
     return 0
 
 
-def create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype):
-    """Create a new points transaction using the invoice / credit note date."""
-    if filetype == FT_INVOICE:
-        transaction = PointsTransaction.objects.create(
-            user=user,
-            value=points,
-            date=invoice_date.date(),  # Use invoice date instead of upload date
-            description=f'Invoice {invoice_id}',
-            type='STANDARD_POINTS',
-            status='PENDING',
-            brand=brand
-        )
-        logger.debug(f"Created transaction: {transaction} with date {invoice_date.date()}")
-    elif filetype == FT_CREDIT_NOTE:
-        transaction = PointsTransaction.objects.create(
-            user=user,
-            value=-points,
-            date=invoice_date.date(),  # Use invoice date instead of upload date
-            description=f'Dobropis {invoice_id}',
-            type='CREDIT_NOTE_ADJUST',
-            status='CONFIRMED',  # Negative point transactions are considered immediately confirmed
-            brand=brand
-        )
-        logger.debug(f"Created transaction: {transaction} with date {invoice_date.date()}")
-
+def create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype, upload):
+    """Create a transaction with robust idempotency check."""
+    # Convert invoice_id to string to ensure consistent comparison
+    invoice_id_str = str(invoice_id)
+    
+    # Ensure invoice_date is a date object
+    if hasattr(invoice_date, 'date'):
+        invoice_date = invoice_date.date()
+    
+    # More comprehensive query to catch potential duplicates
+    existing = PointsTransaction.objects.filter(
+        user=user,
+        date=invoice_date,
+        brand=brand,
+        type='STANDARD_POINTS' if filetype == FT_INVOICE else 'CREDIT_NOTE_ADJUST'
+    ).filter(
+        Q(description__contains=invoice_id_str) | 
+        Q(description__contains=f"Invoice {invoice_id_str}") | 
+        Q(description__contains=f"Dobropis {invoice_id_str}")
+    ).first()
+    
+    if existing:
+        logger.info(f"Skipping duplicate: {invoice_id} for user {user.username}")
+        return existing
+    
+    # Create new transaction
+    transaction = PointsTransaction.objects.create(
+        user=user,
+        value=points if filetype == FT_INVOICE else -points,
+        date=invoice_date,
+        description=f'{"Invoice" if filetype == FT_INVOICE else "Dobropis"} {invoice_id_str}',
+        type='STANDARD_POINTS' if filetype == FT_INVOICE else 'CREDIT_NOTE_ADJUST',
+        status='PENDING' if filetype == FT_INVOICE else 'CONFIRMED',
+        brand=brand,
+        file_upload=upload  # Link to the upload
+    )
+    
+    logger.debug(f"Created new transaction: {transaction}")
     return transaction
 
 
