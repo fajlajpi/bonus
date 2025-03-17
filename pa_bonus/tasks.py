@@ -9,7 +9,11 @@ from .models import FileUpload, PointsTransaction, User, Brand, UserContract, Br
 # Configure logging
 logger = logging.getLogger(__name__)
 
-def process_uploaded_file(upload_id):
+# FILETYPE CONSTANTS TO BRANCH THE PROCESSING
+FT_INVOICE = 'INVOICE'
+FT_CREDIT_NOTE = 'CREDIT_NOTE'
+
+def process_uploaded_file(upload_id: FileUpload):
     """Main function to process an uploaded file and create points transactions."""
     upload = FileUpload.objects.get(id=upload_id)
     logger.info(f"Starting to process upload {upload_id}")
@@ -17,12 +21,12 @@ def process_uploaded_file(upload_id):
     try:
         mark_upload_as_processing(upload)
         df = read_file(upload.file.path)
-        validate_columns(df)
+        filetype = validate_columns(df)
         
         # Convert and validate dates
         df = process_dates(df)
         
-        successful_rows = process_data(df, upload)
+        successful_rows = process_data(df, upload, filetype)
         
         complete_upload(upload, successful_rows)
         logger.info(f"Processing completed. Successful rows: {successful_rows}")
@@ -32,13 +36,13 @@ def process_uploaded_file(upload_id):
         raise
 
 
-def mark_upload_as_processing(upload):
+def mark_upload_as_processing(upload: FileUpload):
     """Mark the upload as being processed."""
     upload.status = 'PROCESSING'
     upload.save()
 
 
-def read_file(file_path):
+def read_file(file_path: str) -> pd.DataFrame:
     """Read the uploaded file and return a dataframe."""
     if file_path.endswith('.csv'):
         df = pd.read_csv(file_path)
@@ -49,15 +53,28 @@ def read_file(file_path):
     return df
 
 
-def validate_columns(df):
+def validate_columns(df: pd.DataFrame):
     """Validate that the dataframe contains all required columns."""
-    required_columns = ['ZČ', 'Cena', 'Kód', 'Faktura', 'Datum']
+    required_columns = ['ZČ', 'Cena', 'Kód', 'Datum']
     missing_columns = [col for col in required_columns if col not in df.columns]
+
+    filetype_columns = ['Faktura', 'Dobropis']
+    filetype_columns_checked = [col for col in filetype_columns if col in df.columns]
+
+    if len(filetype_columns_checked) != 1:
+        raise ValueError(f"Wrong columns for filetype (need either column 'Faktura' or 'Dobropis'), not both or none.")
+
     if missing_columns:
         raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
 
+    if filetype_columns_checked[0] == 'Faktura':
+        return FT_INVOICE
+    elif filetype_columns_checked[0] == 'Dobropis':
+        return FT_CREDIT_NOTE
+    else:
+        raise ValueError(f"Unknown type of document, neither invoice or credit note.")
 
-def process_dates(df):
+def process_dates(df: pd.DataFrame):
     """Convert date strings in DD.MM.YYYY format to datetime objects."""
     try:
         # Convert 'Datum' from string to datetime
@@ -79,7 +96,7 @@ def process_dates(df):
         raise ValueError(f"Failed to process dates: {str(e)}")
 
 
-def process_data(df, upload):
+def process_data(df, upload, filetype):
     """Process the data in the dataframe and create transactions."""
     successful_rows = 0
     errors = []
@@ -91,7 +108,7 @@ def process_data(df, upload):
     # Process each unique user
     for user_number in unique_users:
         try:
-            user_successful_rows = process_user(user_number, df, upload)
+            user_successful_rows = process_user(user_number, df, upload, filetype)
             successful_rows += user_successful_rows
         except Exception as e:
             error_msg = f"Error processing user {user_number}: {str(e)}"
@@ -104,7 +121,7 @@ def process_data(df, upload):
     return successful_rows
 
 
-def process_user(user_number, df, upload):
+def process_user(user_number, df, upload, filetype):
     """Process data for a single user."""
     logger.debug(f"Processing user {user_number}")
     
@@ -119,17 +136,22 @@ def process_user(user_number, df, upload):
     # Get user's data
     user_data = df[df['ZČ'] == user_number]
     
-    return process_user_invoices(user, user_data, upload)
+    return process_user_invoices(user, user_data, upload, filetype)
 
 
-def process_user_invoices(user, user_data, upload):
-    """Process all invoices for a user."""
+def process_user_invoices(user, user_data, upload, filetype):
+    """Process all invoices / credit notes for a user."""
     successful_rows = 0
     
-    # Group by invoice
-    invoices = user_data.groupby('Faktura')
+    # Group by invoice or credit note
+    if filetype == FT_INVOICE:
+        invoices = user_data.groupby('Faktura')
+    elif filetype == FT_CREDIT_NOTE:
+        invoices = user_data.groupby('Dobropis')
+    else:
+        raise Exception(f"Unknown filetype: {filetype}")
     
-    # Process each invoice
+    # Process each invoice / credit note
     for invoice_id, invoice_data in invoices:
         # Get the invoice date (should be the same for all rows in this invoice)
         invoice_date = invoice_data['Datum'].iloc[0]
@@ -151,7 +173,7 @@ def process_user_invoices(user, user_data, upload):
         
         # Process each brand bonus for this invoice
         for bonus in brand_bonuses:
-            transactions_created = process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date)
+            transactions_created = process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype)
             successful_rows += transactions_created
     
     return successful_rows
@@ -173,8 +195,8 @@ def get_active_contract(user, date):
         return None
 
 
-def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date):
-    """Process a single brand bonus for an invoice."""
+def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype):
+    """Process a single brand bonus for an invoice / credit note."""
     brand = bonus.brand_id
     logger.debug(f"Processing brand {brand.name} with prefix {brand.prefix}")
     
@@ -194,24 +216,37 @@ def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date):
     
     # Create transaction if points exist
     if points > 0:
-        create_points_transaction(user, points, invoice_date, invoice_id, brand)
+        create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype)
         return 1
     
     return 0
 
 
-def create_points_transaction(user, points, invoice_date, invoice_id, brand):
-    """Create a new points transaction using the invoice date."""
-    transaction = PointsTransaction.objects.create(
-        user=user,
-        value=points,
-        date=invoice_date.date(),  # Use invoice date instead of upload date
-        description=f'Invoice {invoice_id}',
-        type='STANDARD_POINTS',
-        status='PENDING',
-        brand=brand
-    )
-    logger.debug(f"Created transaction: {transaction} with date {invoice_date.date()}")
+def create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype):
+    """Create a new points transaction using the invoice / credit note date."""
+    if filetype == FT_INVOICE:
+        transaction = PointsTransaction.objects.create(
+            user=user,
+            value=points,
+            date=invoice_date.date(),  # Use invoice date instead of upload date
+            description=f'Invoice {invoice_id}',
+            type='STANDARD_POINTS',
+            status='PENDING',
+            brand=brand
+        )
+        logger.debug(f"Created transaction: {transaction} with date {invoice_date.date()}")
+    elif filetype == FT_CREDIT_NOTE:
+        transaction = PointsTransaction.objects.create(
+            user=user,
+            value=-points,
+            date=invoice_date.date(),  # Use invoice date instead of upload date
+            description=f'Dobropis {invoice_id}',
+            type='CREDIT_NOTE_ADJUST',
+            status='CONFIRMED',  # Negative point transactions are considered immediately confirmed
+            brand=brand
+        )
+        logger.debug(f"Created transaction: {transaction} with date {invoice_date.date()}")
+
     return transaction
 
 
