@@ -27,7 +27,7 @@ Django-based system for tracking and using loyalty points
 - [ ] Uploading accounting data
     - [X] Invoices (points gained for turnover in brands)
     - [ ] Invoices (points lost for rewards claimed)
-    - [ ] Credit Notes (points lost for money returned to client)
+    - [x] Credit Notes (points lost for money returned to client)
 - [ ] Processing accounting data and creating point transactions
 - [x] Users can log in and see their points totals as well as transactions history
 - [x] Users can see a list of available rewards
@@ -39,7 +39,8 @@ Django-based system for tracking and using loyalty points
 - [x] Basic Models layout
 - [x] Upload functionality
 - [x] Invoice data processing
-- Credit Note processing
+    - [x] Transaction fingerprinting - won't create duplicates of the same transaction
+- [x] Credit Note processing
 - [x] User Views
     - [x] Current Point Balance
     - [x] Individual Transactions
@@ -55,16 +56,20 @@ Django-based system for tracking and using loyalty points
 - [x] Basic styling
 - [ ] Add a landing page for unregistered / logged out visitors
 - [ ] Add registrations for new clients
+- [ ] Add options and settings for clients
 - [ ] Add custom 404
 - [ ] Add Managers functionality to dashboard or a separate management view
+    - [ ] See open reward requests
+    - [ ] Confirm / modify / reject reward requests with a message
+    - [ ] See clients' contract details
+    - [ ] Track clients' progress
+    - [ ] Get exports to pass on to sales reps
 - [ ] Look into splitting the functionality into multiple apps
 - [ ] Refactor tasks.py into more single-responsibility functions rather than one spaghetti function
 
 
 ## Nice to have
-- [ ] Custom views instead of Django Admin for Managers
 - [ ] Internationalization prepared (but postponed due to Hungary launch being shelved for now)
 - [ ] Proper Template structure
 - [ ] Anything resembling Front-end
-- Proper verification
-    - Transaction "fingerprinting" to prevent duplicate transactions
+
