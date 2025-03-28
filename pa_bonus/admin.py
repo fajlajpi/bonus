@@ -1,16 +1,30 @@
 import logging
+from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import FilteredSelectMultiple, AdminDateWidget
 from import_export import resources, fields, widgets
 from import_export.widgets import DateWidget
 from import_export.admin import ExportMixin, ImportExportMixin
 from django.contrib.auth.hashers import make_password
 from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
-    User, Brand, UserContract, PointsTransaction, BrandBonus, PointsBalance, 
-    FileUpload, Reward, RewardRequest, RewardRequestItem
+    User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, PointsBalance, 
+    FileUpload, Reward, RewardRequest, RewardRequestItem,
 )
 
 logger = logging.getLogger(__name__)
+
+# INLINE FORMS
+class UserContractGoalInlineForm(forms.ModelForm):
+    class Meta:
+        model = UserContractGoal
+        fields = '__all__'
+        widgets = {
+            'goal_period_from': AdminDateWidget(),
+            'goal_period_to': AdminDateWidget(),
+            'brands': FilteredSelectMultiple("Brands", is_stacked=False),
+        }
+
 
 # IMPORT EXPORT RESOURCES
 class UserResource(resources.ModelResource):
@@ -73,7 +87,7 @@ class UserContractResource(resources.ModelResource):
     class Meta:
         model = UserContract
         import_id_fields = ['user_email']  # Use email instead of ID
-        fields = ('user_email', 'contract_date_from', 'contract_date_to', 'extra_goal_12m', 'extra_goal_base', 'is_active', 'brand_bonuses')
+        fields = ('user_email', 'contract_date_from', 'contract_date_to', 'is_active', 'brand_bonuses')
 
     def before_import_row(self, row, **kwargs):
         """
@@ -114,7 +128,45 @@ class UserContractResource(resources.ModelResource):
                 bonuses = BrandBonus.objects.filter(name__in=bonus_names_list)
                 instance.brandbonuses.set(bonuses)  # Assign ManyToMany relation
 
+class UserContractGoalResource(resources.ModelResource):
+    user_email = fields.Field(
+        column_name='user_email',
+        attribute='user_contract',
+        widget=widgets.ForeignKeyWidget(UserContract, field='user_id__email')
+    )
+    contract_start = fields.Field(
+        column_name='contract_date_from',
+        attribute='user_contract',
+        widget=widgets.ForeignKeyWidget(UserContract, field='contract_date_from')
+    )
+    brands = fields.Field(
+        column_name='brands',
+        attribute='brands',
+        widget=widgets.ManyToManyWidget(Brand, field='name', separator=',')
+    )
 
+    class Meta:
+        model = UserContractGoal
+        import_id_fields = []  # We're not using a unique ID for import
+        fields = (
+            'user_email',
+            'contract_start',
+            'goal_period_from',
+            'goal_period_to',
+            'goal_value',
+            'goal_base',
+            'brands',
+        )
+
+    def before_import_row(self, row, **kwargs):
+        # We combine email and contract date to locate the UserContract
+        email = row['user_email']
+        contract_start = row['contract_date_from']
+        try:
+            contract = UserContract.objects.get(user_id__email=email, contract_date_from=contract_start)
+            row['user_contract'] = contract.pk
+        except UserContract.DoesNotExist:
+            raise ValueError(f"Contract not found for user {email} starting {contract_start}")
 
 # INLINES
 class RewardRequestItemInline(admin.TabularInline):
@@ -132,6 +184,12 @@ class UserContractInline(admin.TabularInline):
     model = UserContract
     extra = 1  # Number of empty forms shown
     formset = UserContractInlineFormSet
+
+class UserContractGoalInline(admin.TabularInline):
+    model = UserContractGoal
+    fk_name = "user_contract"
+    form = UserContractGoalInlineForm
+    extra = 0
 
 # CUSTOM ACTIONS
 def approve_requests(modeladmin, request, queryset):
@@ -177,6 +235,14 @@ class UserContractAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('user_id', 'contract_date_from', 'contract_date_to', 'is_active')
     search_fields = ('user_id__username', 'user_id__email', 'user_id__user_number')
     list_filter = ('is_active', 'contract_date_from', 'contract_date_to')
+    inlines = [UserContractGoalInline]
+
+@admin.register(UserContractGoal)
+class UserContractGoalAdmin(ImportExportMixin, admin.ModelAdmin):
+    resource_class = UserContractGoalResource
+    list_display = ('user_contract', 'goal_period_from', 'goal_period_to', 'goal_value', 'goal_base')
+    list_filter = ('goal_period_from', 'goal_period_to')
+    search_fields = ('user_contract__user_id__email',)
 
 @admin.register(PointsTransaction)
 class PointsTransactionAdmin(ExportMixin, admin.ModelAdmin):

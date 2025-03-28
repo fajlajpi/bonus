@@ -98,8 +98,6 @@ class UserContract(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     contract_date_from = models.DateField()
     contract_date_to = models.DateField()
-    extra_goal_12m = models.IntegerField(null=True, blank=True)
-    extra_goal_base = models.IntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     brandbonuses = models.ManyToManyField('BrandBonus', related_name="user_contract")
 
@@ -110,7 +108,29 @@ class UserContract(models.Model):
         user_name = self.user_id.last_name + ' ' + self.user_id.first_name
 
         return user_name + f' ({self.contract_date_from})'
-    
+
+class UserContractGoal(models.Model):
+    """
+    Represents an optional extra goal set within a user's contract for specific brands over a period.
+
+    Attributes:
+        user_contract (UserContract): The related contract.
+        brands (Brand): Brands this goal applies to (can be a subset of contract brands).
+        goal_period_from (Date): Start of the goal period.
+        goal_period_to (Date): End of the goal period.
+        goal_value (int): Target turnover value.
+        goal_base (int): Base turnover value to calculate overachievement.
+    """
+    user_contract = models.ForeignKey(UserContract, on_delete=models.CASCADE, related_name='extra_goals')
+    brands = models.ManyToManyField(Brand)
+    goal_period_from = models.DateField()
+    goal_period_to = models.DateField()
+    goal_value = models.IntegerField()
+    goal_base = models.IntegerField()
+
+    def __str__(self):
+        return f"Goal for {self.user_contract} | {self.goal_value} from {self.goal_period_from} to {self.goal_period_to}"
+
 
 class PointsTransaction(models.Model):
     """
