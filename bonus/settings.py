@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-import bonus.private as private
 
 # MY SETTINGS
 LOGIN_REDIRECT_URL = 'dashboard'
