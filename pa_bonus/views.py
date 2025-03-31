@@ -186,38 +186,43 @@ class RewardsView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         user = request.user
         reward_quantities = {}
+        total_points = 0
 
-        # Collect reward quantities from form
+        # Collect and validate input before saving anything
         for key, value in request.POST.items():
             if key.startswith('reward_quantity_') and value.isdigit():
                 reward_id = key.split('reward_quantity_')[1]
-                reward_quantities[reward_id] = int(value)
-        
-        # Create reward request
-        reward_request = RewardRequest(user=user)
-        reward_request.save()
+                quantity = int(value)
+                if quantity <= 0:
+                    continue
+                try:
+                    reward = Reward.objects.get(pk=reward_id)
+                except Reward.DoesNotExist:
+                    continue
+                total_points += reward.point_cost * quantity
+                reward_quantities[reward_id] = (reward, quantity)
 
-        # Create reward request items
-        for reward_id, quantity in reward_quantities.items():
-            if quantity <= 0:
-                continue
-            reward = Reward.objects.get(pk=reward_id)
+        user_balance = user.get_balance()
+
+        # Backend check — don't allow creation if not enough points
+        if total_points > user_balance:
+            messages.error(request, f"You do not have enough points ({user_balance}) to complete this request ({total_points} required).")
+            return redirect('rewards')
+
+        # Only now we create the request and items
+        reward_request = RewardRequest.objects.create(user=user)
+
+        for reward, quantity in reward_quantities.values():
             RewardRequestItem.objects.create(
                 reward_request=reward_request,
                 reward=reward,
-                quantity=quantity
+                quantity=quantity,
+                point_cost=reward.point_cost
             )
-        
-        # Save the request and update total points
-        try:
-            reward_request.save()  # This calculates the point total as well
-        except Exception as e:
-            messages.error(request, f"Error: {e}")
-            return redirect('rewards')
-        
+
+        reward_request.save()  # Updates total_points field
         messages.success(request, "Request saved successfully.")
         return redirect('rewards_request_detail', pk=reward_request.pk)
-
 
 class RewardsRequestsView(LoginRequiredMixin, ListView):
     """
