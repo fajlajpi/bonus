@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['iepgvjxg.a2hosted.com', 'www.iepgvjxg.a2hosted.com']
+ALLOWED_HOSTS = ['iepgvjxg.a2hosted.com', 'www.iepgvjxg.a2hosted.com', 'bonus.ffhh.cz', 'www.bonus.ffhh.cz', 'bonus.iepgvjxg.a2hosted.com']
 
 
 # Application definition
