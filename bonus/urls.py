@@ -38,6 +38,9 @@ urlpatterns = [
     path('rewards/', views.RewardsView.as_view(), name='rewards'),
     path('rewards/requests/', views.RewardsRequestsView.as_view(), name='reward_requests'),
     path('rewards/requests/detail/<int:pk>', views.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'),
+
+    path('manager/reward-requests/', views.ManagerRewardRequestListView.as_view(), name="manager_reward_requests"),
+    path('manager/reward-requests/<int:pk>/', views.ManagerRewardRequestDetailView.as_view(), name='manager_reward_request_detail'),
 ]
 
 from django.conf import settings

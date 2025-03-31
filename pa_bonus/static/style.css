@@ -162,6 +162,16 @@ a:hover {
     background-color: #e2e8f0;
 }
 
+.reward-input {
+    padding: 0.6rem;
+    font-size: 1.1rem;
+    height: 3rem;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
 /* Value formatting: positive (green), negative (red) */
 .value.positive {
     color: var(--success-color);

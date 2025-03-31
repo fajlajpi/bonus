@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load pa_bonus_extras %}
+{% block title %} Manage Request #{{ request_obj.id }} {% endblock %}
+{% block content %}
+<h2>Žádost o čerpání #{{ request_obj.id }} – {{ request_obj.user.email }}</h2>
+
+<div class="points-summary">
+    <p class="total-points">Klient má {{ user_balance }} bodů k dispozici</p>
+    <p class="total-points">Celková hodnota žádosti: <span id="total-points">0</span></p>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <h3>Reward Items</h3>
+  <table class="transactions-table">
+    <thead><tr><th>Reward</th><th>Point Cost</th><th>Quantity</th></tr></thead>
+    <tbody>
+        {% for reward in all_rewards %}
+        <tr>
+          <td>{{ reward.name }}</td>
+          <td>{{ reward.point_cost }}</td>
+          <td>
+            <input class="reward-input" type="number" name="reward_{{ reward.id }}" min="0"
+                   value="{{ item_quantities|default_if_none:''|dict_get:reward.id }}">
+          </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+  </table>
+
+  
+
+  <h3>Status</h3>
+  <select name="status">
+    {% for code, label in request_obj.REQUEST_STATUS %}
+      <option value="{{ code }}" {% if request_obj.status == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+
+  <h3>Manager Message</h3>
+  <textarea name="manager_message" rows="4" cols="50">{{ request_obj.description }}</textarea>
+  <h3>Options</h3>
+  <label>
+    <input type="checkbox" name="allow_negative">
+    Allow negative balance (override point limit)
+  </label>
+  <div style="margin-top: 20px;">
+    <button type="submit">Save Changes</button>
+  </div>
+</form>
+
+<script>
+  function recalculateTotal() {
+    const inputs = document.querySelectorAll("input[name^='reward_']");
+    let total = 0;
+
+    inputs.forEach(input => {
+      const qty = parseInt(input.value) || 0;
+      const cost = parseInt(input.closest('tr').children[1].textContent) || 0;
+      total += qty * cost;
+    });
+
+    document.getElementById("total-points").textContent = total;
+  }
+
+  document.querySelectorAll("input[name^='reward_']").forEach(input => {
+    input.addEventListener("input", recalculateTotal);
+  });
+
+  // Trigger on load
+  document.addEventListener("DOMContentLoaded", recalculateTotal);
+</script>
+{% endblock %}
