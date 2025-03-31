@@ -16,7 +16,6 @@
     <h1>Detail žádosti o čerpání</h1>
   {% endif %}
 
-  <p>Identifikátor: {{ request.id }}</p>
   <p>Uživatel: {{ request.user.username }}</p>
   <p>Datum žádosti: {{ request.requested_at }}</p>
   <p>Celková hodnota: {{ request.total_points }} bodů</p>
@@ -25,7 +24,7 @@
   <ul>
     {% for item in items %}
       <li>
-        {{ item.quantity }} x {{ item.reward.name }} ({{ item.point_cost }} pts each) = {{ item.quantity|multiply:item.point_cost }} pts
+        {{ item.quantity }} x {{ item.reward.name }} ({{ item.point_cost }} bodů / ks) = {{ item.quantity|multiply:item.point_cost }} bodů celkem
       </li>
     {% endfor %}
   </ul>
@@ -35,10 +34,10 @@
     {% if request.total_points <= user_balance %}
         <form method="post">
           {% csrf_token %}
-          <button type="submit">Confirm Request</button>
+          <button class="submit-button" type="submit">Potvrdit žádost o odměnu</button>
         </form>
     {% else %}
-        <p>You don't have enough points to complete this request.</p>
+        <p>Pro odeslání žádosti nemáte k dispozici dostatek bodů.</p>
     {% endif %}
   {% else %}
   <p>Žádost je ve zpracování.</p>

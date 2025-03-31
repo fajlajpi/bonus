@@ -23,7 +23,7 @@
     {% csrf_token %}
     <div class="rewards-container">
       {% for reward in rewards %}
-        <div class="reward-item">
+        <div class="reward-item" data-point-cost="{{ reward.point_cost }}">
           {% if reward.image %}
             <img src="{{ reward.image.url }}" alt="{{ reward.name }}" class="reward-image">
           {% else %}
@@ -34,41 +34,66 @@
           <p class="reward-cost">Bodová hodnota: {{ reward.point_cost }} bodů</p>
           <p class="reward-description">{{ reward.description }}</p>
           <div class="quantity-input">
-            <label for="reward_quantity_{{ reward.id }}">Quantity:</label>
-            <input type="number" name="reward_quantity_{{ reward.id }}" id="reward_quantity_{{ reward.id }}" value="0" min="0">
+            <label for="reward_quantity_{{ reward.id }}"><strong>Počet k objednání:</strong></label>
+            <input class="reward-input" type="number" name="reward_quantity_{{ reward.id }}" id="reward_quantity_{{ reward.id }}" value="0" min="0">
           </div>
         </div>
       {% empty %}
         <p>V tuto chvíli nejsou dostupné žádné odměny.</p>
       {% endfor %}
     </div>
+
+    <!-- Live summary of total point cost -->
+    <div id="live-total-container" class="points-summary" style="margin-top: 2rem;">
+      <h3>Celková hodnota žádosti</h3>
+      <span class="total-points" id="live-total">0 bodů</span> <span class="total-points">/ {{ user_balance }} k dispozici</span>
+      <p id="point-warning" style="display:none; color: var(--error-color); font-weight: bold;">Překročili jste stav bodového konta!</p>
+    </div>
+    
     {% if rewards %}
-      <button type="submit">Vytvořit žádost o odměny</button>
+      <button id="submit-button" class="submit-button" type="submit">Vytvořit žádost o odměny</button>
     {% endif %}
   </form>
 
-  <style>
-    .rewards-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 20px;
-    }
-
-    .reward-item {
-        border: 1px solid #ccc;
-        padding: 10px;
-        width: 230px;
-        text-align: center;
-    }
-
-    .reward-image {
-        max-width: 100%;
-        max-height: 150px;
-        object-fit: contain;
-    }
-
-    .quantity-input {
-        margin-top: 10px;
-    }
-  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const inputs = document.querySelectorAll('.reward-input');
+      const totalDisplay = document.getElementById('live-total');
+      const warningText = document.getElementById('point-warning');
+      const submitButton = document.getElementById('submit-button');
+  
+      const userBalance = {{ user_balance|default:0 }};  // Injected from Django context
+      let currentTotal = 0;
+  
+      function calculateTotal() {
+        currentTotal = 0;
+        inputs.forEach(input => {
+          const quantity = parseInt(input.value) || 0;
+          const rewardItem = input.closest('.reward-item');
+          const pointCost = parseInt(rewardItem.dataset.pointCost);
+          currentTotal += quantity * pointCost;
+        });
+  
+        totalDisplay.textContent = currentTotal + ' bodů';
+  
+        if (currentTotal > userBalance) {
+          warningText.style.display = 'block';
+          submitButton.disabled = true;
+          submitButton.style.opacity = 0.6;
+          submitButton.style.pointerEvents = 'none';
+        } else {
+          warningText.style.display = 'none';
+          submitButton.disabled = false;
+          submitButton.style.opacity = 1;
+          submitButton.style.pointerEvents = 'auto';
+        }
+      }
+  
+      inputs.forEach(input => {
+        input.addEventListener('input', calculateTotal);
+      });
+  
+      calculateTotal();  // initialize on load
+    });
+  </script>
 {% endblock %}
