@@ -148,8 +148,6 @@ class TestUserContract:
             user_id=self.user,
             contract_date_from=date.today(),
             contract_date_to=date.today() + timedelta(days=365),
-            extra_goal_12m=1000,
-            extra_goal_base=500,
             is_active=True
         )
         contract.brandbonuses.add(self.brand_bonus)
@@ -164,8 +162,6 @@ class TestUserContract:
             user_id=self.user,
             contract_date_from=date.today(),
             contract_date_to=date.today() + timedelta(days=365),
-            extra_goal_12m=1000,
-            extra_goal_base=500,
             is_active=True
         )
         

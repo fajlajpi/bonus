@@ -63,8 +63,6 @@ class TestUploadFileView:
             user_id=self.recipient_user,
             contract_date_from=date.today() - timedelta(days=30),
             contract_date_to=date.today() + timedelta(days=335),
-            extra_goal_12m=10000,
-            extra_goal_base=5000,
             is_active=True
         )
         
@@ -168,8 +166,6 @@ class TestDashboardView:
             user_id=self.user,
             contract_date_from=date.today() - timedelta(days=30),
             contract_date_to=date.today() + timedelta(days=335),
-            extra_goal_12m=1000,
-            extra_goal_base=500,
             is_active=True
         )
         self.contract.brandbonuses.add(self.brand_bonus)
@@ -237,8 +233,6 @@ class TestRewardsView:
             user_id=self.user,
             contract_date_from=date.today() - timedelta(days=30),
             contract_date_to=date.today() + timedelta(days=335),
-            extra_goal_12m=1000,
-            extra_goal_base=500,
             is_active=True
         )
         self.contract.brandbonuses.add(self.brand_bonus)
