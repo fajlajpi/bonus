@@ -1,13 +1,11 @@
 import os
 import sys
 
+path = os.path.expanduser('~/bonus') # Replace with your app path
+if path not in sys.path:
+    sys.path.append(path)
 
-sys.path.insert(0, os.path.dirname(__file__))
+os.environ['DJANGO_SETTINGS_MODULE'] = 'bonus.settings' # Replace with your project name
 
-
-def application(environ, start_response):
-    start_response('200 OK', [('Content-Type', 'text/plain')])
-    message = 'It works, and I can do things with it!\n'
-    version = 'Python %s\n' % sys.version.split()[0]
-    response = '\n'.join([message, version])
-    return [response.encode()]
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
