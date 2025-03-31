@@ -1,7 +1,7 @@
 import os
 import sys
 
-path = os.path.expanduser('~/bonus') # Replace with your app path
+path = '/home/iepgvjxg/bonus' # Sbsolute path
 if path not in sys.path:
     sys.path.append(path)
 
