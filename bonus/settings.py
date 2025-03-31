@@ -86,7 +86,7 @@ WSGI_APPLICATION = 'bonus.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USERNAME'),
         'PASSWORD': os.getenv('DB_PASSWORD'),
