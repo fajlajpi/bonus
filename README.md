@@ -59,8 +59,8 @@ Django-based system for tracking and using loyalty points
 - [ ] Add options and settings for clients
 - [ ] Add custom 404
 - [ ] Add Managers functionality to dashboard or a separate management view
-    - [ ] See open reward requests
-    - [ ] Confirm / modify / reject reward requests with a message
+    - [x] See open reward requests
+    - [x] Confirm / modify / reject reward requests with a message
     - [ ] See clients' contract details
     - [ ] Track clients' progress
     - [ ] Get exports to pass on to sales reps
