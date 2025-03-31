@@ -10,6 +10,9 @@ db.sqlite3
 #uploads
 */uploads/*
 
+#static files
+/static/
+
 # media files
 *media*
 
