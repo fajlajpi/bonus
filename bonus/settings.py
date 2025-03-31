@@ -121,7 +121,7 @@ AUTH_USER_MODEL = 'pa_bonus.User'
 
 LANGUAGE_CODE = 'cs'
 
-TIME_ZONE = 'UTC+1'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
