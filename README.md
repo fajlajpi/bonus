@@ -73,3 +73,31 @@ Django-based system for tracking and using loyalty points
 - [ ] Proper Template structure
 - [ ] Anything resembling Front-end
 
+## Feedback from Sales Reps
+- [ ] Prehled OZ a jejich klientů - stav fakturace, bodů, odměn
+- [ ] Klientům rozeslat první SMS s loginem a heslem
+- [ ] Vracení dárků - opravit reward request, opravit podle toho i transakci
+- [ ] Záruka na elektroniku? Jaká? Pan Mach zjišťuje
+    - [ ] Záruka na elektroniku je 1 rok
+    - [ ] Napsat při potvrzení žádosti o dárky
+- [ ] Poštovné za bonusy?
+- [ ] WOrkflow - objednává klient u OZ, u toho objednají dárek, co s tím dál? Manažer potvrdí?
+- [ ] Přidat poznámky k čerpání, aby to telemarketing mohl zpracovávat příslušně
+- [ ] Extra bonus pro nové klienty
+    - Začne s cílem, ale bez základu
+    - Po 6 měsících uvidíme základ, x2, a můžeme stanovovat cíl
+- [ ] Letáček se základní informací
+    - [ ] 1000 ks
+    - [ ] nejzajímavější dárky
+    - [ ] značky EC + AE
+    - [ ] Body za fakturaci - 8 Kč/bod, 10 Kč/bod
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
+- [ ]
