@@ -18,30 +18,43 @@ from django.contrib import admin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
-from pa_bonus import views
+from pa_bonus.views import views_managers as vm, views_users as vu
 
 def home_redirect(request):
     """Redirects the root URL to dashboard."""
     return redirect('dashboard')
 
+urlpatterns = []
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
+# PUBLIC FACING URLS
+urlpatterns.extend([
     path('', home_redirect, name='home_redirect'),
     path('login/', LoginView.as_view(template_name='login.html'), name='login'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
-    path('upload/', views.upload_file, name='upload_file'),
-    path('upload_history/', views.upload_history, name='upload_history'),
-    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
-    path('history/', views.HistoryView.as_view(), name='history'),
-    path('history/detail/<int:pk>/', views.HistoryDetailView.as_view(), name='history_detail'),
-    path('rewards/', views.RewardsView.as_view(), name='rewards'),
-    path('rewards/requests/', views.RewardsRequestsView.as_view(), name='reward_requests'),
-    path('rewards/requests/detail/<int:pk>', views.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'),
+])
 
-    path('manager/reward-requests/', views.ManagerRewardRequestListView.as_view(), name="manager_reward_requests"),
-    path('manager/reward-requests/<int:pk>/', views.ManagerRewardRequestDetailView.as_view(), name='manager_reward_request_detail'),
-]
+# CLIENT FACING URLS
+urlpatterns.extend([
+    path('dashboard/', vu.DashboardView.as_view(), name='dashboard'),
+    path('history/', vu.HistoryView.as_view(), name='history'),
+    path('history/detail/<int:pk>/', vu.HistoryDetailView.as_view(), name='history_detail'),
+    path('rewards/', vu.RewardsView.as_view(), name='rewards'),
+    path('rewards/requests/', vu.RewardsRequestsView.as_view(), name='reward_requests'),
+    path('rewards/requests/detail/<int:pk>', vu.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'), 
+])
+
+# MANAGER FACING URLS
+urlpatterns.extend([
+    path('manager/upload/', vm.upload_file, name='upload_file'),
+    path('manager/upload_history/', vm.upload_history, name='upload_history'),
+    path('manager/reward-requests/', vm.ManagerRewardRequestListView.as_view(), name="manager_reward_requests"),
+    path('manager/reward-requests/<int:pk>/', vm.ManagerRewardRequestDetailView.as_view(), name='manager_reward_request_detail'),
+])
+
+# ADMIN URLS
+urlpatterns.extend([
+    path('admin/', admin.site.urls),
+])
 
 from django.conf import settings
 from django.conf.urls.static import static
