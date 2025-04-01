@@ -14,10 +14,20 @@ Django-based system for tracking and using loyalty points
     - Via email, SMS, WhatsApp
 
 ### For Management
+*Ideally, Managers do not need to use Django Admin for anything*
 - Managers can set up Brand Bonuses
+- Managers can register clients for the system
 - Managers can set up Rewards for clients to claim
 - Managers can see, review and confirm / deny applications to bonus program
 - Managers can see reward claims and confirm / deny them
+- Managers can import turnover data
+
+
+### For Sales Reps
+- Sales Reps can look at their clients
+- Reps can see their turnover in brands as well as their point totals
+- Reps can see their open reward requests, without being able to modify
+- Reps can create reward requests in the name of their cliemts.
 
 ### For Admins
 - Admins can see individual transactions
@@ -47,7 +57,7 @@ Django-based system for tracking and using loyalty points
 - Reward Claims
     - [x] Reward Catalogue
     - [x] Reward Request
-    - [ ] Reward Request status and review
+    - [x] Reward Request status and review
 - [x] Move to PostgreSQL
 - [x] Add tests as per CodersLab project specs
 - [ ] Client notifications
