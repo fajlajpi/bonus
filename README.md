@@ -101,7 +101,7 @@ Django-based system for tracking and using loyalty points
     - [ ] nejzajímavější dárky
     - [ ] značky EC + AE
     - [ ] Body za fakturaci - 8 Kč/bod, 10 Kč/bod
-- [ ]
+- [ ] Manažerské zásahy do žádostí musejí upravovat i příslušné transakce
 - [ ]
 - [ ]
 - [ ]
