@@ -10,6 +10,7 @@ from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, PointsBalance, 
     FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
+    Region, RegionRep,
 )
 
 logger = logging.getLogger(__name__)
@@ -221,12 +222,38 @@ cancel_transactions.short_description = "Cancel selected transactions"
 
 
 # REGISTERING AND SETTING UP MODELS FOR DJANGO ADMIN
+
+@admin.register(Region)
+class RegionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'is_active')
+    search_fields = ('name', 'code')
+    list_filter = ('is_active',)
+
+@admin.register(RegionRep)
+class RegionRepAdmin(admin.ModelAdmin):
+    list_display = ('user', 'region', 'is_primary', 'date_from', 'date_to', 'is_active')
+    list_filter = ('is_active', 'is_primary', 'region')
+    search_fields = ('user__username', 'user__email', 'user__last_name', 'region__name')
+    date_hierarchy = 'date_from'
+    raw_id_fields = ('user',)
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Customize the form to only show users in the Sales Reps group.
+        """
+        form = super().get_form(request, obj, **kwargs)
+        if 'user' in form.base_fields:
+            form.base_fields['user'].queryset = User.objects.filter(
+                groups__name='Sales Reps'
+            )
+        return form
+
 @admin.register(User)
 class UserAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = UserResource
-    list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone')
+    list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone', 'region')
     search_fields = ('username', 'email', 'last_name', 'user_number')
-    list_filter = ('is_staff', 'is_active')
+    list_filter = ('is_staff', 'is_active', 'region')
     inlines = [UserContractInline]
 
 @admin.register(Brand)
