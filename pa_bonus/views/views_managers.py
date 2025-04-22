@@ -2,10 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import permission_required
 from django.contrib import messages
 from django.views.generic import ListView, View
+from django.http import HttpResponse
+from django.utils import timezone
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file
 from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem
 from pa_bonus.utilities import ManagerGroupRequiredMixin
+
+from pa_bonus.exports import generate_telemarketing_export
 
 # Create your views here.
 @permission_required('pa_bonus.can_manage', raise_exception=True)
@@ -145,3 +149,24 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
 
         messages.success(request, f"Request {reward_request.pk} updated.")
         return redirect('manager_reward_requests')
+
+class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
+    """
+    Export a telemarketing file for a specific reward request
+    """
+    def get(self, request, pk):
+        output = generate_telemarketing_export(pk)
+        
+        if output is None:
+            messages.error(request, "Reward request not found or not in ACCEPTED status.")
+            return redirect('manager_reward_requests')
+        
+        # Prepare response
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename=reward_request_{pk}_{timezone.now().strftime("%Y%m%d")}.xlsx'
+        
+        messages.success(request, f"Reward request {pk} has been exported and marked as FINISHED.")
+        return response
