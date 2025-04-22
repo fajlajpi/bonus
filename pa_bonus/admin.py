@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, PointsBalance, 
-    FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification,
+    FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
 )
 
 logger = logging.getLogger(__name__)
@@ -191,6 +191,11 @@ class UserContractGoalInline(admin.TabularInline):
     form = UserContractGoalInlineForm
     extra = 0
 
+class InvoiceBrandTurnoverInline(admin.TabularInline):
+    model = InvoiceBrandTurnover
+    extra = 0
+    
+
 # CUSTOM ACTIONS
 def approve_requests(modeladmin, request, queryset):
     queryset.update(status='ACCEPTED')
@@ -288,3 +293,16 @@ class EmailNotificationAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__email', 'subject')
     readonly_fields = ('created_at', 'sent_at')
 
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('invoice_number', 'client_number', 'invoice_date', 'invoice_type', 'total_amount')
+    list_filter = ('invoice_type', 'invoice_date')
+    search_fields = ('invoice_number', 'client_number')
+    date_hierarchy = 'invoice_date'
+    inlines = [InvoiceBrandTurnoverInline]
+
+@admin.register(InvoiceBrandTurnover)
+class InvoiceBrandTurnoverAdmin(admin.ModelAdmin):
+    list_display = ('invoice', 'brand', 'amount')
+    list_filter = ('brand',)
+    search_fields = ('invoice__invoice_number', 'invoice__client_number', 'brand__name')
