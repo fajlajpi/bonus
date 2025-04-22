@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Sum, Count
 from django.db import transaction
+import logging
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file
 from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification, User
@@ -18,6 +19,8 @@ from dateutil.relativedelta import relativedelta
 
 
 # Create your views here.
+
+logger = logging.getLogger(__name__)
 
 class ManagerDashboardView(ManagerGroupRequiredMixin, View):
     """
@@ -196,9 +199,8 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         old_status = reward_request.status
-        old_total_points = reward_request.total_points
         
-        # Update the reward request items and get the new total
+        # Update the reward request items 
         self._update_reward_items(reward_request, request.POST)
         
         # Update the request status and description
@@ -207,13 +209,8 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         reward_request.status = new_status
         reward_request.save()
         
-        # Handle the point transactions based on changes
-        self._update_point_transactions(
-            reward_request, 
-            old_status, 
-            new_status, 
-            old_total_points
-        )
+        # Update the point transaction to match the current state
+        self._update_point_transaction(reward_request, old_status, new_status)
         
         messages.success(request, f"Request {reward_request.pk} updated.")
         return redirect('manager_reward_requests')
@@ -234,52 +231,26 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
                     quantity=int(qty)
                 )
     
-    def _update_point_transactions(self, reward_request, old_status, new_status, old_total_points):
-        """Update point transactions based on status and point changes."""
-        # Handle status change logic
-        if old_status != new_status:
-            self._handle_status_change(reward_request, old_status, new_status)
-        
-        # Handle point total change logic 
-        elif old_total_points != reward_request.total_points:
-            self._handle_point_total_change(reward_request, old_total_points)
-    
-    def _handle_status_change(self, reward_request, old_status, new_status):
-        """Handle changes in the request status."""
+    def _update_point_transaction(self, reward_request, old_status, new_status):
+        """Update the point transaction to match the current state of the request."""
         transaction = self._get_reward_transaction(reward_request)
         if not transaction:
             return
-            
-        # Request rejected or cancelled
-        if new_status in ['REJECTED', 'CANCELLED']:
-            if old_status not in ['REJECTED', 'CANCELLED']:
-                # Cancel the deduction and return points to the user
-                transaction.status = 'CANCELLED'
-                transaction.save()
-                
-                self._create_reversal_transaction(reward_request, transaction.value, new_status)
         
-        # Request reactivated
+        # If request is rejected/cancelled, cancel the transaction
+        if new_status in ['REJECTED', 'CANCELLED']:
+            transaction.status = 'CANCELLED'
+            transaction.save()
+        
+        # If request was rejected/cancelled but is now active, reactivate transaction
         elif old_status in ['REJECTED', 'CANCELLED'] and new_status not in ['REJECTED', 'CANCELLED']:
-            # Reactivate the transaction with possibly updated point total
             transaction.status = 'CONFIRMED'
+            transaction.save()
+        
+        # In all cases, ensure the transaction amount matches the request total
+        if transaction.status == 'CONFIRMED':
             transaction.value = -reward_request.total_points
             transaction.save()
-    
-    def _handle_point_total_change(self, reward_request, old_total_points):
-        """Handle changes in the point total of a request."""
-        transaction = self._get_reward_transaction(reward_request)
-        if not transaction:
-            return
-            
-        # Calculate difference and update
-        point_difference = old_total_points - reward_request.total_points
-        transaction.value = -reward_request.total_points
-        transaction.save()
-        
-        # Create adjustment transaction if there's a difference
-        if point_difference != 0:
-            self._create_adjustment_transaction(reward_request, point_difference)
     
     def _get_reward_transaction(self, reward_request):
         """Get the associated reward claim transaction."""
@@ -295,30 +266,6 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
             logger.error(f"Multiple transactions found for reward request {reward_request.id}")
             messages.warning(self.request, "Multiple transactions found for this request. Please check manually.")
             return None
-    
-    def _create_reversal_transaction(self, reward_request, original_value, status):
-        """Create a transaction to reverse a reward claim."""
-        PointsTransaction.objects.create(
-            value=abs(original_value),  # Make positive to refund
-            date=timezone.now().date(),
-            user=reward_request.user,
-            description=f"Reversed reward claim - Request {reward_request.id} {status.lower()}",
-            type='ADJUSTMENT',
-            status='CONFIRMED',
-            reward_request=reward_request,
-        )
-    
-    def _create_adjustment_transaction(self, reward_request, point_difference):
-        """Create a transaction to adjust for point differences."""
-        PointsTransaction.objects.create(
-            value=point_difference,
-            date=timezone.now().date(),
-            user=reward_request.user,
-            description=f"Adjustment for modified reward request {reward_request.id}",
-            type='ADJUSTMENT',
-            status='CONFIRMED',
-            reward_request=reward_request,
-        )
 
         
 class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
