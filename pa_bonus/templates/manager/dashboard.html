@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %} Manager Dashboard {% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <h2>Manager Dashboard</h2>
+  
+  <div class="dashboard-intro">
+    <p>Welcome to the Manager Dashboard. Here you can manage all aspects of the bonus program.</p>
+  </div>
+  
+  <div class="dashboard-sections">
+    <!-- Reward Requests Section -->
+    <div class="dashboard-section">
+      <h3>Reward Requests</h3>
+      <div class="dashboard-actions">
+        <a href="{% url 'manager_reward_requests' %}" class="dashboard-button">
+          <span class="button-icon">📦</span>
+          <span class="button-text">Manage Reward Requests</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Transaction Management Section -->
+    <div class="dashboard-section">
+      <h3>Transaction Management</h3>
+      <div class="dashboard-actions">
+        <a href="{% url 'transaction_approval' %}" class="dashboard-button">
+          <span class="button-icon">✅</span>
+          <span class="button-text">Approve Point Transactions</span>
+        </a>
+        <a href="{% url 'upload_file' %}" class="dashboard-button">
+          <span class="button-icon">📤</span>
+          <span class="button-text">Upload Invoice Data</span>
+        </a>
+        <a href="{% url 'upload_history' %}" class="dashboard-button">
+          <span class="button-icon">📋</span>
+          <span class="button-text">Upload History</span>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Reporting Section - Coming Soon -->
+    <div class="dashboard-section">
+      <h3>Reporting</h3>
+      <div class="dashboard-actions">
+        <div class="dashboard-button disabled">
+          <span class="button-icon">📊</span>
+          <span class="button-text">Monthly Reports <small>(Coming Soon)</small></span>
+        </div>
+        <div class="dashboard-button disabled">
+          <span class="button-icon">📈</span>
+          <span class="button-text">Extra Goals Progress <small>(Coming Soon)</small></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

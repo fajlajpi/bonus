@@ -4,14 +4,36 @@ from django.contrib import messages
 from django.views.generic import ListView, View
 from django.http import HttpResponse
 from django.utils import timezone
+from django.db.models import Sum, Count
+from django.db import transaction
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file
-from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem
+from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification
 from pa_bonus.utilities import ManagerGroupRequiredMixin
 
 from pa_bonus.exports import generate_telemarketing_export
 
+import datetime
+from dateutil.relativedelta import relativedelta
+
+
 # Create your views here.
+
+class ManagerDashboardView(ManagerGroupRequiredMixin, View):
+    """
+    Main dashboard view for managers.
+    
+    Provides an overview of system status and links to manager functions.
+    """
+    template_name = 'manager/dashboard.html'
+    
+    def get(self, request):
+        # You can add context data here if needed
+        # For example, summary statistics about recent activities
+        context = {}
+        return render(request, self.template_name, context)
+    
+    
 @permission_required('pa_bonus.can_manage', raise_exception=True)
 def upload_file(request):
     """
@@ -170,3 +192,166 @@ class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
         
         messages.success(request, f"Reward request {pk} has been exported and marked as FINISHED.")
         return response
+
+
+class TransactionApprovalView(ManagerGroupRequiredMixin, View):
+    """
+    View for managers to approve pending transactions based on month/year.
+    
+    Allows managers to see and approve transactions that are due for approval
+    (those from three months ago) in a simple interface.
+    """
+    template_name = 'manager/transaction_approval.html'
+    
+    def get(self, request):
+        """
+        Display the approval form and optionally show transactions for a selected month.
+        """
+        today = timezone.now().date()
+        
+        # Default to showing transactions from 3 months ago
+        default_approval_date = today - relativedelta(months=3)
+        default_year = default_approval_date.year
+        default_month = default_approval_date.month
+        
+        # Get user-selected month and year if provided
+        selected_year = int(request.GET.get('year', default_year))
+        selected_month = int(request.GET.get('month', default_month))
+        
+        # Generate a list of years (from 2 years ago to current year)
+        available_years = range(today.year - 2, today.year + 1)
+        
+        # Get month range for filtering
+        start_date = datetime.date(selected_year, selected_month, 1)
+        if selected_month == 12:
+            end_date = datetime.date(selected_year + 1, 1, 1) - datetime.timedelta(days=1)
+        else:
+            end_date = datetime.date(selected_year, selected_month + 1, 1) - datetime.timedelta(days=1)
+        
+        # Get pending transactions for the selected month
+        pending_transactions = PointsTransaction.objects.filter(
+            status='PENDING',
+            date__gte=start_date,
+            date__lte=end_date
+        ).select_related('user', 'brand')
+        
+        # Get statistics for the selected month
+        stats = pending_transactions.aggregate(
+            total_transactions=Count('id'),
+            total_points=Sum('value')
+        )
+        
+        # Determine if we should highlight this month for approval
+        # (if it's the month that is due for approval based on the 3-month rule)
+        is_approval_month = (
+            selected_year == default_approval_date.year and 
+            selected_month == default_approval_date.month
+        )
+        
+        # Get available months (1-12)
+        available_months = [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+        
+        context = {
+            'pending_transactions': pending_transactions,
+            'stats': stats,
+            'selected_year': selected_year,
+            'selected_month': selected_month,
+            'month_name': datetime.date(selected_year, selected_month, 1).strftime('%B'),
+            'available_years': available_years,
+            'available_months': available_months,
+            'is_approval_month': is_approval_month,
+            'start_date': start_date,
+            'end_date': end_date,
+        }
+        
+        return render(request, self.template_name, context)
+    
+    @transaction.atomic
+    def post(self, request):
+        """
+        Process the approval of transactions for the selected month.
+        """
+        selected_year = int(request.POST.get('year'))
+        selected_month = int(request.POST.get('month'))
+        
+        # Get month range for filtering
+        start_date = datetime.date(selected_year, selected_month, 1)
+        if selected_month == 12:
+            end_date = datetime.date(selected_year + 1, 1, 1) - datetime.timedelta(days=1)
+        else:
+            end_date = datetime.date(selected_year, selected_month + 1, 1) - datetime.timedelta(days=1)
+        
+        # Update pending transactions to confirmed
+        pending_transactions = PointsTransaction.objects.filter(
+            status='PENDING',
+            date__gte=start_date,
+            date__lte=end_date
+        )
+        
+        # Count before updating for the message
+        transaction_count = pending_transactions.count()
+        points_total = pending_transactions.aggregate(total=Sum('value'))['total'] or 0
+        
+        # Update the transactions
+        pending_transactions.update(status='CONFIRMED')
+        
+        # Schedule email notifications for each user with confirmed transactions
+        self.schedule_email_notifications(pending_transactions)
+        
+        # Success message
+        messages.success(
+            request, 
+            f"Successfully approved {transaction_count} transactions totaling {points_total} points."
+        )
+        
+        # Redirect back to the form
+        return redirect('transaction_approval')
+    
+    def schedule_email_notifications(self, transactions):
+        """
+        Schedule email notifications for users whose transactions were approved.
+        
+        Creates EmailNotification records for each user who had transactions approved.
+        These will be processed by a separate task/process.
+        
+        Args:
+            transactions: QuerySet of approved transactions
+        """
+        # Get unique users who had transactions approved
+        user_ids = transactions.values_list('user_id', flat=True).distinct()
+        
+        # For each user, create a notification
+        for user_id in user_ids:
+            # Get the user's transactions that were just approved
+            user_transactions = transactions.filter(user_id=user_id)
+            user = user_transactions.first().user
+            
+            # Calculate total points
+            total_points = user_transactions.aggregate(total=Sum('value'))['total'] or 0
+            
+            # Create notification message
+            subject = "Your bonus points have been confirmed!"
+            message = f"""
+Dear {user.first_name} {user.last_name},
+
+We are pleased to inform you that your transactions for {user_transactions.first().date.strftime('%B %Y')} 
+have been confirmed, adding {total_points} points to your account.
+
+Your current point balance is now: {user.get_balance()} points.
+
+You can log in to the Bonus Program portal to view these transactions and explore 
+available rewards.
+
+Thank you for your business!
+
+Best regards,
+The Bonus Program Team
+            """
+            
+            # Create the notification record
+            EmailNotification.objects.create(
+                user=user,
+                subject=subject,
+                message=message,
+                status='PENDING'
+            )
