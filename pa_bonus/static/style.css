@@ -288,3 +288,46 @@ a:hover {
         padding: 0.3rem 0.6rem;
     }
 }
+/* Export button styling */
+.export-button {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    margin-top: 1rem;
+}
+
+.export-button:hover {
+    background-color: var(--link-hover);
+    color: white;
+}
+
+/* Under construction styling */
+.under-construction {
+    border: 2px dashed var(--primary-color);
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.under-construction h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.manager-info {
+    background-color: #e1effa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+}
+
+.manager-info h4 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
