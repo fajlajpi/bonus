@@ -54,6 +54,7 @@ urlpatterns.extend([
     path('manager/reward-requests/<int:pk>/', vm.ManagerRewardRequestDetailView.as_view(), name='manager_reward_request_detail'),
     path('manager/reward-requests/<int:pk>/export/', vm.ExportTelemarketingFileView.as_view(), name='export_telemarketing_file'),
     path('manager/transactions/approve/', vm.TransactionApprovalView.as_view(), name='transaction_approval'),
+    path('manager/sms-export/', vm.SMSExportView.as_view(), name='sms_export'),
 
 ])
 

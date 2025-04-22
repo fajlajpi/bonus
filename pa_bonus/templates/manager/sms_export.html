@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %} SMS Export {% endblock %}
+
+{% block content %}
+<div class="sms-export-container">
+  <h2>Export SMS Notifications</h2>
+  
+  <div class="intro-text">
+    <p>Zde můžete vytvořit CSV soubor pro hromadné SMS notifikace přes smsbrana.cz.</p>
+    <p>Klientům bude odeslána informace o aktuálním stavu jejich bodového konta.</p>
+  </div>
+  
+  <div class="export-form-container">
+    <form method="post" class="sms-export-form">
+      {% csrf_token %}
+      
+      <div class="form-group">
+        <label for="region">Region (volitelné):</label>
+        <select name="region" id="region">
+          <option value="all">Všechny regiony</option>
+          {% for region in regions %}
+            <option value="{{ region.id }}">{{ region.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="min_points">Minimální počet bodů:</label>
+        <input type="number" name="min_points" id="min_points" value="0" min="0" class="form-control">
+        <small>Zadejte 0 pro export všech klientů bez ohledu na body.</small>
+      </div>
+      
+      <div class="sms-preview">
+        <h3>Ukázka SMS</h3>
+        <div class="sms-text">
+          OS: Bonus Primavera Andorrana - na konte mate {počet bodů} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900.
+        </div>
+      </div>
+      
+      <div class="export-actions">
+        <button type="submit" class="submit-button">Vytvořit SMS Export</button>
+      </div>
+    </form>
+  </div>
+  
+  <div class="export-instructions">
+    <h3>Jak použít export</h3>
+    <ol>
+      <li>Klikněte na tlačítko "Vytvořit SMS Export" pro stažení CSV souboru.</li>
+      <li>Přihlaste se do svého účtu na <a href="https://www.smsbrana.cz/" target="_blank">smsbrana.cz</a>.</li>
+      <li>Nahrajte CSV soubor dle instrukcí portálu.</li>
+      <li>Zkontrolujte a potvrďte odeslání SMS zpráv.</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

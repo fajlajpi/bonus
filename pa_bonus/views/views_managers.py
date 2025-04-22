@@ -9,14 +9,13 @@ from django.db import transaction
 import logging
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file
-from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification, User
+from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification, User, Region
 from pa_bonus.utilities import ManagerGroupRequiredMixin
 
 from pa_bonus.exports import generate_telemarketing_export
 
 import datetime
 from dateutil.relativedelta import relativedelta
-
 
 # Create your views here.
 
@@ -451,3 +450,89 @@ The Bonus Program Team
                 message=message,
                 status='PENDING'
             )
+
+
+class SMSExportView(ManagerGroupRequiredMixin, View):
+    """
+    Generates a CSV file for SMS notifications to clients.
+    
+    This view allows managers to generate a CSV file in the format required by smsbrana.cz
+    to send monthly SMS notifications to clients about their point balances.
+    """
+    template_name = 'manager/sms_export.html'
+    
+    def get(self, request):
+        """
+        Display the SMS export form with options.
+        """
+        # Get all regions for the dropdown
+        regions = Region.objects.filter(is_active=True).order_by('name')
+        
+        context = {
+            'regions': regions
+        }
+        
+        return render(request, self.template_name, context)
+    
+    def post(self, request):
+        """
+        Generate and return the SMS export CSV file.
+        """
+        import csv
+        from django.http import HttpResponse
+        from django.utils import timezone
+        
+        # Create the HttpResponse object with CSV header
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="sms_export_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        
+        # Create CSV writer with semicolon delimiter
+        writer = csv.writer(response, delimiter=';')
+        
+        # Get active users with phone numbers
+        users = User.objects.filter(is_active=True).exclude(user_phone='')
+        
+        # Filter by region if specified
+        region_id = request.POST.get('region')
+        if region_id and region_id != 'all':
+            users = users.filter(region_id=region_id)
+        
+        # Set minimum points threshold
+        min_points = request.POST.get('min_points', 0)
+        try:
+            min_points = int(min_points)
+        except ValueError:
+            min_points = 0
+        
+        # Count for reporting
+        total_sms = 0
+        
+        # Write SMS data rows
+        for user in users:
+            # Get user balance
+            balance = user.get_balance()
+            
+            # Skip users with balance below minimum (if specified)
+            if balance < min_points:
+                continue
+            
+            # Format phone number correctly
+            phone = user.user_phone.strip()
+            if not phone.startswith('+'):
+                # Add Czech prefix if not present
+                if not phone.startswith('420'):
+                    phone = '+420' + phone
+                else:
+                    phone = '+' + phone
+            
+            # Create SMS text with user's balance
+            sms_text = f"OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+            
+            # Write to CSV
+            writer.writerow([phone, sms_text])
+            total_sms += 1
+        
+        # Inform user about how many SMS were generated
+        messages.success(request, f"CSV export vytvořen s {total_sms} SMS zprávami.")
+        
+        return response
