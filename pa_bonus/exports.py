@@ -1,78 +1,121 @@
-# pa_bonus/exports.py
-import pandas as pd
-from django.http import HttpResponse
-from pa_bonus.models import RewardRequest
-from django.utils import timezone
 import io
+from django.shortcuts import get_object_or_404
+from django.db import transaction
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from pa_bonus.models import RewardRequest
 
-def generate_telemarketing_export(reward_request_id):
+def generate_telemarketing_export(request_id):
     """
-    Generate an Excel file for telemarketing for a specific reward request
+    Generate an Excel file for telemarketing from a specific reward request.
+    
+    Args:
+        request_id (int): ID of the RewardRequest to export
+        
+    Returns:
+        bytes: Excel file content or None if the request is not found or not in ACCEPTED status
     """
     try:
-        reward_request = RewardRequest.objects.get(pk=reward_request_id, status='ACCEPTED')
-    except RewardRequest.DoesNotExist:
-        return None
-    
-    # Create a DataFrame for the reward request
-    data = []
-    items = reward_request.rewardrequestitem_set.select_related('reward')
-    
-    for item in items:
-        data.append({
-            'Client Number': reward_request.user.user_number,
-            'Client Name': f"{reward_request.user.first_name} {reward_request.user.last_name}",
-            'Reward Code': item.reward.abra_code,
-            'Reward Name': item.reward.name,
-            'Quantity': item.quantity,
-            'Point Cost': item.point_cost,
-            'Total Point Value': item.quantity * item.point_cost,
-            'Request ID': reward_request.id,
-            'Request Date': reward_request.requested_at.strftime('%Y-%m-%d'),
-            'Notes': reward_request.description
-        })
-    
-    # Create DataFrame
-    df = pd.DataFrame(data)
-    
-    # Create Excel file
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='RewardRequest', index=False)
+        # Get the reward request
+        request = get_object_or_404(RewardRequest, pk=request_id)
         
-        # Get the xlsxwriter workbook and worksheet objects
-        workbook = writer.book
-        worksheet = writer.sheets['RewardRequest']
+        # Check if it's in ACCEPTED status
+        if request.status != 'ACCEPTED':
+            return None
+            
+        # Create a new workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"Request {request_id}"
         
-        # Add some formatting
-        header_format = workbook.add_format({
-            'bold': True,
-            'text_wrap': True,
-            'valign': 'top',
-            'fg_color': '#D7E4BC',
-            'border': 1
-        })
+        # Define styles
+        # First row style (red, bold, size 18)
+        first_row_font = Font(name='Arial', size=18, bold=True, color='FF0000')
+        first_row_alignment = Alignment(horizontal='left', vertical='center')
         
-        # Write the column headers with the defined format
-        for col_num, value in enumerate(df.columns.values):
-            worksheet.write(0, col_num, value, header_format)
+        # Header row style (gray background, bold)
+        header_font = Font(name='Arial', size=11, bold=True)
+        header_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+        header_alignment = Alignment(horizontal='center', vertical='center')
+        
+        # Data cells style (light green background for columns B, E, F)
+        data_font = Font(name='Arial', size=11)
+        data_fill = PatternFill(start_color='E6FFE6', end_color='E6FFE6', fill_type='solid')
+        data_alignment = Alignment(horizontal='left', vertical='center')
+        data_alignment_center = Alignment(horizontal='center', vertical='center')
         
         # Set column widths
-        worksheet.set_column('A:A', 15)  # Client Number
-        worksheet.set_column('B:B', 25)  # Client Name
-        worksheet.set_column('C:C', 15)  # Reward Code
-        worksheet.set_column('D:D', 30)  # Reward Name
-        worksheet.set_column('E:E', 10)  # Quantity
-        worksheet.set_column('F:F', 12)  # Point Cost
-        worksheet.set_column('G:G', 15)  # Total Point Value
-        worksheet.set_column('H:H', 10)  # Request ID
-        worksheet.set_column('I:I', 12)  # Request Date
-        worksheet.set_column('J:J', 40)  # Notes
-    
-    # Update reward request status to FINISHED
-    reward_request.status = 'FINISHED'
-    reward_request.save()
-    
-    # Return the Excel file
-    output.seek(0)
-    return output.getvalue()
+        ws.column_dimensions['A'].width = 5
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['C'].width = 40
+        ws.column_dimensions['D'].width = 10
+        ws.column_dimensions['E'].width = 15
+        ws.column_dimensions['F'].width = 15
+        
+        # First row: Client code and heading
+        ws['B1'] = request.user.user_number  # Client code (ZČ)
+        ws['C1'] = "ČERPÁNÍ ODMĚNY"         # Heading text
+        ws['F1'] = "010"                    # Warehouse code
+        
+        # Apply styles to first row
+        for col in ['B', 'C', 'F']:
+            ws[f'{col}1'].font = first_row_font
+            ws[f'{col}1'].alignment = first_row_alignment
+        
+        # Row 2 is empty
+        
+        # Row 3: Headers
+        ws['B3'] = "Kód"
+        ws['C3'] = "Název"
+        ws['E3'] = "Cena/ks"
+        ws['F3'] = "Množství"
+        
+        # Apply styles to header row
+        for col in ['B', 'C', 'E', 'F']:
+            ws[f'{col}3'].font = header_font
+            ws[f'{col}3'].fill = header_fill
+            ws[f'{col}3'].alignment = header_alignment
+        
+        # Get items from the request
+        items = request.rewardrequestitem_set.select_related('reward').all()
+        
+        # Row 4 and onwards: Data rows
+        row_num = 4
+        for item in items:
+            ws[f'B{row_num}'] = item.reward.abra_code
+            ws[f'C{row_num}'] = item.reward.name
+            ws[f'E{row_num}'] = 1.0
+            ws[f'F{row_num}'] = item.quantity
+            
+            # Apply styles to data cells
+            ws[f'B{row_num}'].fill = data_fill
+            ws[f'B{row_num}'].alignment = data_alignment
+            ws[f'B{row_num}'].font = data_font
+            
+            ws[f'C{row_num}'].alignment = data_alignment
+            ws[f'C{row_num}'].font = data_font
+            
+            ws[f'E{row_num}'].fill = data_fill
+            ws[f'E{row_num}'].alignment = data_alignment_center
+            ws[f'E{row_num}'].font = data_font
+            
+            ws[f'F{row_num}'].fill = data_fill
+            ws[f'F{row_num}'].alignment = data_alignment_center
+            ws[f'F{row_num}'].font = data_font
+            
+            row_num += 1
+            
+        # Save the workbook to a BytesIO object
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return output.getvalue()
+        
+    except Exception as e:
+        # Log error here if needed
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error generating telemarketing export: {str(e)}")
+        return None
