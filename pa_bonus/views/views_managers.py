@@ -8,7 +8,7 @@ from django.db.models import Sum, Count
 from django.db import transaction
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file
-from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification
+from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification, User
 from pa_bonus.utilities import ManagerGroupRequiredMixin
 
 from pa_bonus.exports import generate_telemarketing_export
@@ -28,9 +28,66 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
     template_name = 'manager/dashboard.html'
     
     def get(self, request):
-        # You can add context data here if needed
-        # For example, summary statistics about recent activities
-        context = {}
+        # System-wide points statistics
+        from django.db.models import Sum, Count, Q, F, Value
+        from django.db.models.functions import Coalesce
+        
+        # 1. Total points summary
+        points_summary = PointsTransaction.objects.filter(
+            status__in=['PENDING', 'CONFIRMED']
+        ).values('status').annotate(
+            total=Coalesce(Sum('value'), Value(0))
+        ).order_by('status')
+        
+        # Convert to a dictionary for easier access in template
+        points_data = {
+            'PENDING': 0,
+            'CONFIRMED': 0,
+        }
+        for entry in points_summary:
+            points_data[entry['status']] = entry['total']
+            
+        # 2. Reward requests statistics
+        request_stats = RewardRequest.objects.filter(
+            status__in=['PENDING', 'ACCEPTED']
+        ).values('status').annotate(
+            count=Count('id'),
+            total_points=Coalesce(Sum('total_points'), Value(0))
+        ).order_by('status')
+        
+        # Convert to dictionary
+        request_data = {
+            'PENDING': {'count': 0, 'total_points': 0},
+            'ACCEPTED': {'count': 0, 'total_points': 0},
+        }
+        for entry in request_stats:
+            request_data[entry['status']] = {
+                'count': entry['count'],
+                'total_points': entry['total_points']
+            }
+            
+        # 3. Top 10 clients by available points
+        top_clients = User.objects.annotate(
+            available_points=Coalesce(
+                Sum('pointstransaction__value', 
+                    filter=Q(pointstransaction__status='CONFIRMED')),
+                Value(0)
+            ),
+            pending_points=Coalesce(
+                Sum('pointstransaction__value', 
+                    filter=Q(pointstransaction__status='PENDING')),
+                Value(0)
+            )
+        ).filter(
+            available_points__gt=0
+        ).order_by('-available_points')[:10]
+        
+        context = {
+            'points_data': points_data,
+            'request_data': request_data,
+            'top_clients': top_clients,
+        }
+        
         return render(request, self.template_name, context)
     
     

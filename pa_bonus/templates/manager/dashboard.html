@@ -2,6 +2,9 @@
 {% block title %} Manager Dashboard {% endblock %}
 
 {% block content %}
+<!-- Chart.js from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
 <div class="dashboard-container">
   <h2>Manager Dashboard</h2>
   
@@ -10,6 +13,72 @@
   </div>
   
   <div class="dashboard-sections">
+    <!-- Points Overview Section -->
+    <div class="dashboard-section">
+      <h3>System Overview</h3>
+      <div class="stats-summary">
+        <div class="stat-item">
+          <span class="stat-value">{{ points_data.CONFIRMED }}</span>
+          <span class="stat-label">Available Points</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ points_data.PENDING }}</span>
+          <span class="stat-label">Pending Points</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ request_data.PENDING.count }}</span>
+          <span class="stat-label">Pending Requests</span>
+          <span class="stat-subvalue">{{ request_data.PENDING.total_points }} pts</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">{{ request_data.ACCEPTED.count }}</span>
+          <span class="stat-label">Accepted Requests</span>
+          <span class="stat-subvalue">{{ request_data.ACCEPTED.total_points }} pts</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Points Distribution Chart -->
+    <div class="dashboard-section">
+      <h3>Points Distribution Visualization</h3>
+      <div id="points-chart-container" style="height: 300px; width: 100%; margin: 20px 0;">
+        <!-- Chart will be rendered here -->
+      </div>
+    </div>
+    
+    <!-- Top Clients -->
+    <div class="dashboard-section">
+      <h3>Top 10 Clients by Available Points</h3>
+      <div class="table-container">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Available Points</th>
+              <th>Pending Points</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in top_clients %}
+            <tr>
+              <td>{{ client.first_name }} {{ client.last_name }} ({{ client.user_number }})</td>
+              <td class="value positive">{{ client.available_points }}</td>
+              <td>{{ client.pending_points }}</td>
+              <td>
+                <a href="#" class="details-link">View</a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4">No clients with available points found</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
     <!-- Reward Requests Section -->
     <div class="dashboard-section">
       <h3>Reward Requests</h3>
@@ -56,4 +125,65 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get data from template
+    const confirmedPoints = {{ points_data.CONFIRMED }};
+    const pendingPoints = {{ points_data.PENDING }};
+    const pendingRequests = {{ request_data.PENDING.total_points }};
+    const acceptedRequests = {{ request_data.ACCEPTED.total_points }};
+    
+    // Create data for chart
+    const data = {
+      labels: ['Available Points', 'Pending Points', 'Pending Requests', 'Accepted Requests'],
+      datasets: [{
+        label: 'Points',
+        data: [confirmedPoints, pendingPoints, pendingRequests, acceptedRequests],
+        backgroundColor: [
+          '#48BB78', // Available Points - green
+          '#FFD700', // Pending Points - yellow
+          '#E53E3E', // Pending Requests - red
+          '#4A7CAB'  // Accepted Requests - blue
+        ],
+        borderWidth: 1
+      }]
+    };
+    
+    // Create chart
+    const ctx = document.createElement('canvas');
+    ctx.id = 'pointsChart';
+    document.getElementById('points-chart-container').appendChild(ctx);
+    
+    new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Points'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.parsed.y.toLocaleString() + ' points';
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+</script>
 {% endblock %}
