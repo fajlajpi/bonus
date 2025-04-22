@@ -196,9 +196,6 @@ class RequestsDetailView(LoginRequiredMixin, TemplateView):
 class RewardsRequestConfirmationView(LoginRequiredMixin, View):
     """
     Asks the user to confirm their request for rewards.
-
-    Attributes:
-        template_name (str): Name of the template to render the view.
     """
     template_name = 'rewards_request_detail.html'
 
@@ -217,6 +214,12 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         if reward_request.status == 'DRAFT':
+            # Verify that user still has enough points
+            user_balance = request.user.get_balance()
+            if reward_request.total_points > user_balance:
+                messages.error(request, f"Insufficient points: You have {user_balance} points but the request requires {reward_request.total_points} points.")
+                return redirect('rewards_request_detail', pk=pk)
+                
             # Update the status to Pending
             reward_request.status = "PENDING"
             reward_request.save()

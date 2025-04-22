@@ -344,6 +344,26 @@ class RewardRequestItem(models.Model):
         #Set point cost from Reward before saving.
         self.point_cost = self.reward.point_cost
         super().save(*args, **kwargs)
+
+class EmailNotification(models.Model):
+    NOTIFICATION_STATUS = (
+        ('PENDING', 'Pending'),
+        ('SENT', 'Sent'),
+        ('FAILED', 'Failed'),
+    )
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    status = models.CharField(max_length=10, choices=NOTIFICATION_STATUS, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.subject} to {self.user.email} ({self.status})"
     
 # Utility function to create group and permissions
 def create_manager_group_and_permissions(*args, **options):

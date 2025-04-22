@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password
 from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, PointsBalance, 
-    FileUpload, Reward, RewardRequest, RewardRequestItem,
+    FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification,
 )
 
 logger = logging.getLogger(__name__)
@@ -280,3 +280,11 @@ class RewardRequestAdmin(admin.ModelAdmin):
 @admin.register(RewardRequestItem)
 class RewardRequestItemAdmin(admin.ModelAdmin):
     list_display = ('reward_request', 'reward', 'quantity', 'point_cost')
+
+@admin.register(EmailNotification)
+class EmailNotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'subject', 'status', 'created_at', 'sent_at')
+    list_filter = ('status', 'created_at', 'sent_at')
+    search_fields = ('user__username', 'user__email', 'subject')
+    readonly_fields = ('created_at', 'sent_at')
+

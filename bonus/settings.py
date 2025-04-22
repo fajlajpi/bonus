@@ -96,6 +96,16 @@ DATABASES = {
     }
 }
 
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = private.email_host
+EMAIL_PORT = private.smtp_port
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = private.smtp_login
+EMAIL_HOST_PASSWORD = private.smtp_pass
+DEFAULT_FROM_EMAIL = f'Bonusový Program <{private.smtp_login}>'
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
