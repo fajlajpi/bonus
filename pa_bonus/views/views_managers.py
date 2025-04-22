@@ -173,9 +173,6 @@ class ManagerRewardRequestListView(ManagerGroupRequiredMixin, ListView):
 class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
     """
     (Managers Only) Detail of Reward Request with editing and confirming capability.
-
-    Attributes:
-        template_name (str): Template name to render
     """
     template_name = 'manager/reward_request_detail.html'
 
@@ -183,7 +180,7 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         items = reward_request.rewardrequestitem_set.select_related('reward')
         item_quantities = {
-            item.reward.id: item.quantity for item in reward_request.rewardrequestitem_set.all()
+            item.reward.id: item.quantity for item in items
         }
         all_rewards = Reward.objects.filter(is_active=True)
         user_balance = reward_request.user.get_balance()
@@ -195,40 +192,135 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
             'user_balance': user_balance,
         })
 
+    @transaction.atomic
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
-        user_balance = reward_request.user.get_balance()
-        override_limit = request.POST.get('allow_negative', '') == 'on'
-
-        # Clear and rebuild items
+        old_status = reward_request.status
+        old_total_points = reward_request.total_points
+        
+        # Update the reward request items and get the new total
+        self._update_reward_items(reward_request, request.POST)
+        
+        # Update the request status and description
+        new_status = request.POST.get('status')
+        reward_request.description = request.POST.get('manager_message', '')
+        reward_request.status = new_status
+        reward_request.save()
+        
+        # Handle the point transactions based on changes
+        self._update_point_transactions(
+            reward_request, 
+            old_status, 
+            new_status, 
+            old_total_points
+        )
+        
+        messages.success(request, f"Request {reward_request.pk} updated.")
+        return redirect('manager_reward_requests')
+    
+    def _update_reward_items(self, reward_request, post_data):
+        """Update the reward request items from form data."""
+        # Clear existing items
         reward_request.rewardrequestitem_set.all().delete()
-        total_points = 0
-
+        
+        # Add new items
         for reward in Reward.objects.filter(is_active=True):
             field_name = f'reward_{reward.id}'
-            qty = request.POST.get(field_name)
+            qty = post_data.get(field_name)
             if qty and qty.isdigit() and int(qty) > 0:
-                quantity = int(qty)
                 RewardRequestItem.objects.create(
                     reward_request=reward_request,
                     reward=reward,
-                    quantity=quantity,
-                    point_cost=reward.point_cost
+                    quantity=int(qty)
                 )
-                total_points += quantity * reward.point_cost
+    
+    def _update_point_transactions(self, reward_request, old_status, new_status, old_total_points):
+        """Update point transactions based on status and point changes."""
+        # Handle status change logic
+        if old_status != new_status:
+            self._handle_status_change(reward_request, old_status, new_status)
+        
+        # Handle point total change logic 
+        elif old_total_points != reward_request.total_points:
+            self._handle_point_total_change(reward_request, old_total_points)
+    
+    def _handle_status_change(self, reward_request, old_status, new_status):
+        """Handle changes in the request status."""
+        transaction = self._get_reward_transaction(reward_request)
+        if not transaction:
+            return
+            
+        # Request rejected or cancelled
+        if new_status in ['REJECTED', 'CANCELLED']:
+            if old_status not in ['REJECTED', 'CANCELLED']:
+                # Cancel the deduction and return points to the user
+                transaction.status = 'CANCELLED'
+                transaction.save()
+                
+                self._create_reversal_transaction(reward_request, transaction.value, new_status)
+        
+        # Request reactivated
+        elif old_status in ['REJECTED', 'CANCELLED'] and new_status not in ['REJECTED', 'CANCELLED']:
+            # Reactivate the transaction with possibly updated point total
+            transaction.status = 'CONFIRMED'
+            transaction.value = -reward_request.total_points
+            transaction.save()
+    
+    def _handle_point_total_change(self, reward_request, old_total_points):
+        """Handle changes in the point total of a request."""
+        transaction = self._get_reward_transaction(reward_request)
+        if not transaction:
+            return
+            
+        # Calculate difference and update
+        point_difference = old_total_points - reward_request.total_points
+        transaction.value = -reward_request.total_points
+        transaction.save()
+        
+        # Create adjustment transaction if there's a difference
+        if point_difference != 0:
+            self._create_adjustment_transaction(reward_request, point_difference)
+    
+    def _get_reward_transaction(self, reward_request):
+        """Get the associated reward claim transaction."""
+        try:
+            return PointsTransaction.objects.get(
+                reward_request=reward_request,
+                type='REWARD_CLAIM'
+            )
+        except PointsTransaction.DoesNotExist:
+            logger.warning(f"No transaction found for reward request {reward_request.id}")
+            return None
+        except PointsTransaction.MultipleObjectsReturned:
+            logger.error(f"Multiple transactions found for reward request {reward_request.id}")
+            messages.warning(self.request, "Multiple transactions found for this request. Please check manually.")
+            return None
+    
+    def _create_reversal_transaction(self, reward_request, original_value, status):
+        """Create a transaction to reverse a reward claim."""
+        PointsTransaction.objects.create(
+            value=abs(original_value),  # Make positive to refund
+            date=timezone.now().date(),
+            user=reward_request.user,
+            description=f"Reversed reward claim - Request {reward_request.id} {status.lower()}",
+            type='ADJUSTMENT',
+            status='CONFIRMED',
+            reward_request=reward_request,
+        )
+    
+    def _create_adjustment_transaction(self, reward_request, point_difference):
+        """Create a transaction to adjust for point differences."""
+        PointsTransaction.objects.create(
+            value=point_difference,
+            date=timezone.now().date(),
+            user=reward_request.user,
+            description=f"Adjustment for modified reward request {reward_request.id}",
+            type='ADJUSTMENT',
+            status='CONFIRMED',
+            reward_request=reward_request,
+        )
 
-        # Validate against user balance
-        if not override_limit and total_points > user_balance:
-            messages.error(request, f"Total points required ({total_points}) exceeds user's available balance ({user_balance}).")
-            return redirect(request.path)
-
-        reward_request.description = request.POST.get('manager_message', '')
-        reward_request.status = request.POST.get('status')
-        reward_request.save()
-
-        messages.success(request, f"Request {reward_request.pk} updated.")
-        return redirect('manager_reward_requests')
-
+        
 class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
     """
     Export a telemarketing file for a specific reward request
