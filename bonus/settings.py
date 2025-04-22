@@ -114,6 +114,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Custom Authentication backend for using emails or usernames interchangeably
+AUTHENTICATION_BACKENDS = [
+    'pa_bonus.auth.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep the default for admin
+]
+
 AUTH_USER_MODEL = 'pa_bonus.User'
 
 

@@ -1,5 +1,7 @@
 from django import forms
 from .models import FileUpload
+from django.contrib.auth.forms import AuthenticationForm
+from django.utils.translation import gettext_lazy as _
 
 class FileUploadForm(forms.ModelForm):
     class Meta:
@@ -19,3 +21,9 @@ class FileUploadForm(forms.ModelForm):
             raise forms.ValidationError('File too large (>15 MB)')
         
         return file
+    
+class EmailAuthenticationForm(AuthenticationForm):
+    username = forms.CharField(
+        label=_("Email or Username"),
+        widget=forms.TextInput(attrs={'autofocus': True}),
+    )

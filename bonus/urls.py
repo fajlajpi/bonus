@@ -19,6 +19,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
 from pa_bonus.views import views_managers as vm, views_users as vu
+from pa_bonus.forms import EmailAuthenticationForm
 
 def home_redirect(request):
     """Redirects the root URL to dashboard."""
@@ -29,7 +30,7 @@ urlpatterns = []
 # PUBLIC FACING URLS
 urlpatterns.extend([
     path('', home_redirect, name='home_redirect'),
-    path('login/', LoginView.as_view(template_name='login.html'), name='login'),
+    path('login/', LoginView.as_view(template_name='login.html', authentication_form=EmailAuthenticationForm), name='login'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
 ])
 
