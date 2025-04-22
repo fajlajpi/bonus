@@ -240,3 +240,9 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
         else:
             messages.warning(request, f"Reward request was already submitted.")
             return redirect('rewards')
+
+class ExtraGoalsView(LoginRequiredMixin, TemplateView):
+    """
+    Displays the extra goals page (currently under construction).
+    """
+    template_name = 'extra_goals.html'

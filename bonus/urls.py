@@ -42,6 +42,7 @@ urlpatterns.extend([
     path('rewards/', vu.RewardsView.as_view(), name='rewards'),
     path('rewards/requests/', vu.RewardsRequestsView.as_view(), name='reward_requests'),
     path('rewards/requests/detail/<int:pk>', vu.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'), 
+    path('extra-goals/', vu.ExtraGoalsView.as_view(), name='extra_goals'),
 ])
 
 # MANAGER FACING URLS

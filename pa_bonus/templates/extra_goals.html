@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %} Extra Goals {% endblock title %}
+
+{% block content %}
+<div class="extra-goals-container">
+    <h2>Extra Goals</h2>
+    
+    <div class="under-construction">
+        <h3>Feature Coming Soon</h3>
+        <p>The Extra Goals feature is currently under development and will be available in the next update.</p>
+        <p>This feature will allow you to earn bonus points when you exceed your sales targets.</p>
+    </div>
+    
+    {% if user.is_staff or user.groups.all.0.name == "Managers" %}
+    <div class="manager-info">
+        <h4>Manager Information</h4>
+        <p>This feature will track client turnover at 6 and 12-month intervals and calculate bonus points based on achieved goals.</p>
+        <p>Clients will receive bonus points worth 50% of their turnover increase, up to a maximum of 20,000 points per year.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
