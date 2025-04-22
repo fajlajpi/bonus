@@ -50,6 +50,8 @@ urlpatterns.extend([
     path('manager/upload_history/', vm.upload_history, name='upload_history'),
     path('manager/reward-requests/', vm.ManagerRewardRequestListView.as_view(), name="manager_reward_requests"),
     path('manager/reward-requests/<int:pk>/', vm.ManagerRewardRequestDetailView.as_view(), name='manager_reward_request_detail'),
+    path('manager/reward-requests/<int:pk>/export/', vm.ExportTelemarketingFileView.as_view(), name='export_telemarketing_file'),
+
 ])
 
 # ADMIN URLS

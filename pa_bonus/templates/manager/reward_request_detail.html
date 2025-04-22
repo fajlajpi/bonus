@@ -38,6 +38,12 @@
     {% endfor %}
   </select>
 
+  {% if request_obj.status == 'ACCEPTED' %}
+    <a href="{% url 'export_telemarketing_file' request_obj.id %}" class="export-button">
+        Export for Telemarketing
+    </a>
+  {% endif %}
+
   <h3>Manager Message</h3>
   <textarea name="manager_message" rows="4" cols="50">{{ request_obj.description }}</textarea>
   <h3>Options</h3>
