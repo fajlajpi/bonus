@@ -392,3 +392,66 @@ def create_manager_group_and_permissions(*args, **options):
     except Exception as e:
         logger.error(f"Error creating Manager group and permissions: {e}", exc_info=True)
         print(f"Error creating Manager group and permissions: {e}")
+
+class Invoice(models.Model):
+    """
+    Represents an invoice from the accounting system.
+    
+    This model stores the base information about invoices imported from the 
+    accounting system, regardless of whether the client is registered in the
+    bonus program.
+    
+    Attributes:
+        invoice_number (str): The unique invoice number.
+        client_number (str): The client's number in the accounting system.
+        invoice_date (Date): The date of the invoice.
+        total_amount (Decimal): The total amount of the invoice.
+        invoice_type (str): Type of invoice (standard invoice or credit note).
+        file_upload (FileUpload): The file upload that created this invoice.
+        created_at (DateTime): When this record was created.
+    """
+    INVOICE_TYPES = (
+        ('INVOICE', 'Standard Invoice'),
+        ('CREDIT_NOTE', 'Credit Note'),
+    )
+    
+    invoice_number = models.CharField(max_length=50, unique=True)
+    client_number = models.CharField(max_length=20, db_index=True)
+    invoice_date = models.DateField()
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    invoice_type = models.CharField(max_length=15, choices=INVOICE_TYPES)
+    file_upload = models.ForeignKey('FileUpload', on_delete=models.CASCADE, 
+                                   related_name='invoices')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-invoice_date', 'invoice_number']
+        indexes = [
+            models.Index(fields=['client_number', 'invoice_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.invoice_number} | {self.client_number} | {self.invoice_date}"
+
+
+class InvoiceBrandTurnover(models.Model):
+    """
+    Represents the turnover for a specific brand within an invoice.
+    
+    Attributes:
+        invoice (Invoice): The invoice this turnover belongs to.
+        brand (Brand): The brand this turnover is for.
+        amount (Decimal): The total amount for this brand in the invoice.
+    """
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, 
+                               related_name='brand_turnovers')
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE,
+                             related_name='invoice_turnovers')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    class Meta:
+        unique_together = ['invoice', 'brand']
+        ordering = ['-invoice__invoice_date', 'brand__name']
+    
+    def __str__(self):
+        return f"{self.invoice.invoice_number} | {self.brand.name} | {self.amount}"
