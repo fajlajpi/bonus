@@ -42,19 +42,29 @@ class UserResource(resources.ModelResource):
         attribute='password',
         widget=None  # We override save_instance to hash passwords
     )
+    
+    region = fields.Field(
+        column_name='region',
+        attribute='region',
+        widget=widgets.ForeignKeyWidget(Region, field='code')
+    )
 
     class Meta:
         model = User
         import_id_fields = ['email']  # Email is the unique identifier
-        fields = ('username', 'email', 'first_name', 'last_name', 'user_number', 'user_phone', 'password', 'is_active')
+        fields = ('username', 'email', 'first_name', 'last_name', 'user_number', 'user_phone', 'password', 'is_active', 'region')
 
     def before_import_row(self, row, **kwargs):
         """
         Automatically sets the default password to user_number and hashes it.
         """
         row['password'] = make_password(str(row['user_number']))
+        
+        # Handle empty region values
+        if 'region' in row and not row['region']:
+            row['region'] = None
+            
         super().before_import_row(row, **kwargs)
-
 
     def before_save_instance(self, instance, *args, **kwargs):
         """
@@ -64,6 +74,7 @@ class UserResource(resources.ModelResource):
 
         instance.password = make_password(instance.password)
         super().before_save_instance(instance, *args, **kwargs)
+
 
 class UserContractResource(resources.ModelResource):
     """

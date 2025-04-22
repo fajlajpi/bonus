@@ -16,7 +16,7 @@ def reverse_func(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('pa_bonus', '0013_invoice_invoicebrandturnover_and_more.py'), 
+        ('pa_bonus', '0013_invoice_invoicebrandturnover_and_more'), 
     ]
 
     operations = [
