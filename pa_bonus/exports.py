@@ -46,14 +46,15 @@ def generate_telemarketing_export(request_id):
         data_alignment_center = Alignment(horizontal='center', vertical='center')
         
         # Set column widths
-        ws.column_dimensions['A'].width = 5
-        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['A'].width = 20
+        ws.column_dimensions['B'].width = 25
         ws.column_dimensions['C'].width = 40
         ws.column_dimensions['D'].width = 10
         ws.column_dimensions['E'].width = 15
         ws.column_dimensions['F'].width = 15
         
         # First row: Client code and heading
+        ws['A1'] = request.user.get_full_name()  # Client name
         ws['B1'] = request.user.user_number  # Client code (ZČ)
         ws['C1'] = "ČERPÁNÍ ODMĚNY"         # Heading text
         ws['F1'] = "010"                    # Warehouse code
@@ -68,11 +69,12 @@ def generate_telemarketing_export(request_id):
         # Row 3: Headers
         ws['B3'] = "Kód"
         ws['C3'] = "Název"
+        ws['D3'] = "Body/ks"
         ws['E3'] = "Cena/ks"
         ws['F3'] = "Množství"
         
         # Apply styles to header row
-        for col in ['B', 'C', 'E', 'F']:
+        for col in ['B', 'C', 'D', 'E', 'F']:
             ws[f'{col}3'].font = header_font
             ws[f'{col}3'].fill = header_fill
             ws[f'{col}3'].alignment = header_alignment
@@ -85,6 +87,7 @@ def generate_telemarketing_export(request_id):
         for item in items:
             ws[f'B{row_num}'] = item.reward.abra_code
             ws[f'C{row_num}'] = item.reward.name
+            ws[f'D{row_num}'] = item.reward.point_cost
             ws[f'E{row_num}'] = 1.0
             ws[f'F{row_num}'] = item.quantity
             
@@ -95,6 +98,10 @@ def generate_telemarketing_export(request_id):
             
             ws[f'C{row_num}'].alignment = data_alignment
             ws[f'C{row_num}'].font = data_font
+
+            ws[f'D{row_num}'].fill = data_fill
+            ws[f'D{row_num}'].alignment = data_alignment_center
+            ws[f'D{row_num}'].font = data_font
             
             ws[f'E{row_num}'].fill = data_fill
             ws[f'E{row_num}'].alignment = data_alignment_center
