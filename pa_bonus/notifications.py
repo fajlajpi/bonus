@@ -1,10 +1,11 @@
+from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 from pa_bonus.models import EmailNotification, User, PointsTransaction, RewardRequest
 
 def send_email_notification(user, subject, message):
     """
-    Send an email to a user and log it in the notifications table
+    Send an email to a user and log it in the notifications table. If DEBUG=True, always sends it to the admin email.
     """
     notification = EmailNotification.objects.create(
         user=user,
@@ -13,11 +14,17 @@ def send_email_notification(user, subject, message):
     )
     
     try:
+        # Get User email or, if in DEBUG, admin email
+        if settings.DEBUG:
+            email_to = User.objects.filter(username='admin').first().email
+        else:
+            email_to = user.email
+        
         send_mail(
             subject=subject,
             message=message,
             from_email=None,  # Uses DEFAULT_FROM_EMAIL from settings
-            recipient_list=[user.email],
+            recipient_list=[email_to],
             fail_silently=False,
         )
         

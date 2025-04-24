@@ -7,11 +7,9 @@ from pa_bonus.notifications import notify_points_added, notify_reward_status_cha
 def transaction_notification(sender, instance, created, **kwargs):
     """Send notification when a transaction is created or status changes to CONFIRMED"""
     if created and instance.status == 'CONFIRMED':
-        # notify_points_added(instance)
-        pass
+        notify_points_added(instance)
 
 @receiver(post_save, sender=RewardRequest)
 def reward_request_notification(sender, instance, **kwargs):
     """Send notification when reward request status changes"""
-    # notify_reward_status_change(instance)
-    pass
+    notify_reward_status_change(instance)

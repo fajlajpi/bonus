@@ -92,9 +92,9 @@ Django-based system for tracking and using loyalty points
     - SMS
         - Found a practical service SMSbrana.cz, charging 1,05 CZK / SMS with prepaid credit
         - Automated sending via CSV or direct API connection
-        - [ ] CSV export of messages
+        - [x] CSV export of messages
         - [ ] Initial login / password information
-        - [ ] Monthly point update
+        - [x] Monthly point update
 - [ ] **Manager Views**
     - [ ] Clients list
     - [ ] Client detail & Modification
