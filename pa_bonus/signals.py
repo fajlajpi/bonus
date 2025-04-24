@@ -11,5 +11,6 @@ def transaction_notification(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=RewardRequest)
 def reward_request_notification(sender, instance, **kwargs):
-    """Send notification when reward request status changes"""
-    notify_reward_status_change(instance)
+    """Send notification when reward request status changes, except for drafts"""
+    if instance.status != 'DRAFT':
+        notify_reward_status_change(instance)

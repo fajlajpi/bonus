@@ -2,6 +2,10 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
 from pa_bonus.models import EmailNotification, User, PointsTransaction, RewardRequest
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def send_email_notification(user, subject, message):
     """
@@ -12,6 +16,7 @@ def send_email_notification(user, subject, message):
         subject=subject,
         message=message
     )
+    logger.info(f"EMAIL NOTIFICATION: Created notification for user {user.username}")
     
     try:
         # Get User email or, if in DEBUG, admin email
@@ -20,6 +25,8 @@ def send_email_notification(user, subject, message):
         else:
             email_to = user.email
         
+        logger.info(f"EMAIL NOTIFICATION: Attempting to send an email to {email_to}")
+
         send_mail(
             subject=subject,
             message=message,
@@ -31,10 +38,12 @@ def send_email_notification(user, subject, message):
         notification.status = 'SENT'
         notification.sent_at = timezone.now()
         notification.save()
+        logger.info(f"EMAIL NOTIFICATION: Email sent to {email_to}")
         return True
     except Exception as e:
         notification.status = 'FAILED'
         notification.save()
+        logger.error(f"EMAIL NOTIFICATION: Failed to send email to {email_to}: {str(e)}")
         return False
 
 def notify_points_added(transaction):
