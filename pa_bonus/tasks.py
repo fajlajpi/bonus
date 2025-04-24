@@ -333,6 +333,7 @@ def process_brand_points(user, invoice, turnover, brand_bonuses, filetype):
         value=points,
         date=invoice.invoice_date,
         description=f'{"Invoice" if invoice.invoice_type == FT_INVOICE else "Credit Note"} {invoice.invoice_number}',
+        invoice=invoice,
         type=transaction_type,
         status=status,
         brand=brand,
@@ -349,18 +350,14 @@ def check_existing_transaction(user, invoice, brand, transaction_type):
     
     This provides a robust idempotency check to prevent duplicate transactions.
     """
-    invoice_id_str = str(invoice.invoice_number)
     
     # Comprehensive query to catch potential duplicates
     existing = PointsTransaction.objects.filter(
         user=user,
         date=invoice.invoice_date,
         brand=brand,
-        type=transaction_type
-    ).filter(
-        Q(description__contains=invoice_id_str) | 
-        Q(description__contains=f"Invoice {invoice_id_str}") | 
-        Q(description__contains=f"Credit Note {invoice_id_str}")
+        type=transaction_type,
+        invoice=invoice,
     ).first()
     
     return existing
