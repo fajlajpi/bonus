@@ -47,7 +47,7 @@ Django-based system for tracking and using loyalty points
 
 ## MVP V2: Going Public
 - [x] SMS Notifications (monthly + one shot login info) via CSV
-- [ ] Email notifications
+- [x] Email notifications
 - [x] Login with email
 - [x] Reward Request confirmation
 - [x] Reward Request to Telemarketing bridge file
