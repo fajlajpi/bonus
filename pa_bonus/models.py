@@ -250,6 +250,7 @@ class PointsTransaction(models.Model):
         type (str): Type of the transaction.
         status (str): Current status of the transaction.
         brand (Brand): Brand the transaction relates to (optional).
+        invoice (Invoice): Invoice the transaction relates to (optional).
         reward_request (RewardRequest): The reward request the transaction relates to (optional).
         created_at (DateTime): The datetime the transaction was created.
 
