@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pa_bonus',
-
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -100,7 +100,6 @@ DATABASES = {
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = private.email_host
 EMAIL_PORT = private.smtp_port
-EMAIL_USE_TLS = True
 EMAIL_HOST_USER = private.smtp_login
 EMAIL_HOST_PASSWORD = private.smtp_pass
 DEFAULT_FROM_EMAIL = f'Bonusový Program <{private.smtp_login}>'
@@ -154,6 +153,24 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# DJANGO Q FOR ASYNC TASKS
+Q_CLUSTER = {
+    'name': 'bonus',
+    'workers': 4,
+    'recycle': 500,
+    'timeout': 60,
+    'compress': True,
+    'save_limit': 250,
+    'queue_limit': 500,
+    'cpu_affinity': 1,
+    'label': 'Django Q2',
+    'redis': {
+        'host': 'localhost',
+        'port': 6379,
+        'db': 0,
+    }
+}
 
 LOGGING = {
     'version': 1,

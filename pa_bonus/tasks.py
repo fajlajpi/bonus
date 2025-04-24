@@ -2,13 +2,16 @@ import pandas as pd
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q
+from django.core.mail import send_mail
 import logging
 from datetime import datetime
 from decimal import Decimal
 
+
 from .models import (
     FileUpload, PointsTransaction, User, Brand, 
-    UserContract, BrandBonus, Invoice, InvoiceBrandTurnover
+    UserContract, BrandBonus, Invoice, InvoiceBrandTurnover,
+    EmailNotification,
 )
 
 # Configure logging
@@ -379,3 +382,49 @@ def handle_processing_error(upload, exception):
     upload.error_message = error_msg
     upload.processed_at = timezone.now()
     upload.save()
+
+
+# EMAIL ASYNC TASKS
+def send_email_task(notification_id, recipient_email, subject, message):
+    """
+    Background task to send an email and update the notification record.
+    
+    This function will be called asynchronously by Django-Q2.
+    """
+    try:
+        # Get the notification object
+        notification = EmailNotification.objects.get(id=notification_id)
+        
+        # Send the email
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=None,  # Uses DEFAULT_FROM_EMAIL from settings
+            recipient_list=[recipient_email],
+            fail_silently=False,
+        )
+        
+        logger.info(f"Attempting to asynchronously send an email to {recipient_email}")
+        
+        # Update notification status to indicate success
+        notification.status = 'SENT'
+        notification.sent_at = timezone.now()
+        notification.save()
+        
+        return True
+    except EmailNotification.DoesNotExist:
+        # Handle the case where the notification doesn't exist
+        return False
+    except Exception as e:
+        # Update notification status to indicate failure
+        try:
+            notification = EmailNotification.objects.get(id=notification_id)
+            notification.status = 'FAILED'
+            notification.save()
+
+            logger.error(f"Error sending email: {str(e)}", exc_info=True)
+        except:
+            pass
+        
+        # Re-raise the exception so Django-Q2 can log it
+        raise 
