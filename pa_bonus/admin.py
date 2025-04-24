@@ -66,15 +66,6 @@ class UserResource(resources.ModelResource):
             
         super().before_import_row(row, **kwargs)
 
-    def before_save_instance(self, instance, *args, **kwargs):
-        """
-        Ensures passwords are hashed before saving
-        """
-        logger.debug(f"before_save_instance called with: args={args}, kwargs={kwargs}")
-
-        instance.password = make_password(instance.password)
-        super().before_save_instance(instance, *args, **kwargs)
-
 
 class UserContractResource(resources.ModelResource):
     """
