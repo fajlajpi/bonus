@@ -395,6 +395,8 @@ def send_email_task(notification_id, recipient_email, subject, message):
         # Get the notification object
         notification = EmailNotification.objects.get(id=notification_id)
         
+        logger.info(f"Attempting to asynchronously send an email to {recipient_email}")
+
         # Send the email
         send_mail(
             subject=subject,
@@ -403,8 +405,8 @@ def send_email_task(notification_id, recipient_email, subject, message):
             recipient_list=[recipient_email],
             fail_silently=False,
         )
-        
-        logger.info(f"Attempting to asynchronously send an email to {recipient_email}")
+
+        logger.info(f"Email sent to {recipient_email} successfully")
         
         # Update notification status to indicate success
         notification.status = 'SENT'

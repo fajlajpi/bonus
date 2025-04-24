@@ -97,9 +97,14 @@ DATABASES = {
 }
 
 # Email settings
+# if DEBUG:
+#     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# else:
+#     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = private.email_host
 EMAIL_PORT = private.smtp_port
+EMAIL_USE_SSL = True
 EMAIL_HOST_USER = private.smtp_login
 EMAIL_HOST_PASSWORD = private.smtp_pass
 DEFAULT_FROM_EMAIL = f'Bonusový Program <{private.smtp_login}>'
