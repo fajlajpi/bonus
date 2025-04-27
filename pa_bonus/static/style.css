@@ -576,3 +576,27 @@ small {
     justify-content: center;
   }
 }
+
+.request-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.summary-row {
+  font-weight: bold;
+  background-color: var(--neutral-bg);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.transactions-table th, .transactions-table td {
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.transactions-table th:last-child, 
+.transactions-table td:last-child {
+  text-align: right;
+}
