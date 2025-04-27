@@ -1,0 +1,19 @@
+{% load static %}
+<footer class="site-footer">
+    <div class="footer-content">
+        <div class="footer-info">
+            <p>&copy; {{ current_year }} Primavera Andorrana. All rights reserved.</p>
+        </div>
+        <div class="footer-links">
+            <a href="{% url 'home_redirect' %}">Home</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Support</a>
+            {% if user.is_staff %}
+                <a href="{% url 'admin:index' %}">Administration</a>
+            {% endif %}
+            {% if user.groups.all.0.name == 'Managers' %}
+                <a href="{% url 'manager_dashboard' %}">Managers Section</a>
+            {% endif %}
+        </div>
+    </div>
+</footer>

@@ -9,3 +9,7 @@ def multiply(value, arg):
 @register.filter
 def dict_get(d, key):
     return d.get(key, 0)
+
+@register.filter
+def divide(value, arg):
+    return value / arg
