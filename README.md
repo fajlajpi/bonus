@@ -51,6 +51,10 @@ Django-based system for tracking and using loyalty points
 - [x] Login with email
 - [x] Reward Request confirmation
 - [x] Reward Request to Telemarketing bridge file
+- [ ] Translations in all relevant places
+- [ ] Landing page, better login page
+- [ ] Static pages such as contacts, privacy policy
+- [ ] Necessary warning / under construction messages
 - [ ] Client EXTRA GOAL logic
 
 ## TODO
