@@ -121,21 +121,21 @@ Django-based system for tracking and using loyalty points
     - [ ] Reward Catalogue Teaser
 - [ ] **Client Area**
     - [ ] Registration of new client
-    - [ ] Dashboard
-    - [ ] List of Point Transactions
+    - [x] Dashboard
+    - [x] List of Point Transactions
     - [ ] Current Goal & progress
     - [ ] New goal submission
-    - [ ] Bonus Catalogue
-    - [ ] Reward Request
-    - [ ] Reward Request List & Status
+    - [x] Bonus Catalogue
+    - [x] Reward Request
+    - [x] Reward Request List & Status
     - [ ] Reward Request Modification
 - [ ] **Manager Area**
-    - [ ] Dashboard
+    - [x] Dashboard
     - [ ] Clients
-        - [ ] List of clients
+        - [x] List of clients
         - [ ] Goals & progress
         - [ ] New registrations
-    - [ ] Reward Requests
+    - [x] Reward Requests
 - [ ] **Sales Rep Area**
     - [ ] Dashboard
     - [ ] Client overview
