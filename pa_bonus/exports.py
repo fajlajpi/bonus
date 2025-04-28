@@ -112,6 +112,19 @@ def generate_telemarketing_export(request_id):
             ws[f'F{row_num}'].font = data_font
             
             row_num += 1
+        
+        # Add customer note if it exists
+        if request.note:
+            row_num += 1  # Add a blank row
+            ws[f'B{row_num}'] = "Customer Note:"
+            ws[f'B{row_num}'].font = header_font
+            
+            row_num += 1
+            ws.merge_cells(f'B{row_num}:F{row_num}')
+            ws[f'B{row_num}'] = request.note
+            ws[f'B{row_num}'].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+            # Set row height to accommodate multi-line text
+            ws.row_dimensions[row_num].height = 80
             
         # Save the workbook to a BytesIO object
         output = io.BytesIO()

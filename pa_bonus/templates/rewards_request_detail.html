@@ -10,90 +10,67 @@
 {% endblock title %}
 
 {% block content %}
-  <div class="request-detail-container">
-    {% if request.status == 'DRAFT' %}
-      <h1>Potvrzení žádosti o čerpání</h1>
-    {% else %}
-      <h1>Detail žádosti o čerpání</h1>
-    {% endif %}
+  {% if request.status == 'DRAFT' %}
+    <h1>Potvrzení žádosti o čerpání</h1>
+  {% else %}
+    <h1>Detail žádosti o čerpání</h1>
+  {% endif %}
 
-    <div class="stats-container">
-      <h3>Informace o žádosti</h3>
-      <table class="transactions-table">
-        <tr>
-          <th>Uživatel:</th>
-          <td>{{ request.user.username }}</td>
-        </tr>
-        <tr>
-          <th>Datum žádosti:</th>
-          <td>{{ request.requested_at }}</td>
-        </tr>
-        <tr>
-          <th>Stav žádosti:</th>
-          <td><span class="status-badge {{ request.status|lower }}">{{ request.get_status_display }}</span></td>
-        </tr>
-        <tr>
-          <th>Celková hodnota:</th>
-          <td class="total-points">{{ request.total_points }} bodů</td>
-        </tr>
-      </table>
-    </div>
+  <p>Uživatel: {{ request.user.username }}</p>
+  <p>Datum žádosti: {{ request.requested_at }}</p>
+  <p>Celková hodnota: {{ request.total_points }} bodů</p>
 
-    <div class="stats-container">
-      <h3>Položky žádosti</h3>
-      <div class="table-container">
-        <table class="transactions-table">
-          <thead>
-            <tr>
-              <th>Název odměny</th>
-              <th>Bodová hodnota</th>
-              <th>Počet kusů</th>
-              <th>Celkem bodů</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in items %}
-              <tr>
-                <td>{{ item.reward.name }}</td>
-                <td>{{ item.point_cost }} bodů</td>
-                <td>{{ item.quantity }}</td>
-                <td class="value positive">{{ item.quantity|multiply:item.point_cost }} bodů</td>
-              </tr>
-            {% endfor %}
-            <tr class="summary-row">
-              <td colspan="3" class="text-right"><strong>Celkem:</strong></td>
-              <td class="total-points">{{ request.total_points }} bodů</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <h2>Položky:</h2>
+  <ul>
+    {% for item in items %}
+      <li>
+        {{ item.quantity }} x {{ item.reward.name }} ({{ item.point_cost }} bodů / ks) = {{ item.quantity|multiply:item.point_cost }} bodů celkem
+      </li>
+    {% endfor %}
+  </ul>
 
-    {% if request.status == 'DRAFT' %}
-      <div class="points-summary">
-        <h3>Bodové konto</h3>
-        <p>Vaše dostupné body: <span class="total-points">{{ user_balance }}</span></p>
-        <p>Body k čerpání: <span class="total-points">{{ request.total_points }}</span></p>
-        <p>Zůstatek po čerpání: <span class="total-points">{{ user_balance|subtract:request.total_points }}</span></p>
-      </div>
-
-      {% if request.total_points <= user_balance %}
+  {% if request.status == 'DRAFT' %}
+    <p>Vaše dostupné body: {{ user_balance }}</p>
+    {% if request.total_points <= user_balance %}
         <form method="post">
           {% csrf_token %}
+          
+          <div class="form-group">
+            <label for="customer_note"><strong>Poznámka k žádosti:</strong></label>
+            <textarea name="customer_note" id="customer_note" rows="4" style="width: 100%;">{{ request.note }}</textarea>
+            <p class="help-text">Zde můžete uvést doručovací adresu (pokud se liší od vaší registrované adresy), 
+            preferovaný termín dodání nebo jakékoliv další požadavky týkající se vaší objednávky.</p>
+          </div>
+          
           <button class="submit-button" type="submit">Potvrdit žádost o odměnu</button>
         </form>
-      {% else %}
-        <div class="approval-notification">
-          <p>Pro odeslání žádosti nemáte k dispozici dostatek bodů.</p>
-        </div>
-      {% endif %}
     {% else %}
-      <div class="approval-notification">
-        <p>Žádost je ve zpracování.</p>
-        {% if request.description %}
-          <p><strong>Poznámka:</strong> {{ request.description }}</p>
-        {% endif %}
-      </div>
+        <p>Pro odeslání žádosti nemáte k dispozici dostatek bodů.</p>
     {% endif %}
-  </div>
+  {% else %}
+    {% if request.note %}
+    <h2>Poznámka k žádosti:</h2>
+    <div class="note-container">
+      {{ request.note }}
+    </div>
+    {% endif %}
+    <p>Žádost je ve zpracování.</p>
+  {% endif %}
+
+  <style>
+    .hidden{
+      display: none;
+    }
+    .note-container {
+      background-color: var(--neutral-bg);
+      padding: 1rem;
+      border-radius: var(--border-radius-md);
+      margin-bottom: 1.5rem;
+    }
+    .help-text {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.25rem;
+    }
+  </style>
 {% endblock %}

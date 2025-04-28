@@ -214,6 +214,10 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         if reward_request.status == 'DRAFT':
+            # Save customer note
+            customer_note = request.POST.get('customer_note', '')
+            reward_request.note = customer_note
+            
             # Verify that user still has enough points
             user_balance = request.user.get_balance()
             if reward_request.total_points > user_balance:

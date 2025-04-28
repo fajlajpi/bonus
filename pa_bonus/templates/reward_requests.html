@@ -13,6 +13,7 @@
                 <th>Datum</th>
                 <th>Hodnota</th>
                 <th>Status</th>
+                <th>Poznámka</th>
                 <th>Detail</th>
             </tr>
         </thead>
@@ -25,6 +26,11 @@
                     <span class="status-badge {{ reward_request.status|lower }}">{{ reward_request.get_status_display }}</span>
                 </td>
                 <td>
+                    {% if reward_request.note %}
+                    <span class="note-indicator" title="{{ reward_request.note|truncatechars:50 }}">✓</span>
+                    {% endif %}
+                </td>
+                <td>
                     <a href="{% url 'rewards_request_detail' reward_request.id %}" class="details-link">Detail</a>
                 </td>
             </tr>
@@ -35,4 +41,12 @@
     <p>Žádné žádosti nenalezeny.</p>
     {% endif %}
 </div>
+
+<style>
+    .note-indicator {
+        color: var(--primary-color);
+        font-weight: bold;
+        cursor: help;
+    }
+</style>
 {% endblock %}

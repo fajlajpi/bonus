@@ -202,6 +202,10 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         # Update the reward request items 
         self._update_reward_items(reward_request, request.POST)
         
+        # Update the customer note
+        customer_note = request.POST.get('customer_note', '')
+        reward_request.note = customer_note
+        
         # Update the request status and description
         new_status = request.POST.get('status')
         reward_request.description = request.POST.get('manager_message', '')

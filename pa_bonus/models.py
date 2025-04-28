@@ -406,6 +406,7 @@ class RewardRequest(models.Model):
     status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='DRAFT')
     description = models.TextField()
     total_points = models.IntegerField(default=0)
+    note = models.TextField(blank=True, null=True, verbose_name="Customer Note")
 
     def __str__(self):
         return f"Request {self.id} | by {self.user} | on {self.requested_at.strftime('%Y-%m-%d')} | TOTAL: {self.total_points} pts"
