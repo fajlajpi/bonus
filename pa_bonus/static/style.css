@@ -600,3 +600,38 @@ small {
 .transactions-table td:last-child {
   text-align: right;
 }
+/* Test Environment Warning */
+.test-environment-warning {
+  background-color: #FFF3CD;
+  border: 1px solid #FFEEBA;
+  color: #856404;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  font-size: 0.95rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.test-environment-warning p {
+  margin: 0;
+}
+
+.test-environment-warning a {
+  color: #775c00;
+  text-decoration: underline;
+}
+
+.test-environment-warning a:hover {
+  color: #5c4500;
+}
+
+/* Make the warning more prominent on smaller screens */
+@media (max-width: 768px) {
+  .test-environment-warning {
+    padding: var(--spacing-xs);
+    font-size: 0.85rem;
+  }
+}
