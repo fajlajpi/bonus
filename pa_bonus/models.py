@@ -367,11 +367,17 @@ class Reward(models.Model):
         image (Image): Image representing the item.
         created_at (DateTime): The datetime the item was created.
     """
+    AVAILABILITY_TYPE = (
+        ('AVAILABLE', 'Available'),
+        ('ON_DEMAND', 'On Demand'),
+        ('UNAVAILABLE', 'Unavailable'),
+    )
     abra_code = models.CharField(max_length=30, unique=True)
     name = models.CharField(max_length=100)
     point_cost = models.IntegerField()
     description = models.TextField()
-    brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.CASCADE)
+    availability = models.CharField(max_length=20, choices=AVAILABILITY_TYPE, default='ON_DEMAND')
+    brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.SET_NULL)
     is_active = models.BooleanField(default=True)
     image = models.ImageField(upload_to='reward_images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
