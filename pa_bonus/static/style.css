@@ -635,3 +635,128 @@ small {
     font-size: 0.85rem;
   }
 }
+/* Rewards Table */
+.rewards-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: var(--spacing-md);
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  }
+  .rewards-table th, .rewards-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  }
+  .rewards-table th {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+  text-align: left;
+  }
+  .rewards-table tr td {
+  border-bottom: none;
+  }
+  .rewards-table tr {
+  background-color: #f5f9ff;
+  }
+  /* Column widths */
+  .reward-image-col {
+  width: 120px;
+  }
+  .reward-info-col {
+  width: 40%;
+  }
+  .reward-cost-col, .reward-status-col, .reward-quantity-col {
+  width: 15%;
+  text-align: center;
+  }
+  /* Cell styling */
+  .reward-image-cell {
+  text-align: center;
+  }
+  .reward-image {
+  max-width: 100px;
+  max-height: 100px;
+  object-fit: contain;
+  }
+  .reward-info-cell {
+  padding: 1rem;
+  }
+  .reward-name {
+  margin: 0 0 0.5rem 0;
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  }
+  .reward-description {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  }
+  .reward-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #666;
+  }
+  .reward-cost-cell {
+  text-align: center;
+  font-weight: bold;
+  }
+  .point-cost {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  }
+  .reward-status-cell {
+  text-align: center;
+  }
+  .availability-badge {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--border-radius-lg);
+  font-weight: bold;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  }
+  .availability-badge.available {
+  background-color: var(--success-color);
+  color: white;
+  }
+  .availability-badge.on_demand {
+  background-color: #FFD700;
+  color: black;
+  }
+  .availability-badge.unavailable {
+  background-color: var(--error-color);
+  color: white;
+  }
+  .reward-quantity-cell {
+  text-align: center;
+  }
+  /* Make the table responsive */
+  @media (max-width: 768px) {
+  .rewards-table {
+  display: block;
+  overflow-x: auto;
+  }
+  .reward-metadata {
+  flex-direction: column;
+  gap: 0.25rem;
+  }
+  .reward-input {
+  width: 100%;
+  max-width: 80px;
+  }
+  .reward-name {
+  font-size: 1rem;
+  }
+  .reward-description {
+  font-size: 0.85rem;
+  }
+  .point-cost {
+  font-size: 1.5rem;
+  }
+  }
