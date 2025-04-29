@@ -1,0 +1,294 @@
+from import_export import resources, fields, widgets
+from import_export.widgets import ForeignKeyWidget
+from django.core.files.storage import default_storage
+from django.core.files import File
+from django.conf import settings
+from django.contrib.auth.hashers import make_password
+import os
+import logging
+from .models import Reward, Brand, User, UserContract, UserContractGoal, Region, BrandBonus
+
+logger = logging.getLogger(__name__)
+
+class UserResource(resources.ModelResource):
+    """
+    Defines import/export settings for the User model.
+
+    - Can import from XLSX file
+    - Hashes passwords
+    - Uses email as the primary identifier
+    """
+
+    password = fields.Field(
+        column_name='password',
+        attribute='password',
+        widget=None  # We override save_instance to hash passwords
+    )
+    
+    region = fields.Field(
+        column_name='region',
+        attribute='region',
+        widget=widgets.ForeignKeyWidget(Region, field='code')
+    )
+
+    class Meta:
+        model = User
+        import_id_fields = ['email']  # Email is the unique identifier
+        fields = ('username', 'email', 'first_name', 'last_name', 'user_number', 'user_phone', 'password', 'is_active', 'region')
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Automatically sets the default password to user_number and hashes it.
+        """
+        row['password'] = make_password(str(row['user_number']))
+        
+        # Handle empty region values
+        if 'region' in row and not row['region']:
+            row['region'] = None
+            
+        super().before_import_row(row, **kwargs)
+
+
+class UserContractResource(resources.ModelResource):
+    """
+    Defines import/export settings for UserContract.
+
+    - Uses email instead of user_id for better readability in import/export.
+    - Automatically fetches the user ID during import.
+    """
+
+    user_email = fields.Field(
+        column_name='user_email',
+        attribute='user_id',
+        widget=widgets.ForeignKeyWidget(User, field='email')
+    )
+
+    brand_bonuses = fields.Field(
+        column_name='brand_bonuses',
+        attribute='brandbonuses',
+        widget=widgets.ManyToManyWidget(BrandBonus, field='name', separator=', ')
+    )
+
+    class Meta:
+        model = UserContract
+        import_id_fields = ['user_email']  # Use email instead of ID
+        fields = ('user_email', 'contract_date_from', 'contract_date_to', 'is_active', 'brand_bonuses')
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Ensures that the user exists before importing.
+        Automatically assigns the correct user_id based on the email.
+        Calls the parent method to retain default behavior.
+        """
+        super().before_import_row(row, **kwargs)  # Call parent method
+
+        try:
+            user = User.objects.get(email=row['user_email'])
+            row['user_id'] = user.id  # Assign correct user_id
+        except User.DoesNotExist:
+            raise ValueError(f"User with email {row['user_email']} does not exist.")
+
+    def after_save_instance(self, instance, new, **kwargs):
+        """
+        Handles the ManyToMany relationship for BrandBonus after instance creation.
+
+        - Parses the `brand_bonuses` column from the import file.
+        - Assigns the corresponding BrandBonus objects to the instance.
+        """
+        logger.info(f"after_save_instance called with: instance={instance}, new={new}, kwargs={kwargs}")
+
+        if hasattr(instance, 'brandbonuses') and instance.brandbonuses is not None:
+            logger.info(f"Processing Brand Bonuses for {instance}")
+
+            # Get the original brand bonuses from the imported row
+            row_data = kwargs.get('row', {})
+            brand_bonus_names = row_data.get('brand_bonuses', '')
+
+            if brand_bonus_names:
+                # Convert the comma-separated string into a list
+                bonus_names_list = [name.strip() for name in brand_bonus_names.split(',')]
+                logger.info(f"Parsed brand bonuses: {bonus_names_list}")
+
+                # Find matching BrandBonus objects
+                bonuses = BrandBonus.objects.filter(name__in=bonus_names_list)
+                instance.brandbonuses.set(bonuses)  # Assign ManyToMany relation
+
+class UserContractGoalResource(resources.ModelResource):
+    user_email = fields.Field(
+        column_name='user_email',
+        attribute='user_contract',
+        widget=widgets.ForeignKeyWidget(UserContract, field='user_id__email')
+    )
+    contract_start = fields.Field(
+        column_name='contract_date_from',
+        attribute='user_contract',
+        widget=widgets.ForeignKeyWidget(UserContract, field='contract_date_from')
+    )
+    brands = fields.Field(
+        column_name='brands',
+        attribute='brands',
+        widget=widgets.ManyToManyWidget(Brand, field='name', separator=',')
+    )
+
+    class Meta:
+        model = UserContractGoal
+        import_id_fields = []  # We're not using a unique ID for import
+        fields = (
+            'user_email',
+            'contract_start',
+            'goal_period_from',
+            'goal_period_to',
+            'goal_value',
+            'goal_base',
+            'brands',
+        )
+
+    def before_import_row(self, row, **kwargs):
+        # We combine email and contract date to locate the UserContract
+        email = row['user_email']
+        contract_start = row['contract_date_from']
+        try:
+            contract = UserContract.objects.get(user_id__email=email, contract_date_from=contract_start)
+            row['user_contract'] = contract.pk
+        except UserContract.DoesNotExist:
+            raise ValueError(f"Contract not found for user {email} starting {contract_start}")
+
+class RewardResource(resources.ModelResource):
+    """
+    Import/Export resource for Reward model.
+    
+    Handles image file association based on ABRA code.
+    """
+    abra_code = fields.Field(column_name='abra_code', attribute='abra_code')
+    name = fields.Field(column_name='name', attribute='name')
+    point_cost = fields.Field(column_name='point_cost', attribute='point_cost')
+    description = fields.Field(column_name='description', attribute='description')
+    
+    # Brand is a ForeignKey, so we use a ForeignKeyWidget
+    brand = fields.Field(
+        column_name='brand', 
+        attribute='brand',
+        widget=ForeignKeyWidget(Brand, 'name')
+    )
+    
+    is_active = fields.Field(column_name='is_active', attribute='is_active')
+    
+    # This field will be used to indicate if an image exists
+    image_exists = fields.Field(column_name='image_exists')
+    
+    class Meta:
+        model = Reward
+        import_id_fields = ['abra_code']  # abra_code is the unique identifier
+        fields = ('abra_code', 'name', 'point_cost', 'description', 'brand', 'is_active', 'image_exists')
+        export_order = fields
+    
+    def before_import_row(self, row, **kwargs):
+        """
+        Check if an image exists for this reward before importing.
+        
+        The image should follow the convention: {IMAGES_PATH}/{abra_code}.png
+        """
+        super().before_import_row(row, **kwargs)
+        
+        # Handle both dict-like and list-like row objects
+        abra_code = None
+        
+        # If row is dict-like (when using Import-Export admin)
+        if hasattr(row, 'get') and callable(row.get):
+            if 'abra_code' in row and row['abra_code']:
+                abra_code = row['abra_code']
+        # If row is list-like (when using Dataset directly)
+        elif isinstance(row, (list, tuple)) and kwargs.get('dataset'):
+            dataset = kwargs.get('dataset')
+            try:
+                abra_code_index = dataset.headers.index('abra_code')
+                if len(row) > abra_code_index:
+                    abra_code = row[abra_code_index]
+            except (ValueError, IndexError):
+                logger.warning("Could not find abra_code column in dataset")
+        
+        if abra_code:
+            image_path = self._get_image_path(abra_code)
+            
+            # Add a field to indicate if image exists (for dict-like rows)
+            if hasattr(row, '__setitem__'):
+                row['image_exists'] = os.path.exists(image_path)
+            
+            # Log missing images 
+            if not os.path.exists(image_path):
+                logger.warning(f"No image found for reward {abra_code} at {image_path}")
+    
+    def after_import_row(self, row, row_result, **kwargs):
+        """
+        Associate an image with the reward after it has been imported.
+        """
+        if row_result.import_type != 'skip' and row.get('image_exists'):
+            # Get the ABRA code directly from the row
+            abra_code = row.get('abra_code')
+            if not abra_code:
+                return
+                
+            # Find the reward instance by ABRA code
+            try:
+                instance = Reward.objects.get(abra_code=abra_code)
+                
+                # Set the image
+                image_path = self._get_image_path(abra_code)
+                self._set_reward_image(instance, image_path)
+            except Reward.DoesNotExist:
+                logger.error(f"Reward with ABRA code {abra_code} not found after import")
+            except Exception as e:
+                logger.error(f"Error setting image for {abra_code}: {str(e)}")
+    
+    def dehydrate_image_exists(self, reward):
+        """
+        Prepare the image_exists field for export.
+        """
+        return bool(reward.image)
+    
+    def _get_image_path(self, abra_code):
+        """
+        Get the expected image path for a given ABRA code.
+        
+        Args:
+            abra_code: The ABRA code of the reward.
+            
+        Returns:
+            str: Path to the expected image file.
+        """
+        # Use a subdirectory 'reward_import_images' in MEDIA_ROOT
+        import_dir = os.path.join(settings.MEDIA_ROOT, 'reward_import_images')
+        
+        # Make sure the directory exists
+        if not os.path.exists(import_dir):
+            os.makedirs(import_dir)
+            
+        # Return the path to the image file
+        return os.path.join(import_dir, f"{abra_code}.png")
+    
+    def _set_reward_image(self, reward, image_path):
+        """
+        Set the image for a reward based on the image_path.
+        
+        Args:
+            reward: The Reward instance.
+            image_path: Path to the image file.
+        """
+        if not os.path.exists(image_path):
+            return
+            
+        try:
+            with open(image_path, 'rb') as img_file:
+                # The target path in the media directory
+                target_filename = f"{reward.abra_code}.png"
+                
+                # Set the image field
+                reward.image.save(
+                    target_filename,
+                    File(img_file),
+                    save=True
+                )
+                
+            logger.info(f"Successfully associated image for reward {reward.abra_code}")
+        except Exception as e:
+            logger.error(f"Error setting image for reward {reward.abra_code}: {e}")

@@ -5,13 +5,14 @@ from django.contrib.admin.widgets import FilteredSelectMultiple, AdminDateWidget
 from import_export import resources, fields, widgets
 from import_export.widgets import DateWidget
 from import_export.admin import ExportMixin, ImportExportMixin
-from django.contrib.auth.hashers import make_password
 from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
-    User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, PointsBalance, 
+    User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, 
     FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
     Region, RegionRep,
 )
+from .resources import UserResource, UserContractResource, UserContractGoalResource, RewardResource
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,151 +26,6 @@ class UserContractGoalInlineForm(forms.ModelForm):
             'goal_period_to': AdminDateWidget(),
             'brands': FilteredSelectMultiple("Brands", is_stacked=False),
         }
-
-
-# IMPORT EXPORT RESOURCES
-class UserResource(resources.ModelResource):
-    """
-    Defines import/export settings for the User model.
-
-    - Can import from XLSX file
-    - Hashes passwords
-    - Uses email as the primary identifier
-    """
-
-    password = fields.Field(
-        column_name='password',
-        attribute='password',
-        widget=None  # We override save_instance to hash passwords
-    )
-    
-    region = fields.Field(
-        column_name='region',
-        attribute='region',
-        widget=widgets.ForeignKeyWidget(Region, field='code')
-    )
-
-    class Meta:
-        model = User
-        import_id_fields = ['email']  # Email is the unique identifier
-        fields = ('username', 'email', 'first_name', 'last_name', 'user_number', 'user_phone', 'password', 'is_active', 'region')
-
-    def before_import_row(self, row, **kwargs):
-        """
-        Automatically sets the default password to user_number and hashes it.
-        """
-        row['password'] = make_password(str(row['user_number']))
-        
-        # Handle empty region values
-        if 'region' in row and not row['region']:
-            row['region'] = None
-            
-        super().before_import_row(row, **kwargs)
-
-
-class UserContractResource(resources.ModelResource):
-    """
-    Defines import/export settings for UserContract.
-
-    - Uses email instead of user_id for better readability in import/export.
-    - Automatically fetches the user ID during import.
-    """
-
-    user_email = fields.Field(
-        column_name='user_email',
-        attribute='user_id',
-        widget=widgets.ForeignKeyWidget(User, field='email')
-    )
-
-    brand_bonuses = fields.Field(
-        column_name='brand_bonuses',
-        attribute='brandbonuses',
-        widget=widgets.ManyToManyWidget(BrandBonus, field='name', separator=', ')
-    )
-
-    class Meta:
-        model = UserContract
-        import_id_fields = ['user_email']  # Use email instead of ID
-        fields = ('user_email', 'contract_date_from', 'contract_date_to', 'is_active', 'brand_bonuses')
-
-    def before_import_row(self, row, **kwargs):
-        """
-        Ensures that the user exists before importing.
-        Automatically assigns the correct user_id based on the email.
-        Calls the parent method to retain default behavior.
-        """
-        super().before_import_row(row, **kwargs)  # Call parent method
-
-        try:
-            user = User.objects.get(email=row['user_email'])
-            row['user_id'] = user.id  # Assign correct user_id
-        except User.DoesNotExist:
-            raise ValueError(f"User with email {row['user_email']} does not exist.")
-
-    def after_save_instance(self, instance, new, **kwargs):
-        """
-        Handles the ManyToMany relationship for BrandBonus after instance creation.
-
-        - Parses the `brand_bonuses` column from the import file.
-        - Assigns the corresponding BrandBonus objects to the instance.
-        """
-        logger.info(f"after_save_instance called with: instance={instance}, new={new}, kwargs={kwargs}")
-
-        if hasattr(instance, 'brandbonuses') and instance.brandbonuses is not None:
-            logger.info(f"Processing Brand Bonuses for {instance}")
-
-            # Get the original brand bonuses from the imported row
-            row_data = kwargs.get('row', {})
-            brand_bonus_names = row_data.get('brand_bonuses', '')
-
-            if brand_bonus_names:
-                # Convert the comma-separated string into a list
-                bonus_names_list = [name.strip() for name in brand_bonus_names.split(',')]
-                logger.info(f"Parsed brand bonuses: {bonus_names_list}")
-
-                # Find matching BrandBonus objects
-                bonuses = BrandBonus.objects.filter(name__in=bonus_names_list)
-                instance.brandbonuses.set(bonuses)  # Assign ManyToMany relation
-
-class UserContractGoalResource(resources.ModelResource):
-    user_email = fields.Field(
-        column_name='user_email',
-        attribute='user_contract',
-        widget=widgets.ForeignKeyWidget(UserContract, field='user_id__email')
-    )
-    contract_start = fields.Field(
-        column_name='contract_date_from',
-        attribute='user_contract',
-        widget=widgets.ForeignKeyWidget(UserContract, field='contract_date_from')
-    )
-    brands = fields.Field(
-        column_name='brands',
-        attribute='brands',
-        widget=widgets.ManyToManyWidget(Brand, field='name', separator=',')
-    )
-
-    class Meta:
-        model = UserContractGoal
-        import_id_fields = []  # We're not using a unique ID for import
-        fields = (
-            'user_email',
-            'contract_start',
-            'goal_period_from',
-            'goal_period_to',
-            'goal_value',
-            'goal_base',
-            'brands',
-        )
-
-    def before_import_row(self, row, **kwargs):
-        # We combine email and contract date to locate the UserContract
-        email = row['user_email']
-        contract_start = row['contract_date_from']
-        try:
-            contract = UserContract.objects.get(user_id__email=email, contract_date_from=contract_start)
-            row['user_contract'] = contract.pk
-        except UserContract.DoesNotExist:
-            raise ValueError(f"Contract not found for user {email} starting {contract_start}")
 
 # INLINES
 class RewardRequestItemInline(admin.TabularInline):
@@ -298,10 +154,12 @@ class FileUploadAdmin(admin.ModelAdmin):
     readonly_fields = ('uploaded_at', 'processed_at', 'status', 'error_message')
 
 @admin.register(Reward)
-class RewardAdmin(admin.ModelAdmin):
+class RewardAdmin(ImportExportMixin, admin.ModelAdmin):
+    resource_class = RewardResource
     list_display = ('abra_code', 'name', 'point_cost', 'brand', 'is_active')
     list_filter = ('brand', 'is_active')
     search_fields = ('abra_code', 'name')
+    readonly_fields = ('created_at',)
 
 @admin.register(RewardRequest)
 class RewardRequestAdmin(admin.ModelAdmin):
