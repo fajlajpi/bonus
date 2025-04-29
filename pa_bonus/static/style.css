@@ -829,3 +829,92 @@ small {
     font-size: 1.1rem;
   }
 }
+
+/* Contact Page Styles - Add to your existing style.css */
+
+.contact-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.contact-container h1 {
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: var(--spacing-sm);
+}
+
+.contact-intro {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.6;
+}
+
+.contact-table-container {
+  margin: var(--spacing-lg) 0;
+}
+
+.contact-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--container-bg);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.contact-table th,
+.contact-table td {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.contact-table th {
+  width: 30%;
+  background-color: var(--neutral-bg);
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.contact-table tr:last-child th,
+.contact-table tr:last-child td {
+  border-bottom: none;
+}
+
+.contact-table a {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.contact-table a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.contact-additional-info {
+  background-color: var(--neutral-bg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-top: var(--spacing-lg);
+}
+
+.contact-additional-info h2 {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+  margin-top: 0;
+  margin-bottom: var(--spacing-sm);
+}
+
+.contact-additional-info p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .contact-table th {
+    width: 40%;
+  }
+}

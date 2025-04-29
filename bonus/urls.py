@@ -33,6 +33,8 @@ urlpatterns.extend([
     path('', home_redirect, name='home_redirect'),
     path('login/', LoginView.as_view(template_name='login.html', authentication_form=EmailAuthenticationForm), name='login'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('contact/', TemplateView.as_view(template_name='contact.html'), name='contact'),
+    path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
 ])
 
 # CLIENT FACING URLS
@@ -44,7 +46,7 @@ urlpatterns.extend([
     path('rewards/requests/', vu.RewardsRequestsView.as_view(), name='reward_requests'),
     path('rewards/requests/detail/<int:pk>', vu.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'), 
     path('extra-goals/', vu.ExtraGoalsView.as_view(), name='extra_goals'),
-    path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
+    
 ])
 
 # MANAGER FACING URLS
