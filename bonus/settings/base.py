@@ -12,10 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-<<<<<<< HEAD:bonus/settings.py
-=======
-
->>>>>>> main:bonus/settings/base.py
 
 # MY SETTINGS
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -23,24 +19,7 @@ LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-<<<<<<< HEAD:bonus/settings.py
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
-ALLOWED_HOSTS = ['iepgvjxg.a2hosted.com', 'www.iepgvjxg.a2hosted.com', 'bonus.ffhh.cz', 'www.bonus.ffhh.cz', 'bonus.iepgvjxg.a2hosted.com']
-
-=======
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
->>>>>>> main:bonus/settings/base.py
 
 # Application definition
 
@@ -86,24 +65,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bonus.wsgi.application'
 
-<<<<<<< HEAD:bonus/settings.py
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USERNAME'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-    }
-}
-
-=======
->>>>>>> main:bonus/settings/base.py
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
