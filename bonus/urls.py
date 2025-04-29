@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
+from django.views.generic import TemplateView
 from pa_bonus.views import views_managers as vm, views_users as vu
 from pa_bonus.forms import EmailAuthenticationForm
 
@@ -43,6 +44,7 @@ urlpatterns.extend([
     path('rewards/requests/', vu.RewardsRequestsView.as_view(), name='reward_requests'),
     path('rewards/requests/detail/<int:pk>', vu.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'), 
     path('extra-goals/', vu.ExtraGoalsView.as_view(), name='extra_goals'),
+    path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
 ])
 
 # MANAGER FACING URLS
