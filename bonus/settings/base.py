@@ -12,30 +12,15 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
-import bonus.private as private
+
 
 # MY SETTINGS
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-()h3p3y3z(&$8p5c7qym4b04oga7)&mu3160-qe^9f@qsa48h='
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.190.42']
-
 
 # Application definition
 
@@ -80,35 +65,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'bonus.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'pa_bonus_db',
-        'USER': 'postgres',
-        'PASSWORD': private.db_pass,
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
-
-# Email settings
-# if DEBUG:
-#     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-# else:
-#     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = private.email_host
-EMAIL_PORT = private.smtp_port
-EMAIL_USE_SSL = True
-EMAIL_HOST_USER = private.smtp_login
-EMAIL_HOST_PASSWORD = private.smtp_pass
-DEFAULT_FROM_EMAIL = f'Bonusový Program <{private.smtp_login}>'
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -158,24 +114,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# DJANGO Q FOR ASYNC TASKS
-Q_CLUSTER = {
-    'name': 'bonus',
-    'workers': 4,
-    'recycle': 500,
-    'timeout': 60,
-    'compress': True,
-    'save_limit': 250,
-    'queue_limit': 500,
-    'cpu_affinity': 1,
-    'label': 'Django Q2',
-    'redis': {
-        'host': 'localhost',
-        'port': 6379,
-        'db': 0,
-    }
-}
 
 LOGGING = {
     'version': 1,
