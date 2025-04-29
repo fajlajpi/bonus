@@ -2,10 +2,17 @@ import pandas as pd
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Q
+from django.core.mail import send_mail
 import logging
 from datetime import datetime
+from decimal import Decimal
 
-from .models import FileUpload, PointsTransaction, User, Brand, UserContract, BrandBonus
+
+from .models import (
+    FileUpload, PointsTransaction, User, Brand, 
+    UserContract, BrandBonus, Invoice, InvoiceBrandTurnover,
+    EmailNotification,
+)
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -14,8 +21,8 @@ logger = logging.getLogger(__name__)
 FT_INVOICE = 'INVOICE'
 FT_CREDIT_NOTE = 'CREDIT_NOTE'
 
-def process_uploaded_file(upload_id: FileUpload):
-    """Main function to process an uploaded file and create points transactions."""
+def process_uploaded_file(upload_id):
+    """Main function to process an uploaded file and create invoice records."""
     upload = FileUpload.objects.get(id=upload_id)
     logger.info(f"Starting to process upload {upload_id}")
     
@@ -27,23 +34,27 @@ def process_uploaded_file(upload_id: FileUpload):
         # Convert and validate dates
         df = process_dates(df)
         
-        successful_rows = process_data(df, upload, filetype)
+        # First pass: create Invoice and InvoiceBrandTurnover records
+        successful_rows = process_invoice_data(df, upload, filetype)
+        
+        # Second pass: calculate and create points transactions
+        points_created = process_points_from_invoices(upload, filetype)
         
         complete_upload(upload, successful_rows)
-        logger.info(f"Processing completed. Successful rows: {successful_rows}")
+        logger.info(f"Processing completed. Successful rows: {successful_rows}, Points transactions: {points_created}")
         
     except Exception as e:
         handle_processing_error(upload, e)
         raise
 
 
-def mark_upload_as_processing(upload: FileUpload):
+def mark_upload_as_processing(upload):
     """Mark the upload as being processed."""
     upload.status = 'PROCESSING'
     upload.save()
 
 
-def read_file(file_path: str) -> pd.DataFrame:
+def read_file(file_path):
     """Read the uploaded file and return a dataframe."""
     if file_path.endswith('.csv'):
         df = pd.read_csv(file_path)
@@ -54,7 +65,7 @@ def read_file(file_path: str) -> pd.DataFrame:
     return df
 
 
-def validate_columns(df: pd.DataFrame):
+def validate_columns(df):
     """Validate that the dataframe contains all required columns."""
     required_columns = ['ZČ', 'Cena', 'Kód', 'Datum']
     missing_columns = [col for col in required_columns if col not in df.columns]
@@ -75,7 +86,8 @@ def validate_columns(df: pd.DataFrame):
     else:
         raise ValueError(f"Unknown type of document, neither invoice or credit note.")
 
-def process_dates(df: pd.DataFrame):
+
+def process_dates(df):
     """Convert date strings in DD.MM.YYYY format to datetime objects."""
     try:
         # Convert 'Datum' from string to datetime
@@ -97,84 +109,164 @@ def process_dates(df: pd.DataFrame):
         raise ValueError(f"Failed to process dates: {str(e)}")
 
 
-def process_data(df, upload, filetype):
-    """Process the data in the dataframe and create transactions."""
+@transaction.atomic
+def process_invoice_data(df, upload, filetype):
+    """
+    First pass processing: Create Invoice and InvoiceBrandTurnover records.
+    
+    This function processes the raw data and creates Invoice records along with 
+    their associated InvoiceBrandTurnover records, irrespective of whether the client
+    is registered in the bonus program.
+    """
     successful_rows = 0
     errors = []
     
-    # Get unique user numbers from the file
-    unique_users = df['ZČ'].unique()
-    logger.info(f"Found {len(unique_users)} unique users in file")
+    # Identify the invoice column based on filetype
+    invoice_col = 'Faktura' if filetype == FT_INVOICE else 'Dobropis'
     
-    # Process each unique user
-    for user_number in unique_users:
+    # Determine the invoice type
+    invoice_type = FT_INVOICE if filetype == FT_INVOICE else FT_CREDIT_NOTE
+    
+    # Get unique invoices from the file
+    unique_invoices = df[invoice_col].unique()
+    logger.info(f"Found {len(unique_invoices)} unique invoices in file")
+    
+    # Create a lookup for all brands in the system to use during processing
+    brand_prefixes = {brand.prefix: brand for brand in Brand.objects.all()}
+    
+    # Process each unique invoice
+    for invoice_number in unique_invoices:
         try:
-            user_successful_rows = process_user(user_number, df, upload, filetype)
-            successful_rows += user_successful_rows
+            # Get all rows for this invoice
+            invoice_data = df[df[invoice_col] == invoice_number]
+            
+            if invoice_data.empty:
+                continue
+                
+            # Get the client number and date from the first row
+            # (should be the same for all rows in this invoice)
+            client_number = invoice_data['ZČ'].iloc[0]
+            invoice_date = invoice_data['Datum'].iloc[0]
+            if hasattr(invoice_date, 'date'):
+                invoice_date = invoice_date.date()
+            
+            # Calculate total amount for the invoice
+            total_amount = Decimal(str(invoice_data['Cena'].sum()))
+            
+            # Create or update the Invoice record
+            invoice, created = Invoice.objects.update_or_create(
+                invoice_number=str(invoice_number),
+                defaults={
+                    'client_number': str(client_number),
+                    'invoice_date': invoice_date,
+                    'total_amount': total_amount,
+                    'invoice_type': invoice_type,
+                    'file_upload': upload,
+                }
+            )
+            
+            # Process brand turnovers for this invoice
+            turnover_created = process_brand_turnovers(invoice, invoice_data, brand_prefixes)
+            
+            successful_rows += 1
+            logger.info(f"Successfully processed invoice {invoice_number}")
+            
         except Exception as e:
-            error_msg = f"Error processing user {user_number}: {str(e)}"
+            error_msg = f"Error processing invoice {invoice_number}: {str(e)}"
             logger.error(error_msg, exc_info=True)
             errors.append(error_msg)
     
     if errors:
         upload.error_message = "\n".join(errors)
     
-    return successful_rows
-
-
-@transaction.atomic
-def process_user(user_number, df, upload, filetype):
-    """Process data for a single user within a transaction."""
-    user = User.objects.get(user_number=user_number)
-    user_data = df[df['ZČ'] == user_number]
-    
-    successful_rows = process_user_invoices(user, user_data, upload, filetype)
-    
-    # Update progress
-    upload.processed_rows += successful_rows
+    upload.processed_rows = successful_rows
     upload.save()
     
     return successful_rows
 
 
-def process_user_invoices(user, user_data, upload, filetype):
-    """Process all invoices / credit notes for a user."""
-    successful_rows = 0
+def process_brand_turnovers(invoice, invoice_data, brand_prefixes):
+    """
+    Process and create InvoiceBrandTurnover records for a specific invoice.
     
-    # Group by invoice or credit note
-    if filetype == FT_INVOICE:
-        invoices = user_data.groupby('Faktura')
-    elif filetype == FT_CREDIT_NOTE:
-        invoices = user_data.groupby('Dobropis')
-    else:
-        raise Exception(f"Unknown filetype: {filetype}")
+    This function analyzes the invoice data, identifies brands based on their
+    prefix codes, and creates corresponding InvoiceBrandTurnover records.
+    """
+    turnovers_created = 0
     
-    # Process each invoice / credit note
-    for invoice_id, invoice_data in invoices:
-        # Get the invoice date (should be the same for all rows in this invoice)
-        invoice_date = invoice_data['Datum'].iloc[0]
-        logger.debug(f"Processing invoice {invoice_id} with date {invoice_date}")
+    for prefix, brand in brand_prefixes.items():
+        # Filter rows for this brand
+        brand_rows = invoice_data[invoice_data['Kód'].str.startswith(prefix)]
         
-        # Check if user had an active contract on the invoice date
-        contract = get_active_contract(user, invoice_date)
-        if not contract:
-            logger.info(f"No active contract found for user {user.user_number} on date {invoice_date} - skipping invoice")
+        if brand_rows.empty:
             continue
         
-        # Get user's brand bonuses for this contract
-        brand_bonuses = contract.brandbonuses.all()
-        logger.debug(f"Found {brand_bonuses.count()} brand bonuses for user contract")
+        # Sum up all values for this brand in this invoice
+        brand_amount = Decimal(str(brand_rows['Cena'].sum()))
         
-        if not brand_bonuses:
-            logger.info(f"No brand bonuses found for user {user.user_number} - skipping invoice")
+        if brand_amount == 0:
             continue
         
-        # Process each brand bonus for this invoice
-        for bonus in brand_bonuses:
-            transactions_created = process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype, upload)
-            successful_rows += transactions_created
+        # Create or update the InvoiceBrandTurnover record
+        turnover, created = InvoiceBrandTurnover.objects.update_or_create(
+            invoice=invoice,
+            brand=brand,
+            defaults={'amount': brand_amount}
+        )
+        
+        turnovers_created += 1
     
-    return successful_rows
+    logger.debug(f"Created {turnovers_created} brand turnover records for invoice {invoice.invoice_number}")
+    return turnovers_created
+
+
+@transaction.atomic
+def process_points_from_invoices(upload, filetype):
+    """
+    Second pass processing: Create points transactions from invoice data.
+    
+    This function iterates through the Invoice records created in the first pass,
+    determines if the client is eligible for points, and creates the appropriate
+    PointsTransaction records.
+    """
+    points_created = 0
+    
+    # Process only invoices from the current upload
+    invoices = Invoice.objects.filter(file_upload=upload)
+    logger.info(f"Processing points for {invoices.count()} invoices")
+    
+    for invoice in invoices:
+        try:
+            # Check if client exists in our system
+            try:
+                user = User.objects.get(user_number=invoice.client_number)
+            except User.DoesNotExist:
+                logger.debug(f"No user found for client number {invoice.client_number} - skipping points")
+                continue
+            
+            # Check if user had an active contract on the invoice date
+            contract = get_active_contract(user, invoice.invoice_date)
+            if not contract:
+                logger.debug(f"No active contract for user {user.user_number} on date {invoice.invoice_date}")
+                continue
+            
+            # Get user's brand bonuses for this contract
+            brand_bonuses = contract.brandbonuses.all()
+            if not brand_bonuses:
+                logger.debug(f"No brand bonuses for user {user.user_number} - skipping")
+                continue
+            
+            # Process each brand turnover for this invoice
+            for turnover in invoice.brand_turnovers.all():
+                transactions_created = process_brand_points(
+                    user, invoice, turnover, brand_bonuses, filetype
+                )
+                points_created += transactions_created
+                
+        except Exception as e:
+            logger.error(f"Error processing points for invoice {invoice.invoice_number}: {str(e)}", exc_info=True)
+    
+    return points_created
 
 
 def get_active_contract(user, date):
@@ -193,72 +285,82 @@ def get_active_contract(user, date):
         return None
 
 
-def process_brand_bonus(user, invoice_id, invoice_data, bonus, invoice_date, filetype, upload):
-    """Process a single brand bonus for an invoice / credit note."""
-    brand = bonus.brand_id
-    logger.debug(f"Processing brand {brand.name} with prefix {brand.prefix}")
+def process_brand_points(user, invoice, turnover, brand_bonuses, filetype):
+    """
+    Process points for a specific brand turnover on an invoice.
     
-    # Filter rows for this brand
-    brand_rows = invoice_data[
-        invoice_data['Kód'].str.startswith(brand.prefix)
-    ]
+    This function calculates the points based on the brand bonus rules and
+    creates the appropriate PointsTransaction record.
+    """
+    brand = turnover.brand
+    amount = turnover.amount
     
-    if brand_rows.empty:
+    # Find the matching brand bonus
+    bonus = None
+    for bb in brand_bonuses:
+        if bb.brand_id == brand:
+            bonus = bb
+            break
+    
+    if not bonus:
         return 0
     
-    # Sum up all values for this brand in this invoice
-    total_amount = brand_rows['Cena'].sum()
-    points = int(total_amount * bonus.points_ratio)
+    # Calculate points based on the bonus ratio
+    points = int(float(amount) * bonus.points_ratio)
     
-    logger.debug(f"Calculated {points} points for amount {total_amount}")
+    if points == 0:
+        return 0
     
-    # Create transaction if points exist
-    if points > 0:
-        create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype, upload)
-        return 1
+    # Determine points sign based on invoice type
+    if filetype == FT_CREDIT_NOTE:
+        points = -points
+        transaction_type = 'CREDIT_NOTE_ADJUST'
+        status = 'CONFIRMED'
+    else:
+        transaction_type = 'STANDARD_POINTS'
+        status = 'PENDING'
     
-    return 0
-
-
-def create_points_transaction(user, points, invoice_date, invoice_id, brand, filetype, upload):
-    """Create a transaction with robust idempotency check."""
-    # Convert invoice_id to string to ensure consistent comparison
-    invoice_id_str = str(invoice_id)
-    
-    # Ensure invoice_date is a date object
-    if hasattr(invoice_date, 'date'):
-        invoice_date = invoice_date.date()
-    
-    # More comprehensive query to catch potential duplicates
-    existing = PointsTransaction.objects.filter(
-        user=user,
-        date=invoice_date,
-        brand=brand,
-        type='STANDARD_POINTS' if filetype == FT_INVOICE else 'CREDIT_NOTE_ADJUST'
-    ).filter(
-        Q(description__contains=invoice_id_str) | 
-        Q(description__contains=f"Invoice {invoice_id_str}") | 
-        Q(description__contains=f"Dobropis {invoice_id_str}")
-    ).first()
+    # Create transaction with robust idempotency check
+    existing = check_existing_transaction(user, invoice, brand, transaction_type)
     
     if existing:
-        logger.info(f"Skipping duplicate: {invoice_id} for user {user.username}")
-        return existing
+        logger.info(f"Skipping duplicate transaction for invoice {invoice.invoice_number}, brand {brand.name}")
+        return 0
     
     # Create new transaction
     transaction = PointsTransaction.objects.create(
         user=user,
-        value=points if filetype == FT_INVOICE else -points,
-        date=invoice_date,
-        description=f'{"Invoice" if filetype == FT_INVOICE else "Dobropis"} {invoice_id_str}',
-        type='STANDARD_POINTS' if filetype == FT_INVOICE else 'CREDIT_NOTE_ADJUST',
-        status='PENDING' if filetype == FT_INVOICE else 'CONFIRMED',
+        value=points,
+        date=invoice.invoice_date,
+        description=f'{"Invoice" if invoice.invoice_type == FT_INVOICE else "Credit Note"} {invoice.invoice_number}',
+        invoice=invoice,
+        type=transaction_type,
+        status=status,
         brand=brand,
-        file_upload=upload  # Link to the upload
+        file_upload=invoice.file_upload
     )
     
     logger.debug(f"Created new transaction: {transaction}")
-    return transaction
+    return 1
+
+
+def check_existing_transaction(user, invoice, brand, transaction_type):
+    """
+    Check if a transaction already exists for this invoice and brand.
+    
+    This provides a robust idempotency check to prevent duplicate transactions.
+    """
+    
+    # Comprehensive query to catch potential duplicates
+    existing = PointsTransaction.objects.filter(
+        user=user,
+        date=invoice.invoice_date,
+        brand=brand,
+        type=transaction_type,
+        invoice=invoice,
+    ).first()
+    
+    return existing
 
 
 def complete_upload(upload, successful_rows):
@@ -277,3 +379,51 @@ def handle_processing_error(upload, exception):
     upload.error_message = error_msg
     upload.processed_at = timezone.now()
     upload.save()
+
+
+# EMAIL ASYNC TASKS
+def send_email_task(notification_id, recipient_email, subject, message):
+    """
+    Background task to send an email and update the notification record.
+    
+    This function will be called asynchronously by Django-Q2.
+    """
+    try:
+        # Get the notification object
+        notification = EmailNotification.objects.get(id=notification_id)
+        
+        logger.info(f"Attempting to asynchronously send an email to {recipient_email}")
+
+        # Send the email
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=None,  # Uses DEFAULT_FROM_EMAIL from settings
+            recipient_list=[recipient_email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Email sent to {recipient_email} successfully")
+        
+        # Update notification status to indicate success
+        notification.status = 'SENT'
+        notification.sent_at = timezone.now()
+        notification.save()
+        
+        return True
+    except EmailNotification.DoesNotExist:
+        # Handle the case where the notification doesn't exist
+        return False
+    except Exception as e:
+        # Update notification status to indicate failure
+        try:
+            notification = EmailNotification.objects.get(id=notification_id)
+            notification.status = 'FAILED'
+            notification.save()
+
+            logger.error(f"Error sending email: {str(e)}", exc_info=True)
+        except:
+            pass
+        
+        # Re-raise the exception so Django-Q2 can log it
+        raise 

@@ -9,7 +9,8 @@ from django.contrib.auth.hashers import make_password
 from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, PointsBalance, 
-    FileUpload, Reward, RewardRequest, RewardRequestItem,
+    FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
+    Region, RegionRep,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,28 +42,30 @@ class UserResource(resources.ModelResource):
         attribute='password',
         widget=None  # We override save_instance to hash passwords
     )
+    
+    region = fields.Field(
+        column_name='region',
+        attribute='region',
+        widget=widgets.ForeignKeyWidget(Region, field='code')
+    )
 
     class Meta:
         model = User
         import_id_fields = ['email']  # Email is the unique identifier
-        fields = ('username', 'email', 'first_name', 'last_name', 'user_number', 'user_phone', 'password', 'is_active')
+        fields = ('username', 'email', 'first_name', 'last_name', 'user_number', 'user_phone', 'password', 'is_active', 'region')
 
     def before_import_row(self, row, **kwargs):
         """
         Automatically sets the default password to user_number and hashes it.
         """
         row['password'] = make_password(str(row['user_number']))
+        
+        # Handle empty region values
+        if 'region' in row and not row['region']:
+            row['region'] = None
+            
         super().before_import_row(row, **kwargs)
 
-
-    def before_save_instance(self, instance, *args, **kwargs):
-        """
-        Ensures passwords are hashed before saving
-        """
-        logger.debug(f"before_save_instance called with: args={args}, kwargs={kwargs}")
-
-        instance.password = make_password(instance.password)
-        super().before_save_instance(instance, *args, **kwargs)
 
 class UserContractResource(resources.ModelResource):
     """
@@ -191,6 +194,11 @@ class UserContractGoalInline(admin.TabularInline):
     form = UserContractGoalInlineForm
     extra = 0
 
+class InvoiceBrandTurnoverInline(admin.TabularInline):
+    model = InvoiceBrandTurnover
+    extra = 0
+    
+
 # CUSTOM ACTIONS
 def approve_requests(modeladmin, request, queryset):
     queryset.update(status='ACCEPTED')
@@ -216,12 +224,38 @@ cancel_transactions.short_description = "Cancel selected transactions"
 
 
 # REGISTERING AND SETTING UP MODELS FOR DJANGO ADMIN
+
+@admin.register(Region)
+class RegionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'is_active')
+    search_fields = ('name', 'code')
+    list_filter = ('is_active',)
+
+@admin.register(RegionRep)
+class RegionRepAdmin(admin.ModelAdmin):
+    list_display = ('user', 'region', 'is_primary', 'date_from', 'date_to', 'is_active')
+    list_filter = ('is_active', 'is_primary', 'region')
+    search_fields = ('user__username', 'user__email', 'user__last_name', 'region__name')
+    date_hierarchy = 'date_from'
+    raw_id_fields = ('user',)
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Customize the form to only show users in the Sales Reps group.
+        """
+        form = super().get_form(request, obj, **kwargs)
+        if 'user' in form.base_fields:
+            form.base_fields['user'].queryset = User.objects.filter(
+                groups__name='Sales Reps'
+            )
+        return form
+
 @admin.register(User)
 class UserAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = UserResource
-    list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone')
+    list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone', 'region')
     search_fields = ('username', 'email', 'last_name', 'user_number')
-    list_filter = ('is_staff', 'is_active')
+    list_filter = ('is_staff', 'is_active', 'region')
     inlines = [UserContractInline]
 
 @admin.register(Brand)
@@ -280,3 +314,24 @@ class RewardRequestAdmin(admin.ModelAdmin):
 @admin.register(RewardRequestItem)
 class RewardRequestItemAdmin(admin.ModelAdmin):
     list_display = ('reward_request', 'reward', 'quantity', 'point_cost')
+
+@admin.register(EmailNotification)
+class EmailNotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'subject', 'status', 'created_at', 'sent_at')
+    list_filter = ('status', 'created_at', 'sent_at')
+    search_fields = ('user__username', 'user__email', 'subject')
+    readonly_fields = ('created_at', 'sent_at')
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('invoice_number', 'client_number', 'invoice_date', 'invoice_type', 'total_amount')
+    list_filter = ('invoice_type', 'invoice_date')
+    search_fields = ('invoice_number', 'client_number')
+    date_hierarchy = 'invoice_date'
+    inlines = [InvoiceBrandTurnoverInline]
+
+@admin.register(InvoiceBrandTurnover)
+class InvoiceBrandTurnoverAdmin(admin.ModelAdmin):
+    list_display = ('invoice', 'brand', 'amount')
+    list_filter = ('brand',)
+    search_fields = ('invoice__invoice_number', 'invoice__client_number', 'brand__name')

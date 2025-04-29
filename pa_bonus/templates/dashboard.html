@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load pa_bonus_extras %}
 
 {% block title %} Přehled {% endblock title %}
 
@@ -13,14 +14,10 @@
 
     {% if contract %}
     <div class="contract-details">
-        <h3>Aktuální členství v bonusovém programu</h3>
-        <p><strong>Členství od:</strong> {{ contract.contract_date_from }}</p>
-        <p><strong>Členství do:</strong> {{ contract.contract_date_to }}</p>
-        
-        <h4>Bonusy za značky</h4>
+        <h3>Bonusy za značky</h3>
         <ul>
         {% for bonus in brand_bonuses %}
-            <li><strong>{{ bonus.brand_id.name }}</strong>: {{ bonus.points_ratio }} bodů za 1 Kč</li>
+            <li><strong>{{ bonus.brand_id.name }}</strong>: {{ 1|divide:bonus.points_ratio }} Kč fakturace bez DPH na 1 bod</li>
         {% endfor %}
         </ul>
     </div>
@@ -34,6 +31,7 @@
             <li><a href="{% url 'history' %}">Historie bodových transakcí</a></li>
             <li><a href="{% url 'rewards' %}">Nabídka odměn</a></li>
             <li><a href="{% url 'reward_requests' %}">Žádosti o čerpání odměn</a></li>
+            <li><a href="{% url 'extra_goals' %}">Extra cíle</a></li>
         </ul>
     </div>
 </div>

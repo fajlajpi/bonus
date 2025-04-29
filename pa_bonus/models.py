@@ -23,6 +23,84 @@ def get_upload_path(instance, filename) -> str:
         filename
     )
 
+class Region(models.Model):
+    """
+    Represents a sales region or territory.
+    
+    Attributes:
+        name (str): The name of the region (max 50 characters)
+        code (str): A short code for the region (max 10 characters)
+        description (str): Optional description of the region
+        is_active (bool): Whether the region is currently active
+        created_at (DateTime): When this region was created
+    """
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=10, unique=True)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+class RegionRep(models.Model):
+    """
+    Join table linking Sales Representatives to Regions.
+    
+    This model allows tracking which Sales Reps are responsible for which regions,
+    including historical assignments.
+    
+    Attributes:
+        user (User): The Sales Rep (User must be in 'Sales Reps' group)
+        region (Region): The region this Sales Rep is assigned to
+        is_primary (bool): Whether this Rep is the primary representative for the region
+        date_from (Date): When this assignment began
+        date_to (Date): When this assignment ended (null for current assignments)
+        is_active (bool): Whether this assignment is currently active
+    """
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='region_assignments')
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='assigned_reps')
+    is_primary = models.BooleanField(default=True)
+    date_from = models.DateField()
+    date_to = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-date_from']
+        unique_together = [
+            # Ensure a user can't be assigned to the same region twice in active status
+            ('user', 'region', 'is_active'),
+            # Only one primary rep per region when active
+            ('region', 'is_primary', 'is_active'),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.region.name} ({self.date_from})"
+    
+    def clean(self):
+        """
+        Custom validation to ensure the User is in the 'Sales Reps' group.
+        """
+        from django.core.exceptions import ValidationError
+        if not self.user.groups.filter(name='Sales Reps').exists():
+            raise ValidationError({'user': 'User must be in the Sales Reps group'})
+        
+        # Ensure date_to is after date_from if provided
+        if self.date_to and self.date_to < self.date_from:
+            raise ValidationError({'date_to': 'End date must be after start date'})
+        
+        super().clean()
+    
+    def save(self, *args, **kwargs):
+        """
+        Override save to ensure validation is called.
+        """
+        self.clean()
+        super().save(*args, **kwargs)
+
 class User(AbstractUser):
     """
     Represents a user in the bonus system.
@@ -41,9 +119,12 @@ class User(AbstractUser):
         
         user_number (str): The Customer Number (Zákaznické číslo) from ERP. Can be alphanumeric.
         user_phone (str): The Customer phone number (max 10 characters)
+        region (Region): The sales region this client belongs to (for clients only)
     """
     user_number = models.CharField(max_length=20, unique=True)
-    user_phone = models.CharField(max_length=10, unique=True)
+    user_phone = models.CharField(max_length=10, unique=False)
+    region = models.ForeignKey(Region, null=True, blank=True, on_delete=models.SET_NULL, 
+                              related_name='clients')
 
     def __str__(self):
         return self.username + ' | ' + (self.first_name + ' ' + self.last_name if self.first_name or self.last_name else '')
@@ -62,6 +143,25 @@ class User(AbstractUser):
             total = Sum('value')
         )
         return total_points['total'] if total_points['total'] is not None else 0
+    
+    def get_sales_rep(self):
+        """
+        Returns the primary Sales Rep for this client's region.
+        
+        Returns:
+            User: The primary Sales Rep user, or None if no region or no rep assigned
+        """
+        if not self.region:
+            return None
+        
+        # Get the active primary rep for this region
+        rep_assignment = RegionRep.objects.filter(
+            region=self.region, 
+            is_active=True,
+            is_primary=True
+        ).first()
+        
+        return rep_assignment.user if rep_assignment else None
 
 
 class Brand(models.Model):
@@ -150,6 +250,7 @@ class PointsTransaction(models.Model):
         type (str): Type of the transaction.
         status (str): Current status of the transaction.
         brand (Brand): Brand the transaction relates to (optional).
+        invoice (Invoice): Invoice the transaction relates to (optional).
         reward_request (RewardRequest): The reward request the transaction relates to (optional).
         created_at (DateTime): The datetime the transaction was created.
 
@@ -173,7 +274,8 @@ class PointsTransaction(models.Model):
     description = models.CharField(max_length=100)
     type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     status = models.CharField(max_length=20, choices=TRANSACTION_STATUS)
-    brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.CASCADE)
+    brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.SET_NULL)
+    invoice = models.ForeignKey('Invoice', null=True, blank=True, on_delete=models.SET_NULL)
     reward_request = models.ForeignKey('RewardRequest', null=True, blank=True, on_delete=models.CASCADE)
     file_upload = models.ForeignKey('FileUpload', null=True, blank=True, on_delete=models.CASCADE, related_name='Transactions')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -304,6 +406,7 @@ class RewardRequest(models.Model):
     status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='DRAFT')
     description = models.TextField()
     total_points = models.IntegerField(default=0)
+    note = models.TextField(blank=True, null=True, verbose_name="Customer Note")
 
     def __str__(self):
         return f"Request {self.id} | by {self.user} | on {self.requested_at.strftime('%Y-%m-%d')} | TOTAL: {self.total_points} pts"
@@ -344,6 +447,26 @@ class RewardRequestItem(models.Model):
         #Set point cost from Reward before saving.
         self.point_cost = self.reward.point_cost
         super().save(*args, **kwargs)
+
+class EmailNotification(models.Model):
+    NOTIFICATION_STATUS = (
+        ('PENDING', 'Pending'),
+        ('SENT', 'Sent'),
+        ('FAILED', 'Failed'),
+    )
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    status = models.CharField(max_length=10, choices=NOTIFICATION_STATUS, default='PENDING')
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.subject} to {self.user.email} ({self.status})"
     
 # Utility function to create group and permissions
 def create_manager_group_and_permissions(*args, **options):
@@ -372,3 +495,67 @@ def create_manager_group_and_permissions(*args, **options):
     except Exception as e:
         logger.error(f"Error creating Manager group and permissions: {e}", exc_info=True)
         print(f"Error creating Manager group and permissions: {e}")
+
+class Invoice(models.Model):
+    """
+    Represents an invoice from the accounting system.
+    
+    This model stores the base information about invoices imported from the 
+    accounting system, regardless of whether the client is registered in the
+    bonus program.
+    
+    Attributes:
+        invoice_number (str): The unique invoice number.
+        client_number (str): The client's number in the accounting system.
+        invoice_date (Date): The date of the invoice.
+        total_amount (Decimal): The total amount of the invoice.
+        invoice_type (str): Type of invoice (standard invoice or credit note).
+        file_upload (FileUpload): The file upload that created this invoice.
+        created_at (DateTime): When this record was created.
+    """
+    INVOICE_TYPES = (
+        ('INVOICE', 'Standard Invoice'),
+        ('CREDIT_NOTE', 'Credit Note'),
+    )
+    
+    invoice_number = models.CharField(max_length=50, unique=True)
+    client_number = models.CharField(max_length=20, db_index=True)
+    invoice_date = models.DateField()
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    invoice_type = models.CharField(max_length=15, choices=INVOICE_TYPES)
+    file_upload = models.ForeignKey('FileUpload', on_delete=models.CASCADE, 
+                                   related_name='invoices')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-invoice_date', 'invoice_number']
+        indexes = [
+            models.Index(fields=['client_number', 'invoice_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.invoice_number} | {self.client_number} | {self.invoice_date}"
+
+
+class InvoiceBrandTurnover(models.Model):
+    """
+    Represents the turnover for a specific brand within an invoice.
+    
+    Attributes:
+        invoice (Invoice): The invoice this turnover belongs to.
+        brand (Brand): The brand this turnover is for.
+        amount (Decimal): The total amount for this brand in the invoice.
+    """
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, 
+                               related_name='brand_turnovers')
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE,
+                             related_name='invoice_turnovers')
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    class Meta:
+        unique_together = ['invoice', 'brand']
+        ordering = ['-invoice__invoice_date', 'brand__name']
+    
+    def __str__(self):
+        return f"{self.invoice.invoice_number} | {self.brand.name} | {self.amount}"
+

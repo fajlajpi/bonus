@@ -12,15 +12,18 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+<<<<<<< HEAD:bonus/settings.py
+=======
+
+>>>>>>> main:bonus/settings/base.py
 
 # MY SETTINGS
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGIN_URL = 'login'
 LOGOUT_URL = 'logout'
 
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+<<<<<<< HEAD:bonus/settings.py
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -35,6 +38,9 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['iepgvjxg.a2hosted.com', 'www.iepgvjxg.a2hosted.com', 'bonus.ffhh.cz', 'www.bonus.ffhh.cz', 'bonus.iepgvjxg.a2hosted.com']
 
+=======
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+>>>>>>> main:bonus/settings/base.py
 
 # Application definition
 
@@ -47,7 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pa_bonus',
-
+    'django_q',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +86,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bonus.wsgi.application'
 
+<<<<<<< HEAD:bonus/settings.py
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -95,6 +102,8 @@ DATABASES = {
     }
 }
 
+=======
+>>>>>>> main:bonus/settings/base.py
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -108,9 +117,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+]
+
+# Custom Authentication backend for using emails or usernames interchangeably
+AUTHENTICATION_BACKENDS = [
+    'pa_bonus.auth.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep the default for admin
 ]
 
 AUTH_USER_MODEL = 'pa_bonus.User'
