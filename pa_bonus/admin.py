@@ -11,7 +11,7 @@ from pa_bonus.models import (
     FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
     Region, RegionRep,
 )
-from .resources import UserResource, UserContractResource, UserContractGoalResource, RewardResource
+from .resources import UserResource, UserContractResource, UserContractGoalResource, RewardResource, OptimizedUserResource
 
 
 logger = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ class RegionRepAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class UserAdmin(ImportExportMixin, admin.ModelAdmin):
-    resource_class = UserResource
+    resource_class = OptimizedUserResource
     list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone', 'region')
     search_fields = ('username', 'email', 'last_name', 'user_number')
     list_filter = ('is_staff', 'is_active', 'region')

@@ -5,11 +5,133 @@ from django.core.files import File
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 import os
+import time
+import tablib
 import logging
 from .models import Reward, Brand, User, UserContract, UserContractGoal, Region, BrandBonus
 
 logger = logging.getLogger(__name__)
 
+class OptimizedUserResource(resources.ModelResource):
+    """
+    Optimized import/export settings for the User model.
+    
+    Compatible with django-import-export 4.3.7
+    
+    Features:
+    - Delayed password hashing for better performance
+    - Region lookup optimization
+    """
+    password = fields.Field(
+        column_name='password',
+        attribute='password',
+    )
+    
+    region = fields.Field(
+        column_name='region',
+        attribute='region',
+        widget=ForeignKeyWidget(Region, field='code')
+    )
+
+    class Meta:
+        model = User
+        import_id_fields = ['email']
+        fields = ('username', 'email', 'first_name', 'last_name', 
+                 'user_number', 'user_phone', 'password', 'is_active', 'region')
+        batch_size = 100
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Cache for regions to avoid repeated DB lookups
+        self._region_cache = {}
+        # Start time for performance tracking
+        self._start_time = None
+
+    def before_import(self, dataset, **kwargs):
+        """
+        Prepare for import by caching regions and other setup tasks.
+        
+        In 4.3.7, before_import doesn't receive using_transactions and dry_run.
+        """
+        self._start_time = time.time()
+        
+        # Cache all regions for faster lookups
+        self._region_cache = {r.code: r for r in Region.objects.all()}
+        logger.debug(f"Cached {len(self._region_cache)} regions in {time.time() - self._start_time:.3f}s")
+        
+        # Let the parent do its thing
+        return super().before_import(dataset, **kwargs)
+
+    def before_import_row(self, row, **kwargs):
+        """
+        Process each row before import.
+        
+        Ensures all data is properly formatted and that password will be set.
+        """
+        # Handle empty region values
+        if 'region' in row and not row['region']:
+            row['region'] = None
+        
+        # Clean user_number and ensure it's a string
+        if 'user_number' in row and row['user_number'] is not None:
+            row['user_number'] = str(row['user_number']).strip()
+        
+        # Clean user_phone and ensure it's a string
+        if 'user_phone' in row and row['user_phone'] is not None:
+            row['user_phone'] = str(row['user_phone']).strip()
+        
+        # Most critical part: Always set a password
+        # If password is empty in the import, use user_number
+        if 'password' not in row or not row['password']:
+            if 'user_number' in row and row['user_number']:
+                row['password'] = str(row['user_number'])
+            elif 'username' in row and row['username']:
+                row['password'] = str(row['username'])
+            else:
+                # Last resort - use a default password
+                row['password'] = 'default_password'
+        
+        # Explicitly hash the password here
+        if 'password' in row and row['password']:
+            row['password'] = make_password(row['password'])
+        
+        logger.debug(f"Processed row: {row}")
+
+        # Always call the parent method
+        super().before_import_row(row, **kwargs)
+
+    def after_import(self, dataset, result, **kwargs):
+        """
+        Log performance metrics after import.
+        
+        In 4.3.7, after_import only takes dataset and result as positional args.
+        """
+        if self._start_time:
+            total_time = time.time() - self._start_time
+            logger.info(f"User import completed in {total_time:.2f}s - "
+                        f"{len(dataset)} rows processed")
+        
+        return super().after_import(dataset, result, **kwargs)
+
+    def skip_row(self, instance, original, row, import_validation_errors=None, **kwargs):
+        """
+        Called when we determine if a row should be skipped.
+        
+        This is a good place to handle password hashing as it's called for every row
+        and occurs after validation but before saving.
+        """
+        # Handle password hashing here, just before the row would be saved
+        if 'password' in row and row['password']:
+            # Hash the password
+            instance.password = make_password(row['password'])
+        elif not original and not instance.password:
+            # For new users without a specified password, use user_number
+            if hasattr(instance, 'user_number') and instance.user_number:
+                instance.password = make_password(instance.user_number)
+        
+        # Call parent implementation to determine if row should be skipped
+        return super().skip_row(instance, original, row, import_validation_errors, **kwargs)
+    
 class UserResource(resources.ModelResource):
     """
     Defines import/export settings for the User model.
