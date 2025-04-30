@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load pa_bonus_extras %}
 
 {% block title %} Historie transakcí {% endblock title %}
 
@@ -21,14 +22,36 @@
         <tbody>
             {% for transaction in transactions %}
             <tr>
-                <td>{{ transaction.date }}</td>
+                <td>{{ transaction.date|czech_date }}</td>
                 <td>{{ transaction.brand.name }}</td>
                 <td class="value {% if transaction.value < 0 %}negative{% else %}positive{% endif %}">
                     {{ transaction.value }} bodů
                 </td>
-                <td>{{ transaction.get_type_display }}</td>
                 <td>
-                    <span class="status-badge {{ transaction.status|lower }}">{{ transaction.get_status_display }}</span>
+                    {% if transaction.type == 'STANDARD_POINTS' %}
+                        Standardní připsání bodů
+                    {% elif transaction.type == 'REWARD_CLAIM' %}
+                        Žádost o odměnu
+                    {% elif transaction.type == 'CREDIT_NOTE_ADJUST' %}
+                        Korekce dobropisu
+                    {% elif transaction.type == 'EXTRA_POINTS' %}
+                        Extra body
+                    {% elif transaction.type == 'ADJUSTMENT' %}
+                        Manuální korekce
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-badge {{ transaction.status|lower }}">
+                        {% if transaction.status == 'PENDING' %}
+                            Čeká na potvrzení
+                        {% elif transaction.status == 'CONFIRMED' %}
+                            Potvrzeno
+                        {% elif transaction.status == 'CANCELLED' %}
+                            Zrušeno
+                        {% elif transaction.status == 'NO-CONTRACT' %}
+                            Transakce bez smlouvy
+                        {% endif %}
+                    </span>
                 </td>
                 <td>
                     <a href="{% url 'history_detail' transaction.id %}" class="details-link">Detail</a>
