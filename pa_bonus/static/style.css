@@ -1105,3 +1105,121 @@ small {
     flex-wrap: wrap;
   }
 }
+/* Add to your style.css file */
+
+/* Catalogue Container */
+.catalogue-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.catalogue-intro {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.6;
+}
+
+/* Rewards Grid */
+.rewards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.reward-card {
+  background-color: var(--container-bg);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.reward-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.reward-image-container {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--neutral-bg);
+  overflow: hidden;
+}
+
+.reward-image {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+}
+
+.reward-info {
+  padding: var(--spacing-md);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.reward-name {
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: var(--spacing-xs);
+  font-size: 1.2rem;
+}
+
+.reward-description {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  margin-bottom: var(--spacing-sm);
+  flex-grow: 1;
+}
+
+.reward-brand {
+  display: inline-block;
+  background-color: var(--neutral-bg);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  color: var(--text-color);
+  align-self: flex-start;
+}
+
+/* Call to Action */
+.catalogue-cta {
+  background-color: var(--neutral-bg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  margin-top: var(--spacing-lg);
+}
+
+.catalogue-cta p {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rewards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--spacing-sm);
+  }
+  
+  .reward-image-container {
+    height: 160px;
+  }
+  
+  .reward-name {
+    font-size: 1.1rem;
+  }
+  
+  .reward-description {
+    font-size: 0.85rem;
+  }
+}

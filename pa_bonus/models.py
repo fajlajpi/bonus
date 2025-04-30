@@ -363,6 +363,7 @@ class Reward(models.Model):
         point_cost (int): Point cost of the item.
         description (str): Description of the item.
         brand (Brand): Brand, in case the item is restricted to only clients with the same Brand in their UserContract (optional)
+        in_showcase (bool): Whether the item should be displayed in the public catalogue showcase.
         is_active (bool): Whether the item is active.
         image (Image): Image representing the item.
         created_at (DateTime): The datetime the item was created.
@@ -379,6 +380,7 @@ class Reward(models.Model):
     availability = models.CharField(max_length=20, choices=AVAILABILITY_TYPE, default='ON_DEMAND')
     brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.SET_NULL)
     is_active = models.BooleanField(default=True)
+    in_showcase = models.BooleanField(default=False, help_text="Display this item in the public showcase")
     image = models.ImageField(upload_to='reward_images/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

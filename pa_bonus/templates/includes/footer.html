@@ -6,6 +6,7 @@
         </div>
         <div class="footer-links">
             <a href="{% url 'home_redirect' %}">Hlavní stránka</a>
+            <a href="{% url 'public_catalogue' %}">Katalog odměn</a>
             <a href="{% url 'privacy_policy' %}">Zásady ochrany osobních údajů</a>
             <a href="{% url 'contact' %}">Kontaktní informace</a>
             {% if user.is_staff %}

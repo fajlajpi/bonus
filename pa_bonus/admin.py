@@ -165,11 +165,23 @@ class FileUploadAdmin(admin.ModelAdmin):
 @admin.register(Reward)
 class RewardAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = RewardResource
-    list_display = ('abra_code', 'name', 'point_cost', 'brand', 'is_active', 'availability')
+    list_display = ('abra_code', 'name', 'point_cost', 'brand', 'is_active', 'availability', 'in_showcase')
     list_filter = ('brand', 'is_active')
     search_fields = ('abra_code', 'name')
     readonly_fields = ('created_at',)
     actions = [reward_availability_set_available, reward_availability_set_on_demand, reward_availability_set_unavailable]
+
+    actions.extend(['add_to_showcase', 'remove_from_showcase'])
+    
+    def add_to_showcase(self, request, queryset):
+        updated = queryset.update(in_showcase=True)
+        self.message_user(request, f"{updated} rewards added to public showcase.")
+    add_to_showcase.short_description = "Add selected rewards to public showcase"
+    
+    def remove_from_showcase(self, request, queryset):
+        updated = queryset.update(in_showcase=False)
+        self.message_user(request, f"{updated} rewards removed from public showcase.")
+    remove_from_showcase.short_description = "Remove selected rewards from public showcase"
 
 @admin.register(RewardRequest)
 class RewardRequestAdmin(admin.ModelAdmin):

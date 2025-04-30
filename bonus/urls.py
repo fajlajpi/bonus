@@ -19,7 +19,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
 from django.views.generic import TemplateView
-from pa_bonus.views import views_managers as vm, views_users as vu
+from pa_bonus.views import views_managers as vm, views_users as vu, views_public as vp
 from pa_bonus.forms import EmailAuthenticationForm
 
 def home_redirect(request):
@@ -35,6 +35,7 @@ urlpatterns.extend([
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
     path('contact/', TemplateView.as_view(template_name='contact.html'), name='contact'),
     path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
+    path('katalog/', vp.PublicCatalogueView.as_view(), name='public_catalogue'),
 ])
 
 # CLIENT FACING URLS
