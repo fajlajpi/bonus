@@ -71,6 +71,15 @@ def pending_transactions(modeladmin, request, queryset):
 def cancel_transactions(modeladmin, request, queryset):
     queryset.update(status='CANCELLED')
 
+def reward_availability_set_available(modeladmin, request, queryset):
+    queryset.update(availability='AVAILABLE')
+
+def reward_availability_set_on_demand(modeladmin, request, queryset):
+    queryset.update(availability='ON_DEMAND')
+
+def reward_availability_set_unavailable(modeladmin, request, queryset):
+    queryset.update(availability='UNAVAILABLE')
+
 
 approve_requests.short_description = "Approve selected requests"
 reject_requests.short_description = "Reject selected requests"
@@ -156,10 +165,11 @@ class FileUploadAdmin(admin.ModelAdmin):
 @admin.register(Reward)
 class RewardAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = RewardResource
-    list_display = ('abra_code', 'name', 'point_cost', 'brand', 'is_active')
+    list_display = ('abra_code', 'name', 'point_cost', 'brand', 'is_active', 'availability')
     list_filter = ('brand', 'is_active')
     search_fields = ('abra_code', 'name')
     readonly_fields = ('created_at',)
+    actions = [reward_availability_set_available, reward_availability_set_on_demand, reward_availability_set_unavailable]
 
 @admin.register(RewardRequest)
 class RewardRequestAdmin(admin.ModelAdmin):
