@@ -12,8 +12,14 @@
 {% block content %}
   {% if request.status == 'DRAFT' %}
     <h1>Potvrzení žádosti o čerpání</h1>
+    <div class="intro-text">
+      <p>Zkontrolujte, prosím, níže uvedené informace a pokud jsou správné, žádost potvrďte tlačítkem ve spodní části stránky.</p>
+    </div>
   {% else %}
     <h1>Detail žádosti o čerpání</h1>
+    <div class="intro-text">
+      <p>Níže najdete informace o odeslané žádosti o bonus v rámci programu.</p>
+    </div>
   {% endif %}
 
   <p>Uživatel: {{ request.user.username }}</p>
@@ -52,6 +58,12 @@
     <h2>Poznámka k žádosti:</h2>
     <div class="note-container">
       {{ request.note }}
+    </div>
+    {% endif %}
+    {% if request.description %}
+    <h2>Další poznámky:</h2>
+    <div class="note-container">
+      {{ request.description }}
     </div>
     {% endif %}
     <p>Žádost je ve zpracování.</p>

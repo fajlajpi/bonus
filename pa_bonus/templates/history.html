@@ -8,6 +8,15 @@
     <h2>Historie bodových transakcí</h2>
 
     {% if transactions %}
+    <div class="intro-text">
+        <p>Níže naleznete seznam Vašich bodových transakcí v rámci Bonusového programu. Body připisujeme se zpožděním 3 měsíců (fakturace v lednu = připsání v dubnu),
+            abychom umožnili zpracování případných reklamací a dobropisů. Transakce do systému nahráváme vždy na začátku měsíce, neobjevují se ihned.
+        </p>
+        <p>Transakce, které už jsou v systému nahrané, ale čekají na uplynutí 3 měsíců, jsou označené <span class="status-badge pending">čeká na potvrzení</span>. Stav transakce
+            <span class="status-badge confirmed">potvrzeno</span> znamená, že jsme body připsali / strhli, ale samotná žádost o čerpání může ještě čekat na zpracování.
+        </p>
+        <p>Stav konkrétní žádosti zkontrolujte v sekci <a href="{% url 'reward_requests' %}">Žádosti o čerpání</a>.</p>
+      </div>
     <table class="transactions-table">
         <thead>
             <tr>

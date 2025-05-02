@@ -7,6 +7,13 @@
     <h3>Aktuální stav bodového konta</h3>
     <p class="total-points">{{ user_balance }} bodů</p>
   </div>
+  <div class="intro-text">
+    <p>Nabídka Bonusového programu se může měnit v závislosti na dostupnosti odměn u nás i u dodavatelů. Odměny označené
+      <span class="availability-badge available">skladem</span> máme obvykle na skladě
+    Odměny označené <span class="availability-badge on_demand">na objednání</span> objednáváme až na základě Vaší žádosti.</p>
+    <p>V případě dotazů nás kontaktujte na emailu <a href="mailto:support@bonus.primavera-and.cz">support@bonus.primavera-and.cz</a>, 
+      nebo se obraťte na svého obchodního zástupce.</p>
+  </div>
   <form method="post">
     {% csrf_token %}
 {% if rewards %}
