@@ -133,7 +133,7 @@ Django-based system for tracking and using loyalty points
 
 ### Frontend
 - [ ] **Public Area**
-    - [ ] Login screen
+    - [x] Login screen
     - [ ] Bonus Programme explanation
     - [ ] Reward Catalogue Teaser
 - [ ] **Client Area**
