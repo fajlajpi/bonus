@@ -17,7 +17,7 @@
   {% endif %}
 
   <p>Uživatel: {{ request.user.username }}</p>
-  <p>Datum žádosti: {{ request.requested_at }}</p>
+  <p>Datum žádosti: {{ request.requested_at|czech_date }}</p>
   <p>Celková hodnota: {{ request.total_points }} bodů</p>
 
   <h2>Položky:</h2>
