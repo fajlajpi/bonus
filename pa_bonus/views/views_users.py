@@ -61,7 +61,7 @@ class HistoryView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return PointsTransaction.objects.filter(
             user = self.request.user
-        ).select_related('brand')
+        ).select_related('brand').order_by('-date', '-created_at')
 
 class HistoryDetailView(LoginRequiredMixin, DetailView):
     """
@@ -175,7 +175,8 @@ class RewardsRequestsView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return RewardRequest.objects.filter(
             user = self.request.user
-        )
+        ).order_by('-requested_at')
+    
 class RequestsDetailView(LoginRequiredMixin, TemplateView):
     """
     Displays the detail of one specific request for rewards.
