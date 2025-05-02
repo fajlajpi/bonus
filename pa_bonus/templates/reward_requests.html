@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load pa_bonus_extras %}
 
 {% block title %} Seznam žádostí o čerpání {% endblock title %}
 
 {% block content %}
 <div class="history-container">
-    <h2>Historie bodových transakcí</h2>
+    <h2>Žádosti o čerpání odměn</h2>
 
     {% if reward_requests %}
     <table class="transactions-table">
@@ -20,10 +21,24 @@
         <tbody>
             {% for reward_request in reward_requests %}
             <tr>
-                <td>{{ reward_request.requested_at }}</td>
+                <td>{{ reward_request.requested_at|czech_date }}</td>
                 <td>{{ reward_request.total_points }} bodů</td>
                 <td>
-                    <span class="status-badge {{ reward_request.status|lower }}">{{ reward_request.get_status_display }}</span>
+                    <span class="status-badge {{ reward_request.status|lower }}">
+                        {% if reward_request.status == 'DRAFT' %}
+                            Koncept
+                        {% elif reward_request.status == 'PENDING' %}
+                            Čeká na potvrzení
+                        {% elif reward_request.status == 'ACCEPTED' %}
+                            Potvrzena
+                        {% elif reward_request.status == 'REJECTED' %}
+                            Odmítnuta
+                        {% elif reward_request.status == 'FINISHED' %}
+                            Dokončena
+                        {% elif reward_request.status == 'CANCELLED' %}
+                            Zrušena
+                        {% endif %}
+                    </span>
                 </td>
                 <td>
                     {% if reward_request.note %}

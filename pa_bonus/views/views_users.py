@@ -61,7 +61,7 @@ class HistoryView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return PointsTransaction.objects.filter(
             user = self.request.user
-        ).select_related('brand')
+        ).select_related('brand').order_by('-date', '-created_at')
 
 class HistoryDetailView(LoginRequiredMixin, DetailView):
     """
@@ -106,7 +106,7 @@ class RewardsView(LoginRequiredMixin, View):
                 user_brands.add(bonus.brand_id)
 
         # Get available rewards
-        available_rewards = Reward.objects.filter(is_active=True).filter(Q(brand__in=user_brands) | Q(brand__isnull=True)).distinct()
+        available_rewards = Reward.objects.filter(is_active=True).filter(Q(brand__in=user_brands) | Q(brand__isnull=True)).distinct().order_by('-point_cost')
         
         # Get user's point balance
         total_points = user.get_balance()
@@ -175,7 +175,8 @@ class RewardsRequestsView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return RewardRequest.objects.filter(
             user = self.request.user
-        )
+        ).order_by('-requested_at')
+    
 class RequestsDetailView(LoginRequiredMixin, TemplateView):
     """
     Displays the detail of one specific request for rewards.
@@ -214,9 +215,10 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         if reward_request.status == 'DRAFT':
-            # Save customer note
-            customer_note = request.POST.get('customer_note', '')
-            reward_request.note = customer_note
+            # Save customer note with validation
+            customer_note = request.POST.get('customer_note', '').strip()
+            # Only save the note if it's longer than 5 characters, otherwise set to empty
+            reward_request.note = customer_note if len(customer_note) > 5 else ''
             
             # Verify that user still has enough points
             user_balance = request.user.get_balance()
@@ -240,10 +242,10 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
             )
 
             messages.success(request, f"Request {reward_request.id} confirmed successfully.")
-            return redirect('rewards')
+            return redirect('reward_requests')
         else:
             messages.warning(request, f"Reward request was already submitted.")
-            return redirect('rewards')
+            return redirect('reward_requests')
 
 class ExtraGoalsView(LoginRequiredMixin, TemplateView):
     """

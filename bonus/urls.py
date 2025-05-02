@@ -18,7 +18,8 @@ from django.contrib import admin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
-from pa_bonus.views import views_managers as vm, views_users as vu
+from django.views.generic import TemplateView
+from pa_bonus.views import views_managers as vm, views_users as vu, views_public as vp
 from pa_bonus.forms import EmailAuthenticationForm
 
 def home_redirect(request):
@@ -32,6 +33,9 @@ urlpatterns.extend([
     path('', home_redirect, name='home_redirect'),
     path('login/', LoginView.as_view(template_name='login.html', authentication_form=EmailAuthenticationForm), name='login'),
     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('contact/', TemplateView.as_view(template_name='contact.html'), name='contact'),
+    path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
+    path('katalog/', vp.PublicCatalogueView.as_view(), name='public_catalogue'),
 ])
 
 # CLIENT FACING URLS
@@ -43,6 +47,7 @@ urlpatterns.extend([
     path('rewards/requests/', vu.RewardsRequestsView.as_view(), name='reward_requests'),
     path('rewards/requests/detail/<int:pk>', vu.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'), 
     path('extra-goals/', vu.ExtraGoalsView.as_view(), name='extra_goals'),
+    
 ])
 
 # MANAGER FACING URLS
@@ -55,7 +60,9 @@ urlpatterns.extend([
     path('manager/reward-requests/<int:pk>/export/', vm.ExportTelemarketingFileView.as_view(), name='export_telemarketing_file'),
     path('manager/transactions/approve/', vm.TransactionApprovalView.as_view(), name='transaction_approval'),
     path('manager/sms-export/', vm.SMSExportView.as_view(), name='sms_export'),
-
+    path('manager/clients/', vm.ClientListView.as_view(), name='manager_clients'),
+    path('manager/clients/<int:pk>/', vm.ClientDetailView.as_view(), name='manager_client_detail'),
+    
 ])
 
 # ADMIN URLS

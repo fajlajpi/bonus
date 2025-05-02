@@ -51,11 +51,24 @@ Django-based system for tracking and using loyalty points
 - [x] Login with email
 - [x] Reward Request confirmation
 - [x] Reward Request to Telemarketing bridge file
-- [ ] Translations in all relevant places
+- [x] Translations in all relevant places
 - [ ] Landing page, better login page
-- [ ] Static pages such as contacts, privacy policy
-- [ ] Necessary warning / under construction messages
+- [x] Static pages such as contacts, privacy policy
+- [x] Necessary warning / under construction messages
+
+## First big update: V3
 - [ ] Client EXTRA GOAL logic
+- [ ] Sales Rep functionality
+    - [ ] See current client status (limited to own region)
+    - [ ] See own region stats
+    - [ ] See clients' extra goal progress
+    - [ ] Place RewardRequests for clients
+- [ ] User options and abilities
+    - [ ] Opt in/out of notifications via email/sms
+    - [ ] Click-through agreement with privacy policy / extra goal
+    - [ ] Cancellation of RewardRequests before they're accepted
+    - [ ] Modification of RewardRequests before they're submitted
+    - [ ] Password change / request if forgotten
 
 ## TODO
 ### Backend
@@ -74,7 +87,7 @@ Django-based system for tracking and using loyalty points
     - Reward Claims
         - [x] Reward Catalogue
         - [x] Reward Request
-            - [ ] Add note for different delivery address to default
+            - [x] Add note for different delivery address to default
         - [x] Reward Request status and review
         - [ ] Reward Request modification of not-yet-approved
     - [ ] User options
@@ -97,10 +110,10 @@ Django-based system for tracking and using loyalty points
         - Found a practical service SMSbrana.cz, charging 1,05 CZK / SMS with prepaid credit
         - Automated sending via CSV or direct API connection
         - [x] CSV export of messages
-        - [ ] Initial login / password information
+        - [x] Initial login / password information
         - [x] Monthly point update
 - [ ] **Manager Views**
-    - [ ] Clients list
+    - [x] Clients list
     - [ ] Client detail & Modification
     - [ ] Client Registrations
     - [x] Reward Requests List

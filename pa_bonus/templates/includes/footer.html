@@ -5,14 +5,15 @@
             <p>&copy; {{ current_year }} Primavera Andorrana. All rights reserved.</p>
         </div>
         <div class="footer-links">
-            <a href="{% url 'home_redirect' %}">Home</a>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Support</a>
+            <a href="{% url 'home_redirect' %}">Hlavní stránka</a>
+            <a href="{% url 'public_catalogue' %}">Katalog odměn</a>
+            <a href="{% url 'privacy_policy' %}">Zásady ochrany osobních údajů</a>
+            <a href="{% url 'contact' %}">Kontaktní informace</a>
             {% if user.is_staff %}
-                <a href="{% url 'admin:index' %}">Administration</a>
+                <a href="{% url 'admin:index' %}">Administrace</a>
             {% endif %}
             {% if user.groups.all.0.name == 'Managers' %}
-                <a href="{% url 'manager_dashboard' %}">Managers Section</a>
+                <a href="{% url 'manager_dashboard' %}">Manažerská sekce</a>
             {% endif %}
         </div>
     </div>

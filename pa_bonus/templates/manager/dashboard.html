@@ -49,6 +49,12 @@
     <!-- Top Clients -->
     <div class="dashboard-section">
       <h3>Top 10 Clients by Available Points</h3>
+      <div class="dashboard-actions" style="margin-bottom: 1rem;">
+        <a href="{% url 'manager_clients' %}" class="dashboard-button">
+          <span class="button-icon">👥</span>
+          <span class="button-text">View All Clients</span>
+        </a>
+      </div>
       <div class="table-container">
         <table class="transactions-table">
           <thead>
@@ -66,7 +72,7 @@
               <td class="value positive">{{ client.available_points }}</td>
               <td>{{ client.pending_points }}</td>
               <td>
-                <a href="#" class="details-link">View</a>
+                <a href="{% url 'manager_client_detail' client.id %}" class="details-link">View</a>
               </td>
             </tr>
             {% empty %}

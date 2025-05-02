@@ -9,7 +9,8 @@ from django.db import transaction
 import logging
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file
-from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction, EmailNotification, User, Region
+from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction
+from pa_bonus.models import EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand
 from pa_bonus.utilities import ManagerGroupRequiredMixin
 
 from pa_bonus.exports import generate_telemarketing_export
@@ -462,6 +463,7 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
     
     This view allows managers to generate a CSV file in the format required by smsbrana.cz
     to send monthly SMS notifications to clients about their point balances.
+    Supports both standard and custom message templates with variable substitution.
     """
     template_name = 'manager/sms_export.html'
     
@@ -508,6 +510,19 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
         except ValueError:
             min_points = 0
         
+        # Determine message type and template
+        message_type = request.POST.get('message_type', 'default')
+        
+        if message_type == 'custom':
+            # Get custom message template
+            message_template = request.POST.get('custom_message_text', '')
+            if not message_template:
+                # Fallback to default if custom template is empty
+                message_template = "OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+        else:
+            # Default message template
+            message_template = "OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+        
         # Count for reporting
         total_sms = 0
         
@@ -529,8 +544,17 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
                 else:
                     phone = '+' + phone
             
-            # Create SMS text with user's balance
-            sms_text = f"OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+            # Replace variables in the message template
+            sms_text = message_template.format(
+                balance=balance,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                user_name=user.username,
+                user_number=user.user_number,
+                user_email=user.email,
+                user_phone=user.user_phone,
+                region=user.region.name if user.region else ''
+            )
             
             # Write to CSV
             writer.writerow([phone, sms_text])
@@ -540,3 +564,317 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
         messages.success(request, f"CSV export vytvořen s {total_sms} SMS zprávami.")
         
         return response
+
+class ClientListView(ManagerGroupRequiredMixin, View):
+    """
+    View for managers to browse all clients with filtering options.
+    
+    Allows filtering by region, time period, and viewing detailed analytics
+    on client turnover and points across their contract brands.
+    """
+    template_name = 'manager/client_list.html'
+    
+    def get(self, request):
+        from django.db.models import Sum, Count, F, Q, Value, DecimalField
+        from django.db.models.functions import Coalesce
+        import datetime
+        
+        # Get filter parameters
+        region_id = request.GET.get('region', '')
+        year_from = request.GET.get('year_from', datetime.datetime.now().year)
+        month_from = request.GET.get('month_from', 1)
+        year_to = request.GET.get('year_to', datetime.datetime.now().year)
+        month_to = request.GET.get('month_to', 12)
+        
+        try:
+            year_from = int(year_from)
+            month_from = int(month_from)
+            year_to = int(year_to)
+            month_to = int(month_to)
+        except (ValueError, TypeError):
+            # Use default values if conversion fails
+            year_from = datetime.datetime.now().year
+            month_from = 1
+            year_to = datetime.datetime.now().year
+            month_to = 12
+        
+        # Calculate date range for filtering
+        date_from = datetime.date(year_from, month_from, 1)
+        if month_to == 12:
+            date_to = datetime.date(year_to + 1, 1, 1) - datetime.timedelta(days=1)
+        else:
+            date_to = datetime.date(year_to, month_to + 1, 1) - datetime.timedelta(days=1)
+        
+        # Base query - get all active users that are not staff
+        clients = User.objects.filter(is_active=True, is_staff=False)
+        
+        # Apply region filter if specified
+        if region_id and region_id != 'all':
+            clients = clients.filter(region_id=region_id)
+        
+        # Annotate with point data for the period
+        clients = clients.annotate(
+            confirmed_points=Coalesce(
+                Sum('pointstransaction__value', 
+                    filter=Q(
+                        pointstransaction__status='CONFIRMED',
+                        pointstransaction__date__gte=date_from,
+                        pointstransaction__date__lte=date_to
+                    )),
+                Value(0)
+            ),
+            pending_points=Coalesce(
+                Sum('pointstransaction__value', 
+                    filter=Q(
+                        pointstransaction__status='PENDING',
+                        pointstransaction__date__gte=date_from,
+                        pointstransaction__date__lte=date_to
+                    )),
+                Value(0)
+            ),
+            available_points=Coalesce(
+                Sum('pointstransaction__value', 
+                    filter=Q(pointstransaction__status='CONFIRMED')),
+                Value(0)
+            )
+        )
+        
+        # Get all regions for the filter dropdown
+        regions = Region.objects.filter(is_active=True).order_by('name')
+        
+        # For each client, get their contract brands turnover
+        client_data = []
+        for client in clients:
+            # Get active contract for further reference
+            try:
+                active_contract = UserContract.objects.get(
+                    user_id=client,
+                    is_active=True
+                )
+                
+                # Get all brands in this contract
+                contract_brands = [bb.brand_id for bb in active_contract.brandbonuses.all()]
+                
+                # Calculate total turnover for the period across contract brands
+                total_turnover = InvoiceBrandTurnover.objects.filter(
+                    invoice__client_number=client.user_number,
+                    invoice__invoice_date__gte=date_from,
+                    invoice__invoice_date__lte=date_to,
+                    invoice__invoice_type='INVOICE',
+                    brand__in=contract_brands
+                ).aggregate(
+                    total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
+                )['total']
+                
+                # Append to results with the contract and turnover info
+                client_data.append({
+                    'user': client,
+                    'contract': active_contract,
+                    'turnover': total_turnover,
+                    'brand_count': len(contract_brands)
+                })
+            except UserContract.DoesNotExist:
+                # Client has no active contract
+                client_data.append({
+                    'user': client,
+                    'contract': None,
+                    'turnover': 0,
+                    'brand_count': 0
+                })
+        
+        # Calculate date ranges for quick filter buttons
+        current_year = datetime.datetime.now().year
+        ytd_from = datetime.date(current_year, 1, 1)
+        ytd_to = datetime.date.today()
+        last_year_from = datetime.date(current_year - 1, 1, 1)
+        last_year_to = datetime.date(current_year - 1, 12, 31)
+        
+        # Prepare context
+        context = {
+            'clients': client_data,
+            'regions': regions,
+            'selected_region': region_id,
+            'year_from': year_from,
+            'month_from': month_from,
+            'year_to': year_to,
+            'month_to': month_to,
+            'date_from': date_from,
+            'date_to': date_to,
+            'ytd_from': ytd_from,
+            'ytd_to': ytd_to,
+            'last_year_from': last_year_from,
+            'last_year_to': last_year_to,
+            'current_year': current_year,
+            'months': [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+        }
+        
+        return render(request, self.template_name, context)
+    
+class ClientDetailView(ManagerGroupRequiredMixin, View):
+    """
+    Detailed view of a client for managers.
+    
+    Shows complete client information including:
+    - Contact details
+    - Contract information
+    - Turnover by brand
+    - Points transactions
+    - Reward requests
+    """
+    template_name = 'manager/client_detail.html'
+    
+    def get(self, request, pk):
+        from django.db.models import Sum, Count, F, Q, Value, DecimalField
+        from django.db.models.functions import Coalesce
+        import datetime
+        
+        # Get the client
+        client = get_object_or_404(User, pk=pk)
+        
+        # Get filter parameters for date range
+        year_from = request.GET.get('year_from', datetime.datetime.now().year)
+        month_from = request.GET.get('month_from', 1)
+        year_to = request.GET.get('year_to', datetime.datetime.now().year)
+        month_to = request.GET.get('month_to', 12)
+        
+        try:
+            year_from = int(year_from)
+            month_from = int(month_from)
+            year_to = int(year_to)
+            month_to = int(month_to)
+        except (ValueError, TypeError):
+            # Use default values if conversion fails
+            year_from = datetime.datetime.now().year
+            month_from = 1
+            year_to = datetime.datetime.now().year
+            month_to = 12
+        
+        # Calculate date range for filtering
+        date_from = datetime.date(year_from, month_from, 1)
+        if month_to == 12:
+            date_to = datetime.date(year_to + 1, 1, 1) - datetime.timedelta(days=1)
+        else:
+            date_to = datetime.date(year_to, month_to + 1, 1) - datetime.timedelta(days=1)
+        
+        # Get client's active contract
+        try:
+            active_contract = UserContract.objects.get(
+                user_id=client, 
+                is_active=True
+            )
+            contract_brands = [bb.brand_id for bb in active_contract.brandbonuses.all()]
+        except UserContract.DoesNotExist:
+            active_contract = None
+            contract_brands = []
+        
+        # Get all client's contracts for history
+        all_contracts = UserContract.objects.filter(
+            user_id=client
+        ).order_by('-contract_date_from')
+        
+        # Get all brands turnover for the selected period
+        all_brands = Brand.objects.all()
+        brand_turnovers = []
+        
+        for brand in all_brands:
+            # Get invoice turnover for this brand
+            invoice_turnover = InvoiceBrandTurnover.objects.filter(
+                invoice__client_number=client.user_number,
+                invoice__invoice_date__gte=date_from,
+                invoice__invoice_date__lte=date_to,
+                invoice__invoice_type='INVOICE',
+                brand=brand
+            ).aggregate(
+                total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
+            )['total']
+            
+            # Get credit note turnover for this brand (negative)
+            credit_turnover = InvoiceBrandTurnover.objects.filter(
+                invoice__client_number=client.user_number,
+                invoice__invoice_date__gte=date_from,
+                invoice__invoice_date__lte=date_to,
+                invoice__invoice_type='CREDIT_NOTE',
+                brand=brand
+            ).aggregate(
+                total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
+            )['total']
+            
+            # Calculate points for this brand in the period
+            points = PointsTransaction.objects.filter(
+                user=client,
+                date__gte=date_from,
+                date__lte=date_to,
+                brand=brand,
+                status='CONFIRMED'
+            ).aggregate(
+                total=Coalesce(Sum('value'), Value(0))
+            )['total']
+            
+            # Only include brands with some activity
+            if invoice_turnover > 0 or credit_turnover > 0 or points != 0:
+                # Check if this brand is in the client's contract
+                in_contract = brand in contract_brands
+                
+                brand_turnovers.append({
+                    'brand': brand,
+                    'invoice_turnover': invoice_turnover,
+                    'credit_turnover': credit_turnover,
+                    'net_turnover': invoice_turnover - credit_turnover,
+                    'points': points,
+                    'in_contract': in_contract
+                })
+        
+        # Sort by net turnover
+        brand_turnovers.sort(key=lambda x: x['net_turnover'], reverse=True)
+        
+        # Get point totals
+        point_totals = {
+            'available': client.get_balance(),
+            'period_confirmed': PointsTransaction.objects.filter(
+                user=client,
+                date__gte=date_from,
+                date__lte=date_to,
+                status='CONFIRMED'
+            ).aggregate(
+                total=Coalesce(Sum('value'), Value(0))
+            )['total'],
+            'period_pending': PointsTransaction.objects.filter(
+                user=client,
+                date__gte=date_from,
+                date__lte=date_to,
+                status='PENDING'
+            ).aggregate(
+                total=Coalesce(Sum('value'), Value(0))
+            )['total']
+        }
+        
+        # Get recent transactions
+        recent_transactions = PointsTransaction.objects.filter(
+            user=client
+        ).order_by('-date', '-created_at')[:10]
+        
+        # Get reward requests
+        reward_requests = RewardRequest.objects.filter(
+            user=client
+        ).order_by('-requested_at')[:10]
+        
+        # Prepare context
+        context = {
+            'client': client,
+            'active_contract': active_contract,
+            'all_contracts': all_contracts,
+            'brand_turnovers': brand_turnovers,
+            'point_totals': point_totals,
+            'recent_transactions': recent_transactions,
+            'reward_requests': reward_requests,
+            'date_from': date_from,
+            'date_to': date_to,
+            'year_from': year_from,
+            'month_from': month_from,
+            'year_to': year_to,
+            'month_to': month_to,
+            'months': [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+        }
+        
+        return render(request, self.template_name, context)
+    
