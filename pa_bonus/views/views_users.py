@@ -106,7 +106,7 @@ class RewardsView(LoginRequiredMixin, View):
                 user_brands.add(bonus.brand_id)
 
         # Get available rewards
-        available_rewards = Reward.objects.filter(is_active=True).filter(Q(brand__in=user_brands) | Q(brand__isnull=True)).distinct()
+        available_rewards = Reward.objects.filter(is_active=True).filter(Q(brand__in=user_brands) | Q(brand__isnull=True)).distinct().order_by('-point_cost')
         
         # Get user's point balance
         total_points = user.get_balance()
