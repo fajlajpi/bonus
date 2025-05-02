@@ -1,8 +1,11 @@
 # development.py
 from .base import *
-import bonus.private as private
+
 
 DEBUG = True
+
+if DEBUG:
+    import bonus.private as private
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
