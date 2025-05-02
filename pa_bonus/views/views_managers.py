@@ -463,6 +463,7 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
     
     This view allows managers to generate a CSV file in the format required by smsbrana.cz
     to send monthly SMS notifications to clients about their point balances.
+    Supports both standard and custom message templates with variable substitution.
     """
     template_name = 'manager/sms_export.html'
     
@@ -509,6 +510,19 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
         except ValueError:
             min_points = 0
         
+        # Determine message type and template
+        message_type = request.POST.get('message_type', 'default')
+        
+        if message_type == 'custom':
+            # Get custom message template
+            message_template = request.POST.get('custom_message_text', '')
+            if not message_template:
+                # Fallback to default if custom template is empty
+                message_template = "OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+        else:
+            # Default message template
+            message_template = "OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+        
         # Count for reporting
         total_sms = 0
         
@@ -530,8 +544,17 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
                 else:
                     phone = '+' + phone
             
-            # Create SMS text with user's balance
-            sms_text = f"OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+            # Replace variables in the message template
+            sms_text = message_template.format(
+                balance=balance,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                user_name=user.username,
+                user_number=user.user_number,
+                user_email=user.email,
+                user_phone=user.user_phone,
+                region=user.region.name if user.region else ''
+            )
             
             # Write to CSV
             writer.writerow([phone, sms_text])
