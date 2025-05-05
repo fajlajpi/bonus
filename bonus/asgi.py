@@ -11,6 +11,10 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bonus.settings.production')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bonus.settings.development')
+# Check for "production" and load settings if found
+if os.environ.get('DJANGO_ENVIRONMENT') == 'production':
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'bonus.settings.production'
+
 
 application = get_asgi_application()

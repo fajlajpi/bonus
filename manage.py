@@ -6,7 +6,14 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bonus.settings.production')
+
+    # Default to development settings
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bonus.settings.development')
+
+    # Check for "production" and load settings if found
+    if os.environ.get('DJANGO_ENVIRONMENT') == 'production':
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'bonus.settings.production'
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
