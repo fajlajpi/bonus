@@ -91,9 +91,10 @@ class OptimizedUserResource(resources.ModelResource):
                 # Last resort - use a default password
                 row['password'] = 'default_password'
         
-        # Explicitly hash the password here
-        if 'password' in row and row['password']:
-            row['password'] = make_password(row['password'])
+        # COMMENTED OUT AS WE WERE DOUBLE HASHING, HASHING IS IN SKIP_ROW
+        # # Explicitly hash the password here
+        # if 'password' in row and row['password']:
+        #     row['password'] = make_password(row['password'])
         
         logger.debug(f"Processed row: {row}")
 
