@@ -8,7 +8,7 @@ from django.db.models import Sum, Count
 from django.db import transaction
 import logging
 from pa_bonus.forms import FileUploadForm
-from pa_bonus.tasks import process_uploaded_file
+from pa_bonus.tasks import process_uploaded_file, process_stock_file
 from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction
 from pa_bonus.models import EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand
 from pa_bonus.utilities import ManagerGroupRequiredMixin
@@ -133,6 +133,46 @@ def upload_file(request):
         form = FileUploadForm()
     
     return render(request, 'upload.html', {'form': form})
+
+@permission_required('pa_bonus.can_manage', raise_exception=True)
+def upload_stock(request):
+    """
+    Handles file uploads for processing stock data and updating reward availability.
+
+    This view allows users with the correct permission to upload stock data files.
+    After a successful upload, the file is processed to update reward availability status.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing the file upload.
+
+    Returns:
+        HttpResponse: Renders the upload form (GET) or redirects to the reward list (POST).
+    """
+    if request.method == "POST":
+        form = FileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            upload = form.save(commit=False)
+            upload.uploaded_by = request.user
+            upload.save()
+
+            # Process the uploaded file
+            try:
+                process_stock_file(upload.id)
+                messages.success(
+                    request, 
+                    'Stock file uploaded successfully and rewards have been updated'
+                )
+            except Exception as e:
+                messages.error(
+                    request, 
+                    f'Error processing file: {str(e)}'
+                )
+
+            return redirect('upload_history')
+    else:
+        form = FileUploadForm()
+    
+    return render(request, 'manager/upload_stock.html', {'form': form})
 
 @permission_required('pa_bonus.can_manage', raise_exception=True)
 def upload_history(request):

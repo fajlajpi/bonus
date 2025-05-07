@@ -7,11 +7,13 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
+logger = logging.getLogger(__name__)
+
 
 from .models import (
     FileUpload, PointsTransaction, User, Brand, 
     UserContract, BrandBonus, Invoice, InvoiceBrandTurnover,
-    EmailNotification,
+    EmailNotification, Reward, 
 )
 
 # Configure logging
@@ -427,3 +429,78 @@ def send_email_task(notification_id, recipient_email, subject, message):
         
         # Re-raise the exception so Django-Q2 can log it
         raise 
+
+def process_stock_file(upload_id):
+    """Process stock data file and update reward availability."""
+    upload = FileUpload.objects.get(id=upload_id)
+    logger.info(f"Starting to process stock upload {upload_id}")
+    
+    try:
+        # Mark as processing
+        upload.status = 'PROCESSING'
+        upload.save()
+        
+        # Read the file
+        if upload.file.path.endswith('.csv'):
+            df = pd.read_csv(upload.file.path, delimiter=";")
+        else:
+            df = pd.read_excel(upload.file.path)
+        
+        logger.info(f"File read successfully. Shape: {df.shape}")
+        
+        # Check required columns
+        required_columns = ['katalog', 'Počet']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+        
+        # Process data
+        with transaction.atomic():
+            updated_count = 0
+            not_found_count = 0
+            
+            for _, row in df.iterrows():
+                code = str(row['katalog']).strip()
+                quantity = row['Počet']
+                
+                # Skip empty rows
+                if not code:
+                    continue
+                
+                try:
+                    # Get the reward
+                    reward = Reward.objects.get(abra_code=code)
+                    
+                    # Determine availability based on quantity
+                    if quantity is None or pd.isna(quantity):
+                        availability = 'ON_DEMAND'
+                    elif quantity >= 6:
+                        availability = 'AVAILABLE'
+                    elif 1 <= quantity <= 5:
+                        availability = 'AVAILABLE_LAST_UNITS'
+                    else:  # quantity = 0
+                        availability = 'ON_DEMAND'
+                    
+                    # Update reward
+                    reward.availability = availability
+                    reward.save(update_fields=['availability'])
+                    updated_count += 1
+                    
+                except Reward.DoesNotExist:
+                    not_found_count += 1
+                    logger.warning(f"Reward with code {code} not found")
+        
+        # Mark as completed
+        upload.status = 'COMPLETED'
+        upload.processed_rows = updated_count
+        upload.total_rows = len(df)
+        upload.save()
+        
+        logger.info(f"Processing completed. Updated: {updated_count}, Not found: {not_found_count}")
+        
+    except Exception as e:
+        logger.error(f"Error processing stock file: {str(e)}", exc_info=True)
+        upload.status = 'FAILED'
+        upload.error_message = str(e)
+        upload.save()
+        raise
