@@ -370,6 +370,7 @@ class Reward(models.Model):
     """
     AVAILABILITY_TYPE = (
         ('AVAILABLE', 'Available'),
+        ('AVAILABLE_LAST_UNITS', 'Available (Last units)'),
         ('ON_DEMAND', 'On Demand'),
         ('UNAVAILABLE', 'Unavailable'),
     )
