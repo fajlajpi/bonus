@@ -63,6 +63,8 @@ urlpatterns.extend([
     path('manager/clients/', vm.ClientListView.as_view(), name='manager_clients'),
     path('manager/clients/<int:pk>/', vm.ClientDetailView.as_view(), name='manager_client_detail'),
     path('manager/upload_stock/', vm.upload_stock, name='upload_stock'),
+    path('manager/user-activity/', vm.UserActivityDashboardView.as_view(), name='user_activity_dashboard'),
+
 ])
 
 # ADMIN URLS

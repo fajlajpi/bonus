@@ -163,6 +163,27 @@ class User(AbstractUser):
         
         return rep_assignment.user if rep_assignment else None
 
+class UserActivity(models.Model):
+    """
+    Tracks user login and site activity.
+    
+    Attributes:
+        user (User): The user being tracked
+        date (Date): The date of activity
+        last_activity (DateTime): Timestamp of the last activity
+        visit_count (int): Number of visits/page loads for this day
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField()
+    last_activity = models.DateTimeField()
+    visit_count = models.IntegerField(default=1)
+    
+    class Meta:
+        unique_together = ['user', 'date']
+        ordering = ['-date', 'user']
+        
+    def __str__(self):
+        return f"{self.user} - {self.date} ({self.visit_count} visits)"
 
 class Brand(models.Model):
     """

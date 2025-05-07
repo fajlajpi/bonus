@@ -9,7 +9,7 @@ from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, 
     FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
-    Region, RegionRep,
+    Region, RegionRep, UserActivity,
 )
 from .resources import UserResource, UserContractResource, UserContractGoalResource, RewardResource, OptimizedUserResource
 
@@ -122,6 +122,13 @@ class UserAdmin(ImportExportMixin, admin.ModelAdmin):
     search_fields = ('username', 'email', 'last_name', 'user_number')
     list_filter = ('is_staff', 'is_active', 'region')
     inlines = [UserContractInline]
+
+@admin.register(UserActivity)
+class UserActivityAdmin(admin.ModelAdmin):
+    list_display = ('user', 'date', 'last_activity', 'visit_count')
+    list_filter = ('date', 'user')
+    search_fields = ('user__username', 'user__email', 'user__last_name')
+    date_hierarchy = 'date'
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):

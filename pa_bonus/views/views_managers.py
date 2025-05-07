@@ -9,8 +9,9 @@ from django.db import transaction
 import logging
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file, process_stock_file
-from pa_bonus.models import FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction
-from pa_bonus.models import EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand
+from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction,
+                             EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand,
+                             UserActivity)
 from pa_bonus.utilities import ManagerGroupRequiredMixin
 
 from pa_bonus.exports import generate_telemarketing_export
@@ -917,4 +918,56 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
         }
         
         return render(request, self.template_name, context)
+
+class UserActivityDashboardView(ManagerGroupRequiredMixin, View):
+    """
+    View for managers to analyze user activity.
+    """
+    template_name = 'manager/user_activity_dashboard.html'
     
+    def get(self, request):
+        from django.db.models import Count, Sum
+        from django.db.models.functions import TruncDay, TruncMonth
+        import datetime
+        
+        # Get activity for the last 30 days
+        thirty_days_ago = timezone.now().date() - datetime.timedelta(days=30)
+        
+        # Daily activity counts
+        daily_activity = UserActivity.objects.filter(
+            date__gte=thirty_days_ago
+        ).annotate(
+            day=TruncDay('date')
+        ).values('day').annotate(
+            users=Count('user', distinct=True),
+            visits=Sum('visit_count')
+        ).order_by('day')
+        
+        # Most active users
+        most_active_users = UserActivity.objects.filter(
+            date__gte=thirty_days_ago
+        ).values('user__username', 'user__first_name', 'user__last_name', 'user__email').annotate(
+            total_visits=Sum('visit_count')
+        ).order_by('-total_visits')[:20]
+        
+        # Recently active users (last 7 days)
+        seven_days_ago = timezone.now().date() - datetime.timedelta(days=7)
+        recently_active = UserActivity.objects.filter(
+            date__gte=seven_days_ago
+        ).values('user').distinct().count()
+        
+        # Total users in system
+        total_users = User.objects.count()
+        
+        # Percent of active users
+        active_percent = (recently_active / total_users * 100) if total_users > 0 else 0
+        
+        context = {
+            'daily_activity': daily_activity,
+            'most_active_users': most_active_users,
+            'recently_active': recently_active,
+            'total_users': total_users,
+            'active_percent': active_percent,
+        }
+        
+        return render(request, self.template_name, context)
