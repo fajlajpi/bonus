@@ -721,7 +721,7 @@ small {
   font-size: 0.85rem;
   text-transform: uppercase;
   }
-  .availability-badge.available {
+  .availability-badge.available, .availability-badge.available_last_units {
   background-color: var(--success-color);
   color: white;
   }

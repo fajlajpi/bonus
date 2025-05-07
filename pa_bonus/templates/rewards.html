@@ -44,11 +44,6 @@
               <p class="reward-description">{{ reward.description }}</p>
               <div class="reward-metadata">
                 <span class="reward-code">Kód: {{ reward.abra_code }}</span>
-                {% if reward.brand %}
-                  <span class="reward-brand">Značka: {{ reward.brand.name }}</span>
-                {% else %}
-                  <span class="reward-brand">Značka: Všechny značky</span>
-                {% endif %}
               </div>
             </td>
             <td class="reward-cost-cell">
@@ -59,6 +54,8 @@
               <span class="availability-badge {{ reward.availability|lower }}">
                 {% if reward.availability == 'AVAILABLE' %}
                   Skladem
+                {% elif reward.availability == 'AVAILABLE_LAST_UNITS' %}
+                  Skladem poslední kusy
                 {% elif reward.availability == 'ON_DEMAND' %}
                   Na objednání
                 {% elif reward.availability == 'UNAVAILABLE' %}
