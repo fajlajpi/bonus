@@ -95,7 +95,7 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
         return render(request, self.template_name, context)
     
     
-@permission_required('pa_bonus.can_manage', raise_exception=True)
+@permission_required('pa_bonus.add_fileupload', raise_exception=True)
 def upload_file(request):
     """
     Handles file uploads for processing invoice data.
@@ -135,7 +135,7 @@ def upload_file(request):
     
     return render(request, 'upload.html', {'form': form})
 
-@permission_required('pa_bonus.can_manage', raise_exception=True)
+@permission_required('pa_bonus.change_reward', raise_exception=True)
 def upload_stock(request):
     """
     Handles file uploads for processing stock data and updating reward availability.
@@ -175,7 +175,7 @@ def upload_stock(request):
     
     return render(request, 'manager/upload_stock.html', {'form': form})
 
-@permission_required('pa_bonus.can_manage', raise_exception=True)
+@permission_required('pa_bonus.add_fileupload', raise_exception=True)
 def upload_history(request):
     """
     Displays the history of uploaded files.
