@@ -1205,7 +1205,7 @@ small {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .rewards-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: var(--spacing-sm);
@@ -1221,6 +1221,91 @@ small {
   
   .reward-description {
     font-size: 0.85rem;
+  }
+  /* Change table layout to block display for mobile */
+  .rewards-table, 
+  .rewards-table thead, 
+  .rewards-table tbody, 
+  .rewards-table tr, 
+  .rewards-table th, 
+  .rewards-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Hide table headers on mobile */
+  .rewards-table thead {
+    display: none;
+  }
+  
+  /* Make each row look like a card */
+  .rewards-table tr {
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  
+  /* Adjust image cell */
+  .reward-image-cell {
+    text-align: center;
+    padding: var(--spacing-sm);
+    background-color: var(--neutral-bg);
+  }
+  
+  /* Organize all other cells in a consistent manner */
+  .reward-info-cell, 
+  .reward-cost-cell, 
+  .reward-status-cell, 
+  .reward-quantity-cell {
+    padding: var(--spacing-sm);
+    border-top: 1px solid #eee;
+  }
+  
+  /* Create a flex layout for the last 3 cells */
+  .reward-cost-cell, 
+  .reward-status-cell, 
+  .reward-quantity-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  /* Add pseudo-elements for labels */
+  .reward-cost-cell::before {
+    content: "Body:";
+    font-weight: bold;
+    margin-right: var(--spacing-sm);
+  }
+  
+  .reward-status-cell::before {
+    content: "Dostupnost:";
+    font-weight: bold;
+    margin-right: var(--spacing-sm);
+  }
+  
+  .reward-quantity-cell::before {
+    content: "Množství:";
+    font-weight: bold;
+    margin-right: var(--spacing-sm);
+  }
+  
+  /* Reposition the point cost value for mobile */
+  .reward-cost-cell .point-cost {
+    font-size: 1.5rem;
+    margin-right: 0.2rem;
+  }
+  
+  /* Align point cost and "bodů" text in a row */
+  .reward-cost-cell div:last-child {
+    margin-top: 0;
+    display: inline;
+  }
+  
+  /* Make input wider on mobile */
+  .reward-input {
+    width: 80px;
   }
 }
 .sms-export-container {
@@ -1320,91 +1405,4 @@ textarea.form-control {
   padding: 0.1rem 0.4rem;
   border-radius: 0.3rem;
   font-size: 0.8rem;
-}
-@media (max-width: 768px) {
-  /* Change table layout to block display for mobile */
-  .rewards-table, 
-  .rewards-table thead, 
-  .rewards-table tbody, 
-  .rewards-table tr, 
-  .rewards-table th, 
-  .rewards-table td {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  
-  /* Hide table headers on mobile */
-  .rewards-table thead {
-    display: none;
-  }
-  
-  /* Make each row look like a card */
-  .rewards-table tr {
-    margin-bottom: var(--spacing-md);
-    border-radius: var(--border-radius-md);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-  }
-  
-  /* Adjust image cell */
-  .reward-image-cell {
-    text-align: center;
-    padding: var(--spacing-sm);
-    background-color: var(--neutral-bg);
-  }
-  
-  /* Organize all other cells in a consistent manner */
-  .reward-info-cell, 
-  .reward-cost-cell, 
-  .reward-status-cell, 
-  .reward-quantity-cell {
-    padding: var(--spacing-sm);
-    border-top: 1px solid #eee;
-  }
-  
-  /* Create a flex layout for the last 3 cells */
-  .reward-cost-cell, 
-  .reward-status-cell, 
-  .reward-quantity-cell {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  
-  /* Add pseudo-elements for labels */
-  .reward-cost-cell::before {
-    content: "Body:";
-    font-weight: bold;
-    margin-right: var(--spacing-sm);
-  }
-  
-  .reward-status-cell::before {
-    content: "Dostupnost:";
-    font-weight: bold;
-    margin-right: var(--spacing-sm);
-  }
-  
-  .reward-quantity-cell::before {
-    content: "Množství:";
-    font-weight: bold;
-    margin-right: var(--spacing-sm);
-  }
-  
-  /* Reposition the point cost value for mobile */
-  .reward-cost-cell .point-cost {
-    font-size: 1.5rem;
-    margin-right: 0.2rem;
-  }
-  
-  /* Align point cost and "bodů" text in a row */
-  .reward-cost-cell div:last-child {
-    margin-top: 0;
-    display: inline;
-  }
-  
-  /* Make input wider on mobile */
-  .reward-input {
-    width: 80px;
-  }
 }
