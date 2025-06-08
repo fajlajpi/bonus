@@ -238,3 +238,109 @@ class InvoiceBrandTurnoverAdmin(admin.ModelAdmin):
     list_display = ('invoice', 'brand', 'amount')
     list_filter = ('brand',)
     search_fields = ('invoice__invoice_number', 'invoice__client_number', 'brand__name')
+
+# TEST ADDITION, A BIT MESSY
+import csv
+import datetime
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+from django.http import HttpResponse
+from django.db.models import Sum, Value, DecimalField
+from django.db.models.functions import Coalesce
+
+def export_turnover_action(modeladmin, request, queryset):
+    """
+    Admin action to export selected users' turnover data.
+    This will appear in the Actions dropdown in Django Admin.
+    """
+    date_from = datetime.date(2025, 1, 1)
+    date_to = datetime.date.today()
+    
+    # Create CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="users_turnover_{datetime.date.today().isoformat()}.csv"'
+    
+    writer = csv.writer(response)
+    # CSV headers
+    writer.writerow(['User Number', 'Username', 'Email', 'Total Net Turnover', 'Contract Brands'])
+    
+    for user in queryset:
+        # Skip users without user_number
+        if not hasattr(user, 'user_number') or not user.user_number:
+            writer.writerow([f'No user_number', user.username, user.email, '0.00', 'No contract'])
+            continue
+            
+        try:
+            # Get user's active contract
+            active_contract = UserContract.objects.get(
+                user_id=user, 
+                is_active=True
+            )
+            contract_brands = [bb.brand_id for bb in active_contract.brandbonuses.all()]
+            brand_names = [brand.name for brand in contract_brands]  # Assuming Brand has a 'name' field
+        except UserContract.DoesNotExist:
+            writer.writerow([user.user_number, user.username, user.email, '0.00', 'No active contract'])
+            continue
+        
+        if not contract_brands:
+            writer.writerow([user.user_number, user.username, user.email, '0.00', 'No contracted brands'])
+            continue
+        
+        total_net_turnover = 0
+        
+        # Calculate turnover for each contracted brand
+        for brand in contract_brands:
+            # Invoice turnover
+            invoice_turnover = InvoiceBrandTurnover.objects.filter(
+                invoice__client_number=user.user_number,
+                invoice__invoice_date__gte=date_from,
+                invoice__invoice_date__lte=date_to,
+                invoice__invoice_type='INVOICE',
+                brand=brand
+            ).aggregate(
+                total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
+            )['total']
+            
+            # Credit note turnover
+            credit_turnover = InvoiceBrandTurnover.objects.filter(
+                invoice__client_number=user.user_number,
+                invoice__invoice_date__gte=date_from,
+                invoice__invoice_date__lte=date_to,
+                invoice__invoice_type='CREDIT_NOTE',
+                brand=brand
+            ).aggregate(
+                total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
+            )['total']
+            
+            # Add to total
+            total_net_turnover += (invoice_turnover - credit_turnover)
+        
+        # Write row to CSV
+        writer.writerow([
+            user.user_number, 
+            user.username, 
+            user.email,
+            f'{total_net_turnover:.2f}',
+            ', '.join(brand_names)
+        ])
+    
+    return response
+
+# Set the action description (what appears in the dropdown)
+export_turnover_action.short_description = "Export turnover data for selected users"
+
+
+# Custom UserAdmin class
+class CustomUserAdmin(BaseUserAdmin):
+    # Add your custom action to the actions list
+    actions = BaseUserAdmin.actions + (export_turnover_action, )
+    
+    # Optional: Add more fields to the list display
+    list_display = BaseUserAdmin.list_display + ('date_joined',)
+    
+    # Optional: Add filters
+    list_filter = BaseUserAdmin.list_filter + ('date_joined',)
+
+
+admin.site.add_action(export_turnover_action, 'export_turnover_data')
