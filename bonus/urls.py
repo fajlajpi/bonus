@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 from pa_bonus.views import views_managers as vm, views_users as vu, views_public as vp
 from pa_bonus.forms import EmailAuthenticationForm
 
@@ -36,6 +36,7 @@ urlpatterns.extend([
     path('contact/', TemplateView.as_view(template_name='contact.html'), name='contact'),
     path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
     path('katalog/', vp.PublicCatalogueView.as_view(), name='public_catalogue'),
+    path('registrace', RedirectView.as_view(url="https://docs.google.com/forms/d/e/1FAIpQLSc6MCWiLwryMeB5FwUgraf_2XvmvuYedqcx1nDHjLOzlJEQeQ/viewform?usp=sf_link"), name='registration')
 ])
 
 # CLIENT FACING URLS
