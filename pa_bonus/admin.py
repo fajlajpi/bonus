@@ -1,6 +1,7 @@
 import logging
 from django import forms
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.admin.widgets import FilteredSelectMultiple, AdminDateWidget
 from import_export import resources, fields, widgets
 from import_export.widgets import DateWidget
@@ -41,7 +42,7 @@ class UserContractInlineFormSet(BaseInlineFormSet):
 
 class UserContractInline(admin.TabularInline):
     model = UserContract
-    extra = 1  # Number of empty forms shown
+    extra = 0  # Number of empty forms shown
     formset = UserContractInlineFormSet
 
 class UserContractGoalInline(admin.TabularInline):
@@ -131,7 +132,7 @@ class RegionRepAdmin(admin.ModelAdmin):
         return form
 
 @admin.register(User)
-class UserAdmin(ImportExportMixin, admin.ModelAdmin):
+class UserAdmin(ImportExportMixin, BaseUserAdmin):
     resource_class = OptimizedUserResource
     list_display = ('username', 'email', 'last_name', 'first_name', 'user_number', 'user_phone', 'region')
     search_fields = ('username', 'email', 'last_name', 'user_number')
