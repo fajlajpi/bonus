@@ -139,6 +139,15 @@ class UserAdmin(ImportExportMixin, BaseUserAdmin):
     list_filter = ('is_staff', 'is_active', 'region')
     inlines = [UserContractInline]
 
+    # Extend fieldsets to include custom fields from the User model
+    fieldsets = BaseUserAdmin.fieldsets + (
+        ('Custom fields', {'fields': ('user_number', 'user_phone', 'region')}),
+    )
+
+    add_fieldsets = BaseUserAdmin.add_fieldsets + (
+        ('Custom fields', {'fields': ('user_number', 'user_phone', 'region')}),
+    )
+
 @admin.register(UserActivity)
 class UserActivityAdmin(admin.ModelAdmin):
     list_display = ('user', 'date', 'last_activity', 'visit_count')
