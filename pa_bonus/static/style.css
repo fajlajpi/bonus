@@ -1406,3 +1406,395 @@ textarea.form-control {
   border-radius: 0.3rem;
   font-size: 0.8rem;
 }
+
+/* Extra Goals Styles - Add to style.css */
+
+/* Container and Layout */
+.extra-goals-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.goals-intro {
+  background-color: #e1effa;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.no-goals-message, .no-contract-message {
+  background-color: var(--neutral-bg);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  text-align: center;
+  color: #666;
+}
+
+/* Goal Cards */
+.goal-card {
+  background-color: var(--container-bg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.goal-header h2 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+.goal-period {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* Brand Badges */
+.goal-brands {
+  margin-bottom: var(--spacing-md);
+}
+
+.brand-badge {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--border-radius-lg);
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+}
+
+/* Goal Summary */
+.goal-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  background-color: var(--neutral-bg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.summary-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.summary-value {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+/* Progress Bars */
+.progress-bar-container {
+  width: 100%;
+  height: 30px;
+  background-color: #e0e0e0;
+  border-radius: 15px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #48BB78 0%, #38A169 100%);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s ease;
+  min-width: 40px;
+}
+
+.progress-text {
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* Evaluation Periods */
+.evaluation-periods {
+  margin-top: var(--spacing-lg);
+}
+
+.evaluation-periods h3 {
+  margin-bottom: var(--spacing-md);
+  color: var(--primary-color);
+}
+
+.periods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* Period Cards */
+.period-card {
+  background-color: white;
+  border: 2px solid #e0e0e0;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  transition: all 0.2s ease;
+}
+
+.period-card.current-period {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(107, 154, 196, 0.1);
+}
+
+.period-card.status-achieved {
+  border-color: var(--success-color);
+  background-color: #f0fdf4;
+}
+
+.period-card.status-failed {
+  border-color: var(--error-color);
+  background-color: #fef2f2;
+}
+
+.period-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.period-dates {
+  font-weight: bold;
+  color: #333;
+}
+
+.current-badge {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* Status Indicators */
+.period-status {
+  margin-bottom: var(--spacing-sm);
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.status-indicator.achieved {
+  color: var(--success-color);
+}
+
+.status-indicator.failed {
+  color: var(--error-color);
+}
+
+.status-indicator.pending {
+  color: #F59E0B;
+}
+
+.status-indicator.progress {
+  color: var(--primary-color);
+}
+
+.status-indicator.future {
+  color: #9CA3AF;
+}
+
+/* Period Details */
+.period-details {
+  margin-top: var(--spacing-sm);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0;
+  font-size: 0.9rem;
+}
+
+.detail-row span:first-child {
+  color: #666;
+}
+
+.detail-row.bonus-points {
+  margin-top: var(--spacing-xs);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid #e0e0e0;
+}
+
+.points-value {
+  color: var(--success-color);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+/* Mini Progress Bar */
+.mini-progress-bar {
+  flex: 1;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  margin: 0 var(--spacing-xs);
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background-color: var(--primary-color);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Recovery Note */
+.recovery-note {
+  background-color: #FEF3C7;
+  border: 1px solid #FCD34D;
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.recovery-note p {
+  margin: 0;
+  color: #92400E;
+}
+
+/* Manager Dashboard Goal Summary */
+.goal-summary-widget {
+  background-color: var(--neutral-bg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.goal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.goal-stat-item {
+  text-align: center;
+  padding: var(--spacing-sm);
+  background-color: white;
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-sm);
+}
+
+.goal-stat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+.goal-stat-label {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Goal Evaluation Table */
+.evaluation-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.evaluation-table th {
+  background-color: var(--primary-color);
+  color: white;
+  padding: var(--spacing-sm);
+  text-align: left;
+  font-weight: bold;
+}
+
+.evaluation-table td {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.evaluation-table tr:hover {
+  background-color: var(--neutral-bg);
+}
+
+.evaluation-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.evaluation-type-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.evaluation-type-badge.milestone {
+  background-color: #E0E7FF;
+  color: #3730A3;
+}
+
+.evaluation-type-badge.recovery {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.evaluation-type-badge.final {
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .goal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  
+  .goal-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .periods-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .evaluation-table {
+    font-size: 0.85rem;
+  }
+  
+  .evaluation-table th,
+  .evaluation-table td {
+    padding: 0.5rem;
+  }
+}

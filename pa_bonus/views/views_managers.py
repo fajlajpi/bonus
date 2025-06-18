@@ -11,8 +11,8 @@ from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file, process_stock_file
 from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction,
                              EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand,
-                             UserActivity)
-from pa_bonus.utilities import ManagerGroupRequiredMixin
+                             UserActivity, UserContractGoal, GoalEvaluation)
+from pa_bonus.utilities import ManagerGroupRequiredMixin, calculate_turnover_for_goal
 
 from pa_bonus.exports import generate_telemarketing_export
 
@@ -85,11 +85,46 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
         ).filter(
             available_points__gt=0
         ).order_by('-available_points')[:10]
+
+        # NEW: Add goal evaluation statistics
+        today = timezone.now().date()
+        
+        # Count pending goal evaluations
+        pending_evaluations = 0
+        total_potential_points = 0
+        
+        # Get all active goals
+        active_goals = UserContractGoal.objects.filter(
+            goal_period_from__lte=today
+        ).select_related('user_contract__user_id')
+        
+        for goal in active_goals:
+            periods = goal.get_evaluation_periods()
+            for start, end, is_final in periods:
+                if end < today:  # Period has ended
+                    # Check if already evaluated
+                    if not goal.evaluations.filter(period_start=start, period_end=end).exists():
+                        pending_evaluations += 1
+                        
+                        # Calculate potential points (rough estimate)
+                        targets = goal.get_period_targets(start, end)
+                        actual = calculate_turnover_for_goal(
+                            goal.user_contract.user_id,
+                            goal.brands.all(),
+                            start, end
+                        )
+                        if actual > targets['goal_value']:
+                            potential_points = int((float(actual) - targets['goal_base']) * goal.bonus_percentage)
+                            total_potential_points += max(0, potential_points)
         
         context = {
             'points_data': points_data,
             'request_data': request_data,
             'top_clients': top_clients,
+            'goal_stats': {
+                'pending_evaluations': pending_evaluations,
+                'potential_points': total_potential_points
+                }
         }
         
         return render(request, self.template_name, context)
@@ -971,3 +1006,233 @@ class UserActivityDashboardView(ManagerGroupRequiredMixin, View):
         }
         
         return render(request, self.template_name, context)
+    
+class GoalEvaluationView(ManagerGroupRequiredMixin, View):
+    """
+    Allows managers to evaluate extra goals and award bonus points.
+    Similar to transaction approval but for goal achievements.
+    """
+    template_name = 'manager/goal_evaluation.html'
+    
+    def _determine_evaluation_result(self, goal, start_date, end_date, actual_turnover, targets, is_final):
+        """
+        Determine evaluation type, bonus points, and achievement status.
+        Implements the business logic for different evaluation scenarios.
+        """
+        # Check if this period's target was achieved
+        period_achieved = actual_turnover >= targets['goal_value']
+        
+        if not is_final:
+            # Standard milestone evaluation
+            if period_achieved:
+                bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                return 'MILESTONE', max(0, bonus_points), True
+            else:
+                return 'MILESTONE', 0, False
+        
+        # For final evaluation, check recovery scenarios
+        if goal.allow_full_period_recovery:
+            # Get all previous evaluations
+            previous_evals = goal.evaluations.filter(
+                period_end__lt=end_date
+            ).order_by('period_end')
+            
+            # Check if any previous milestone was achieved
+            any_previous_achieved = any(e.is_achieved for e in previous_evals)
+            
+            if any_previous_achieved:
+                # Scenario 1: Previous milestone achieved, evaluate only this period
+                if period_achieved:
+                    bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                    return 'FINAL', max(0, bonus_points), True
+                else:
+                    return 'FINAL', 0, False
+            else:
+                # No previous milestones achieved - check full period recovery
+                full_actual = calculate_turnover_for_goal(
+                    goal.user_contract.user_id,
+                    goal.brands.all(),
+                    goal.goal_period_from,
+                    goal.goal_period_to
+                )
+                
+                if full_actual >= goal.goal_value:
+                    # Scenario 2: Full period recovery
+                    bonus_points = int((full_actual - goal.goal_base) * goal.bonus_percentage)
+                    return 'RECOVERY', max(0, bonus_points), True
+                elif period_achieved:
+                    # Scenario 3: Only this period achieved
+                    bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                    return 'FINAL', max(0, bonus_points), True
+                else:
+                    return 'FINAL', 0, False
+        else:
+            # Simple evaluation without recovery option
+            if period_achieved:
+                bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                return 'FINAL', max(0, bonus_points), True
+            else:
+                return 'FINAL', 0, False
+
+    def get(self, request):
+        from django.db.models import Q, Exists, OuterRef
+        today = timezone.now().date()
+        
+        # Get filter parameters
+        evaluation_type = request.GET.get('type', 'pending')  # pending, all, evaluated
+        region_id = request.GET.get('region', '')
+        
+        # Base query - get goals with evaluation periods that have ended
+        goals_query = UserContractGoal.objects.filter(
+            goal_period_from__lte=today
+        ).select_related('user_contract__user_id')
+        
+        # Apply region filter if specified
+        if region_id and region_id != 'all':
+            goals_query = goals_query.filter(
+                user_contract__user_id__region_id=region_id
+            )
+        
+        # Process each goal to find pending evaluations
+        pending_evaluations = []
+        
+        for goal in goals_query:
+            periods = goal.get_evaluation_periods()
+            
+            for start_date, end_date, is_final in periods:
+                # Skip future periods
+                if end_date > today:
+                    continue
+                
+                # Check if already evaluated
+                existing_evaluation = goal.evaluations.filter(
+                    period_start=start_date,
+                    period_end=end_date
+                ).first()
+                
+                if evaluation_type == 'pending' and existing_evaluation:
+                    continue
+                elif evaluation_type == 'evaluated' and not existing_evaluation:
+                    continue
+                
+                # Calculate turnover and targets
+                targets = goal.get_period_targets(start_date, end_date)
+                actual_turnover = calculate_turnover_for_goal(
+                    goal.user_contract.user_id,
+                    goal.brands.all(),
+                    start_date,
+                    end_date
+                )
+                
+                # Determine evaluation type and potential bonus
+                eval_type, bonus_points, is_achieved = self._determine_evaluation_result(
+                    goal, start_date, end_date, actual_turnover, targets, is_final
+                )
+                
+                pending_evaluations.append({
+                    'goal': goal,
+                    'user': goal.user_contract.user_id,
+                    'period_start': start_date,
+                    'period_end': end_date,
+                    'is_final': is_final,
+                    'actual_turnover': actual_turnover,
+                    'target_turnover': targets['goal_value'],
+                    'baseline_turnover': targets['goal_base'],
+                    'evaluation_type': eval_type,
+                    'bonus_points': bonus_points,
+                    'is_achieved': is_achieved,
+                    'existing_evaluation': existing_evaluation,
+                    'brands': list(goal.brands.all())
+                })
+        
+        # Get regions for filter
+        regions = Region.objects.filter(is_active=True).order_by('name')
+        
+        # Sort evaluations by user and date
+        pending_evaluations.sort(key=lambda x: (x['user'].last_name, x['period_end']))
+        
+        context = {
+            'evaluations': pending_evaluations,
+            'regions': regions,
+            'selected_region': region_id,
+            'evaluation_type': evaluation_type,
+            'today': today
+        }
+        
+        return render(request, self.template_name, context)
+    
+    @transaction.atomic
+    def post(self, request):
+        """Process selected goal evaluations and create bonus transactions."""
+        evaluations_to_process = request.POST.getlist('evaluate')
+        
+        success_count = 0
+        total_points = 0
+        
+        for eval_key in evaluations_to_process:
+            # Parse the evaluation key (format: "goal_id:start_date:end_date")
+            try:
+                goal_id, start_str, end_str = eval_key.split(':')
+                goal = UserContractGoal.objects.get(id=goal_id)
+                start_date = datetime.datetime.strptime(start_str, '%Y-%m-%d').date()
+                end_date = datetime.datetime.strptime(end_str, '%Y-%m-%d').date()
+            except (ValueError, UserContractGoal.DoesNotExist):
+                continue
+            
+            # Check if already evaluated
+            if goal.evaluations.filter(period_start=start_date, period_end=end_date).exists():
+                continue
+            
+            # Calculate evaluation details
+            targets = goal.get_period_targets(start_date, end_date)
+            actual_turnover = calculate_turnover_for_goal(
+                goal.user_contract.user_id,
+                goal.brands.all(),
+                start_date,
+                end_date
+            )
+            
+            eval_type, bonus_points, is_achieved = self._determine_evaluation_result(
+                goal, start_date, end_date, actual_turnover, targets, 
+                end_date == goal.goal_period_to
+            )
+            
+            # Create evaluation record
+            evaluation = GoalEvaluation.objects.create(
+                goal=goal,
+                evaluation_date=timezone.now().date(),
+                period_start=start_date,
+                period_end=end_date,
+                actual_turnover=actual_turnover,
+                target_turnover=targets['goal_value'],
+                baseline_turnover=targets['goal_base'],
+                is_achieved=is_achieved,
+                bonus_points=bonus_points,
+                evaluation_type=eval_type,
+                evaluated_by=request.user
+            )
+            
+            # Create points transaction if bonus points awarded
+            if bonus_points > 0:
+                transaction = PointsTransaction.objects.create(
+                    user=goal.user_contract.user_id,
+                    value=bonus_points,
+                    date=end_date,
+                    description=f"Extra goal bonus for period {start_date} to {end_date}",
+                    type='EXTRA_POINTS',
+                    status='CONFIRMED'
+                )
+                evaluation.points_transaction = transaction
+                evaluation.save()
+                
+                total_points += bonus_points
+            
+            success_count += 1
+        
+        messages.success(
+            request,
+            f"Successfully evaluated {success_count} goal periods, "
+            f"awarding {total_points} bonus points in total."
+        )
+        
+        return redirect('goal_evaluation')

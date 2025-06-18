@@ -4,7 +4,10 @@ from django.contrib import messages
 from django.views.generic import TemplateView, ListView, DetailView, View
 from django.db.models import Q
 from django.db import transaction
-from pa_bonus.models import PointsTransaction, UserContract, Reward, RewardRequest, RewardRequestItem
+from django.utils import timezone
+from pa_bonus.models import (PointsTransaction, UserContract, Reward, RewardRequest, RewardRequestItem,
+                             UserContractGoal, InvoiceBrandTurnover)
+from pa_bonus.utilities import calculate_turnover_for_goal
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     """
@@ -23,7 +26,9 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-
+        today = timezone.now().date()
+        
+        # Existing code...
         # Get the user's active contract and bonuses
         try:
             contract = UserContract.objects.get(
@@ -32,15 +37,51 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             )
             context['contract'] = contract
             context['brand_bonuses'] = contract.brandbonuses.all()
+            
+            # NEW: Get active extra goals
+            active_goals = UserContractGoal.objects.filter(
+                user_contract=contract,
+                goal_period_from__lte=today,
+                goal_period_to__gte=today
+            )
+            
+            if active_goals.exists():
+                # Get current period for the first active goal
+                goal = active_goals.first()
+                periods = goal.get_evaluation_periods()
+                
+                current_period = None
+                for start, end, is_final in periods:
+                    if start <= today <= end:
+                        current_period = (start, end, is_final)
+                        break
+                
+                if current_period:
+                    # Calculate progress for current period
+                    targets = goal.get_period_targets(current_period[0], current_period[1])
+                    actual_turnover = calculate_turnover_for_goal(
+                        user, goal.brands.all(), current_period[0], current_period[1]
+                    )
+                    progress = (actual_turnover / targets['goal_value'] * 100) if targets['goal_value'] > 0 else 0
+                    
+                    context['active_goal'] = {
+                        'goal': goal,
+                        'period_start': current_period[0],
+                        'period_end': current_period[1],
+                        'target': targets['goal_value'],
+                        'actual': actual_turnover,
+                        'progress': min(progress, 100),
+                        'remaining': max(0, targets['goal_value'] - actual_turnover)
+                    }
         except UserContract.DoesNotExist:
             context['contract'] = None
             context['brand_bonuses'] = []
+            context['active_goal'] = None
         
         # Calculate current point total
-        # TODO: Use PointsBalance model to avoid this calculation
         total_points = user.get_balance()
-
         context['total_points'] = total_points
+        
         return context
 
 class HistoryView(LoginRequiredMixin, ListView):
@@ -252,3 +293,105 @@ class ExtraGoalsView(LoginRequiredMixin, TemplateView):
     Displays the extra goals page (currently under construction).
     """
     template_name = 'extra_goals.html'
+
+class ExtraGoalsDetailView(LoginRequiredMixin, View):
+    """
+    Displays detailed extra goals progress for the logged-in user.
+    Shows current goals, evaluation periods, and progress tracking.
+    """
+    template_name = 'extra_goals_detail.html'
+    login_url = 'login'
+    
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        
+        # Get active contract
+        try:
+            active_contract = UserContract.objects.get(
+                user_id=user,
+                is_active=True
+            )
+        except UserContract.DoesNotExist:
+            return render(request, self.template_name, {
+                'error': 'No active contract found',
+                'goals': []
+            })
+        
+        # Get all extra goals for the active contract
+        goals = UserContractGoal.objects.filter(
+            user_contract=active_contract
+        ).prefetch_related('brands', 'evaluations')
+        
+        goals_data = []
+        
+        for goal in goals:
+            # Get evaluation periods
+            periods = goal.get_evaluation_periods()
+            period_data = []
+            
+            for start_date, end_date, is_final in periods:
+                # Get targets for this period
+                targets = goal.get_period_targets(start_date, end_date)
+                
+                # Calculate actual turnover for this period
+                actual_turnover = calculate_turnover_for_goal(
+                    user, goal.brands.all(), start_date, end_date
+                )
+                
+                # Check if this period has been evaluated
+                evaluation = goal.evaluations.filter(
+                    period_start=start_date,
+                    period_end=end_date
+                ).first()
+                
+                # Determine period status
+                if evaluation:
+                    status = 'achieved' if evaluation.is_achieved else 'failed'
+                    bonus_points = evaluation.bonus_points
+                elif end_date < today:
+                    status = 'pending_evaluation'
+                    bonus_points = 0
+                elif start_date <= today <= end_date:
+                    status = 'in_progress'
+                    bonus_points = 0
+                else:
+                    status = 'future'
+                    bonus_points = 0
+                
+                # Calculate progress percentage
+                progress = (actual_turnover / targets['goal_value'] * 100) if targets['goal_value'] > 0 else 0
+                
+                period_data.append({
+                    'start': start_date,
+                    'end': end_date,
+                    'is_final': is_final,
+                    'target': targets['goal_value'],
+                    'baseline': targets['goal_base'],
+                    'actual': actual_turnover,
+                    'progress': min(progress, 100),  # Cap at 100% for display
+                    'status': status,
+                    'evaluation': evaluation,
+                    'bonus_points': bonus_points,
+                    'is_current': start_date <= today <= end_date
+                })
+            
+            # Calculate overall progress
+            total_actual = sum(p['actual'] for p in period_data if p['end'] <= today)
+            total_progress = (total_actual / goal.goal_value * 100) if goal.goal_value > 0 else 0
+            
+            goals_data.append({
+                'goal': goal,
+                'periods': period_data,
+                'total_progress': min(total_progress, 100),
+                'total_actual': total_actual,
+                'brands': goal.brands.all()
+            })
+        
+        context = {
+            'contract': active_contract,
+            'goals': goals_data,
+            'today': today
+        }
+        
+        return render(request, self.template_name, context)
