@@ -10,7 +10,7 @@ from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
     User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, 
     FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
-    Region, RegionRep, UserActivity,
+    Region, RegionRep, UserActivity, GoalEvaluation, 
 )
 from .resources import UserResource, UserContractResource, UserContractGoalResource, RewardResource, OptimizedUserResource
 
@@ -174,6 +174,12 @@ class UserContractGoalAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('user_contract', 'goal_period_from', 'goal_period_to', 'goal_value', 'goal_base')
     list_filter = ('goal_period_from', 'goal_period_to')
     search_fields = ('user_contract__user_id__email',)
+
+@admin.register(GoalEvaluation)
+class GoalEvaluationAdmin(admin.ModelAdmin):
+    list_display = ('goal', 'evaluation_date', 'period_start', 'period_end', 'actual_turnover', 'target_turnover', 'baseline_turnover', 'is_achieved', 'bonus_points', 'evaluation_type')
+    list_filter = ('evaluation_date', 'is_achieved', 'evaluation_type')
+    search_fields = ('goal__user_contract__user_id__username', 'goal__user_contract__user_id__email')
 
 @admin.register(PointsTransaction)
 class PointsTransactionAdmin(ExportMixin, admin.ModelAdmin):
