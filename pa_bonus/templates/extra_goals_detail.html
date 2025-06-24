@@ -19,7 +19,7 @@
         </div>
     {% else %}
         <div class="goals-intro">
-            <p>Zde můžete sledovat pokrok vašich cílových bonusů. Za překročení stanovených cílů získáváte bonusové body navíc.</p>
+            <p>Zde můžete sledovat plnění vašich cílových bonusů. Za překročení stanovených cílů získáváte bonusové body navíc.</p>
         </div>
         
         {% for goal_data in goals %}
@@ -48,9 +48,9 @@
                     <span class="summary-value">{{ goal_data.total_actual|floatformat:0 }} Kč</span>
                 </div>
                 <div class="summary-item">
-                    <span class="summary-label">Celkový pokrok:</span>
+                    <span class="summary-label">Celkem splněno:</span>
                     <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: {{ goal_data.total_progress }}%">
+                        <div class="progress-bar" style="width: {{ goal_data.total_progress|floatformat:0 }}%">
                             <span class="progress-text">{{ goal_data.total_progress|floatformat:0 }}%</span>
                         </div>
                     </div>
@@ -96,9 +96,9 @@
                             </div>
                             {% if period.status != 'future' %}
                             <div class="detail-row">
-                                <span>Pokrok:</span>
+                                <span>Splněno:</span>
                                 <div class="mini-progress-bar">
-                                    <div class="mini-progress-fill" style="width: {{ period.progress }}%"></div>
+                                    <div class="mini-progress-fill" style="width: {{ period.progress|floatformat:0 }}%"></div>
                                 </div>
                                 <span>{{ period.progress|floatformat:0 }}%</span>
                             </div>
@@ -117,7 +117,7 @@
             
             {% if goal_data.goal.allow_full_period_recovery %}
             <div class="recovery-note">
-                <p><strong>Poznámka:</strong> Pokud nesplníte dílčí cíle, ale splníte celkový cíl za celé období, získáte bonusové body za celé období.</p>
+                <p><strong>Poznámka:</strong> Pokud nesplníte dílčí cíle, ale splníte celkový cíl za celé období, získáte zpětně bonusové body za celé období.</p>
             </div>
             {% endif %}
         </div>

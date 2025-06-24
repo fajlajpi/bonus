@@ -1521,6 +1521,8 @@ textarea.form-control {
   justify-content: center;
   transition: width 0.3s ease;
   min-width: 40px;
+  max-width: 100%;
+  position: relative;
 }
 
 .progress-text {
@@ -1660,6 +1662,8 @@ textarea.form-control {
   border-radius: 4px;
   margin: 0 var(--spacing-xs);
   overflow: hidden;
+  position: relative;
+  max-width: 100px;
 }
 
 .mini-progress-fill {
@@ -1667,6 +1671,7 @@ textarea.form-control {
   background-color: var(--primary-color);
   border-radius: 4px;
   transition: width 0.3s ease;
+  max-width: 100%;
 }
 
 /* Recovery Note */
