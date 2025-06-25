@@ -1014,62 +1014,159 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
     """
     template_name = 'manager/goal_evaluation.html'
     
+    def _calculate_points_cap(self, goal):
+        """
+        Calculate the maximum points cap for the contract period.
+        Base: 20,000 points for 12 months, proportional for other lengths.
+        
+        Args:
+            goal: UserContractGoal instance
+            
+        Returns:
+            int: Maximum points allowed for the contract period
+        """
+        total_days = (goal.goal_period_to - goal.goal_period_from).days
+        # Approximate months (30.44 days per month on average)
+        total_months = total_days / 30.44
+        # 20,000 points for 12 months = ~1,667 points per month
+        return int(total_months * 1667)
+
+    def _get_total_awarded_points(self, goal, exclude_evaluation=None):
+        """
+        Get total points already awarded for this goal across all evaluations.
+        
+        Args:
+            goal: UserContractGoal instance
+            exclude_evaluation: Optional evaluation to exclude from the sum
+            
+        Returns:
+            int: Total points already awarded
+        """
+        from django.db.models import Sum
+        
+        evaluations = goal.evaluations.all()
+        if exclude_evaluation:
+            evaluations = evaluations.exclude(id=exclude_evaluation.id)
+        
+        return evaluations.aggregate(
+            total=Sum('bonus_points')
+        )['total'] or 0
+
+    def _apply_points_cap(self, points, goal, existing_points=0):
+        """
+        Apply the points cap, considering already awarded points.
+        
+        Args:
+            points: Points to be awarded
+            goal: UserContractGoal instance
+            existing_points: Points already awarded
+            
+        Returns:
+            int: The capped points amount that can be awarded
+        """
+        cap = self._calculate_points_cap(goal)
+        total_with_new = existing_points + points
+        
+        if total_with_new > cap:
+            # Can only award up to the cap
+            return max(0, cap - existing_points)
+        return points
+
     def _determine_evaluation_result(self, goal, start_date, end_date, actual_turnover, targets, is_final):
         """
         Determine evaluation type, bonus points, and achievement status.
-        Implements the business logic for different evaluation scenarios.
+        Implements the business logic for different evaluation scenarios with point caps.
+        
+        Business Rules:
+        1. Milestone evaluations: Award points if period target is met
+        2. Final evaluations with recovery: 
+        - First evaluate the final period normally
+        - Then check if full year target is met
+        - If yes, calculate total year points and subtract already awarded
+        3. All points are subject to the proportional annual cap
+        
+        Args:
+            goal: UserContractGoal instance
+            start_date: Period start date
+            end_date: Period end date
+            actual_turnover: Actual turnover achieved
+            targets: Dict with 'goal_value' and 'goal_base' for the period
+            is_final: Whether this is the final evaluation period
+            
+        Returns:
+            tuple: (evaluation_type, bonus_points, is_achieved)
         """
+        # Get total points already awarded for this goal
+        already_awarded = self._get_total_awarded_points(goal)
+        
         # Check if this period's target was achieved
         period_achieved = actual_turnover >= targets['goal_value']
         
         if not is_final:
             # Standard milestone evaluation
             if period_achieved:
-                bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                # Calculate points: half of the increase from base to goal
+                raw_points = int((targets['goal_value'] - targets['goal_base']) * goal.bonus_percentage)
+                # Apply cap considering already awarded points
+                bonus_points = self._apply_points_cap(raw_points, goal, already_awarded)
                 return 'MILESTONE', max(0, bonus_points), True
             else:
                 return 'MILESTONE', 0, False
         
         # For final evaluation, check recovery scenarios
         if goal.allow_full_period_recovery:
-            # Get all previous evaluations
+            # First, evaluate the final period as a milestone
+            period_points = 0
+            if period_achieved:
+                raw_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                period_points = self._apply_points_cap(raw_points, goal, already_awarded)
+            
+            # Get all previous evaluations to calculate total milestone points
             previous_evals = goal.evaluations.filter(
                 period_end__lt=end_date
             ).order_by('period_end')
             
-            # Check if any previous milestone was achieved
-            any_previous_achieved = any(e.is_achieved for e in previous_evals)
+            # Calculate total points from all previous milestones
+            previous_milestone_points = previous_evals.aggregate(
+                total=Sum('bonus_points')
+            )['total'] or 0
             
-            if any_previous_achieved:
-                # Scenario 1: Previous milestone achieved, evaluate only this period
-                if period_achieved:
-                    bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
-                    return 'FINAL', max(0, bonus_points), True
-                else:
-                    return 'FINAL', 0, False
-            else:
-                # No previous milestones achieved - check full period recovery
-                full_actual = calculate_turnover_for_goal(
-                    goal.user_contract.user_id,
-                    goal.brands.all(),
-                    goal.goal_period_from,
-                    goal.goal_period_to
-                )
+            # Check if we should attempt recovery
+            # Get full period actual turnover
+            full_actual = calculate_turnover_for_goal(
+                goal.user_contract.user_id,
+                goal.brands.all(),
+                goal.goal_period_from,
+                goal.goal_period_to
+            )
+            
+            if full_actual >= goal.goal_value:
+                # Recovery scenario - calculate total points for the year
+                # Points = half of (actual turnover - base)
+                total_year_points = int(float((full_actual - goal.goal_base)) * goal.bonus_percentage)
                 
-                if full_actual >= goal.goal_value:
-                    # Scenario 2: Full period recovery
-                    bonus_points = int((full_actual - goal.goal_base) * goal.bonus_percentage)
-                    return 'RECOVERY', max(0, bonus_points), True
-                elif period_achieved:
-                    # Scenario 3: Only this period achieved
-                    bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
-                    return 'FINAL', max(0, bonus_points), True
+                # Apply the annual cap
+                capped_year_points = min(total_year_points, self._calculate_points_cap(goal))
+                
+                # Calculate how many points we need to add (recovery points)
+                # This is the difference between what they should get for the year 
+                # and what they already got from milestones
+                recovery_points = capped_year_points - previous_milestone_points
+                
+                if recovery_points > period_points:
+                    # Recovery gives more points than just the final period
+                    return 'RECOVERY', max(0, recovery_points), True
                 else:
-                    return 'FINAL', 0, False
+                    # Final period evaluation gives more or equal points
+                    return 'FINAL', max(0, period_points), period_achieved
+            else:
+                # No recovery possible, just evaluate the final period
+                return 'FINAL', max(0, period_points), period_achieved
         else:
             # Simple evaluation without recovery option
             if period_achieved:
-                bonus_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                raw_points = int((float(actual_turnover) - targets['goal_base']) * goal.bonus_percentage)
+                bonus_points = self._apply_points_cap(raw_points, goal, already_awarded)
                 return 'FINAL', max(0, bonus_points), True
             else:
                 return 'FINAL', 0, False
@@ -1218,7 +1315,7 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
                     user=goal.user_contract.user_id,
                     value=bonus_points,
                     date=end_date,
-                    description=f"Extra goal bonus for period {start_date} to {end_date}",
+                    description=f"Extra bonus za období od {start_date} do {end_date}",
                     type='EXTRA_POINTS',
                     status='CONFIRMED'
                 )
@@ -1236,3 +1333,136 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
         )
         
         return redirect('goal_evaluation')
+    
+class GoalsOverviewView(ManagerGroupRequiredMixin, ListView):
+    """
+    Manager view showing overview of all extra goals with filtering and progress tracking.
+    
+    Displays a comprehensive list of all clients with active goals, their progress,
+    and comparison to ideal trajectory.
+    """
+    template_name = 'manager/goals_overview.html'
+    context_object_name = 'goal_data'
+    paginate_by = 300
+    
+    def get_queryset(self):
+        from django.db.models import Prefetch
+        today = timezone.now().date()
+        
+        # Base query - get all active goals
+        queryset = UserContractGoal.objects.filter(
+            goal_period_from__lte=today,
+            goal_period_to__gte=today
+        ).select_related(
+            'user_contract__user_id__region'
+        ).prefetch_related(
+            'brands',
+            'user_contract__brandbonuses__brand_id'
+        )
+        
+        # Apply region filter
+        region_id = self.request.GET.get('region')
+        if region_id and region_id != 'all':
+            queryset = queryset.filter(
+                user_contract__user_id__region_id=region_id
+            )
+        
+        # Apply brand filter
+        brand_id = self.request.GET.get('brand')
+        if brand_id and brand_id != 'all':
+            queryset = queryset.filter(
+                brands__id=brand_id
+            ).distinct()
+        
+        # Order by user last name
+        queryset = queryset.order_by('user_contract__user_id__last_name')
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.now().date()
+        
+        # Process each goal to add calculated fields
+        processed_goals = []
+        for goal in context['goal_data']:
+            user = goal.user_contract.user_id
+            
+            # Calculate current turnover
+            current_turnover = calculate_turnover_for_goal(
+                user,
+                goal.brands.all(),
+                goal.goal_period_from,
+                min(today, goal.goal_period_to)  # Don't count future dates
+            )
+            
+            # Calculate ideal turnover (linear progression)
+            total_days = (goal.goal_period_to - goal.goal_period_from).days + 1
+            elapsed_days = (today - goal.goal_period_from).days + 1
+            
+            # Ensure we don't exceed 100% for ideal calculation
+            if today >= goal.goal_period_to:
+                progress_ratio = 1.0
+                elapsed_days = total_days
+            else:
+                progress_ratio = elapsed_days / total_days
+            
+            ideal_turnover = goal.goal_value * progress_ratio
+            
+            # Calculate percentage of goal achieved
+            goal_percentage = (float(current_turnover) / goal.goal_value * 100) if goal.goal_value > 0 else 0
+            
+            # Determine if on track (within 5% of ideal)
+            ideal_percentage = (float(current_turnover) / ideal_turnover * 100) if ideal_turnover > 0 else 0
+            if ideal_percentage >= 95:
+                track_status = 'on_track'
+            elif ideal_percentage >= 85:
+                track_status = 'slightly_behind'
+            else:
+                track_status = 'behind'
+            
+            processed_goals.append({
+                'goal': goal,
+                'user': user,
+                'contract': goal.user_contract,
+                'brands': list(goal.brands.all()),
+                'current_turnover': current_turnover,
+                'ideal_turnover': ideal_turnover,
+                'goal_percentage': goal_percentage,
+                'ideal_percentage': ideal_percentage,
+                'track_status': track_status,
+                'days_elapsed': elapsed_days,
+                'days_total': total_days,
+                'progress_ratio': progress_ratio * 100  # As percentage
+            })
+        
+        # Replace the paginated data with our processed data
+        context['goal_data'] = processed_goals
+        
+        # Add filter options
+        context['regions'] = Region.objects.filter(is_active=True).order_by('name')
+        context['brands'] = Brand.objects.all().order_by('name')
+        
+        # Add selected filters
+        context['selected_region'] = self.request.GET.get('region', 'all')
+        context['selected_brand'] = self.request.GET.get('brand', 'all')
+        
+        # Summary statistics
+        if processed_goals:
+            context['summary'] = {
+                'total_goals': len(processed_goals),
+                'on_track': sum(1 for g in processed_goals if g['track_status'] == 'on_track'),
+                'slightly_behind': sum(1 for g in processed_goals if g['track_status'] == 'slightly_behind'),
+                'behind': sum(1 for g in processed_goals if g['track_status'] == 'behind'),
+                'avg_percentage': sum(g['goal_percentage'] for g in processed_goals) / len(processed_goals)
+            }
+        else:
+            context['summary'] = {
+                'total_goals': 0,
+                'on_track': 0,
+                'slightly_behind': 0,
+                'behind': 0,
+                'avg_percentage': 0
+            }
+        
+        return context

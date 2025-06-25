@@ -171,7 +171,7 @@ class UserContractAdmin(ImportExportMixin, admin.ModelAdmin):
 @admin.register(UserContractGoal)
 class UserContractGoalAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = UserContractGoalResource
-    list_display = ('user_contract', 'goal_period_from', 'goal_period_to', 'goal_value', 'goal_base')
+    list_display = ('user_contract', 'goal_period_from', 'goal_period_to', 'goal_value', 'goal_base', 'evaluation_frequency', 'allow_full_period_recovery', 'bonus_percentage')
     list_filter = ('goal_period_from', 'goal_period_to')
     search_fields = ('user_contract__user_id__email',)
 

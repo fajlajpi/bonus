@@ -1803,3 +1803,247 @@ textarea.form-control {
     padding: 0.5rem;
   }
 }
+
+/* Goals Overview Styles - Add to style.css */
+
+/* Container */
+.goals-overview-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+/* Summary Section */
+.goals-summary-section {
+  background-color: var(--container-bg);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.stat-card {
+  text-align: center;
+  padding: var(--spacing-md);
+  background-color: var(--neutral-bg);
+  border-radius: var(--border-radius-md);
+  border: 2px solid transparent;
+}
+
+.stat-card.on-track {
+  border-color: var(--success-color);
+  background-color: #f0fdf4;
+}
+
+.stat-card.slightly-behind {
+  border-color: #F59E0B;
+  background-color: #fffbeb;
+}
+
+.stat-card.behind {
+  border-color: var(--error-color);
+  background-color: #fef2f2;
+}
+
+/* Goals Table */
+.goals-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.goals-overview-table th {
+  background-color: var(--primary-color);
+  color: white;
+  padding: var(--spacing-sm);
+  text-align: left;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.goals-overview-table td {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+}
+
+.goals-overview-table tr:hover {
+  background-color: var(--neutral-bg);
+}
+
+/* Row Status Styling */
+.goal-row.status-on_track {
+  background-color: #f0fdf4;
+}
+
+.goal-row.status-slightly_behind {
+  background-color: #fffbeb;
+}
+
+.goal-row.status-behind {
+  background-color: #fef2f2;
+}
+
+/* Cell Styling */
+.client-info {
+  min-width: 150px;
+}
+
+.contract-dates {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.brands-list {
+  max-width: 200px;
+}
+
+.brand-badge-small {
+  display: inline-block;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  margin: 0.1rem;
+}
+
+.percentage-display {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 0.3rem;
+}
+
+.mini-progress-container {
+  width: 100%;
+  height: 6px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background-color: var(--primary-color);
+  transition: width 0.3s ease;
+  max-width: 100%;
+}
+
+.ideal-column {
+  background-color: #f9fafb;
+}
+
+.progress-note {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+/* Track Badges */
+.track-badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--border-radius-lg);
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.track-badge.on-track {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.track-badge.slightly-behind {
+  background-color: #F59E0B;
+  color: white;
+}
+
+.track-badge.behind {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.track-percentage {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.2rem;
+}
+
+/* Legend Section */
+.legend-section {
+  background-color: var(--container-bg);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-top: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.legend-item {
+  padding: var(--spacing-sm);
+}
+
+.legend-item p {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* No Data */
+.no-data {
+  background-color: var(--neutral-bg);
+  padding: var(--spacing-lg);
+  text-align: center;
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-lg) 0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .goals-overview-table {
+    font-size: 0.9rem;
+  }
+  
+  .goals-overview-table th,
+  .goals-overview-table td {
+    padding: 0.5rem;
+  }
+  
+  .brands-list {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .goals-overview-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .summary-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .goals-overview-table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .legend-grid {
+    grid-template-columns: 1fr;
+  }
+}

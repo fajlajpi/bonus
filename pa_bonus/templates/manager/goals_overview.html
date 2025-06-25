@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load pa_bonus_extras %}
+
+{% block title %}Přehled cílových bonusů{% endblock %}
+
+{% block content %}
+<div class="goals-overview-container">
+    <h1>Přehled cílových bonusů</h1>
+    
+    <!-- Summary Statistics -->
+    <div class="goals-summary-section">
+        <h2>Souhrn</h2>
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ summary.total_goals }}</div>
+                <div class="stat-label">Aktivní cíle</div>
+            </div>
+            <div class="stat-card on-track">
+                <div class="stat-value">{{ summary.on_track }}</div>
+                <div class="stat-label">Na správné cestě</div>
+            </div>
+            <div class="stat-card slightly-behind">
+                <div class="stat-value">{{ summary.slightly_behind }}</div>
+                <div class="stat-label">Mírně pozadu</div>
+            </div>
+            <div class="stat-card behind">
+                <div class="stat-value">{{ summary.behind }}</div>
+                <div class="stat-label">Výrazně pozadu</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ summary.avg_percentage|floatformat:1 }}%</div>
+                <div class="stat-label">Průměrné plnění</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Form -->
+    <form method="get" class="filter-form">
+        <div class="form-group">
+            <label for="region">Region:</label>
+            <select name="region" id="region" class="form-control">
+                <option value="all">Všechny regiony</option>
+                {% for region in regions %}
+                    <option value="{{ region.id }}" {% if selected_region == region.id|stringformat:"s" %}selected{% endif %}>
+                        {{ region.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="brand">Značka:</label>
+            <select name="brand" id="brand" class="form-control">
+                <option value="all">Všechny značky</option>
+                {% for brand in brands %}
+                    <option value="{{ brand.id }}" {% if selected_brand == brand.id|stringformat:"s" %}selected{% endif %}>
+                        {{ brand.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Filtrovat</button>
+            <a href="{% url 'goals_overview' %}" class="btn btn-secondary">Zrušit filtry</a>
+        </div>
+    </form>
+    
+    <!-- Goals Table -->
+    {% if goal_data %}
+    <div class="table-container">
+        <table class="goals-overview-table">
+            <thead>
+                <tr>
+                    <th>Klient</th>
+                    <th>Smlouva</th>
+                    <th>Značky</th>
+                    <th>Cíl</th>
+                    <th>Základ</th>
+                    <th>Aktuální obrat</th>
+                    <th>% cíle</th>
+                    <th>Ideální obrat</th>
+                    <th>Stav</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in goal_data %}
+                <tr class="goal-row status-{{ item.track_status }}">
+                    <td class="client-info">
+                        <strong>{{ item.user.get_full_name }}</strong><br>
+                        <small>{{ item.user.user_number }}</small>
+                    </td>
+                    <td class="contract-dates">
+                        {{ item.contract.contract_date_from|date:"d.m.Y" }}<br>
+                        {{ item.contract.contract_date_to|date:"d.m.Y" }}
+                    </td>
+                    <td class="brands-list">
+                        {% for brand in item.brands %}
+                            <span class="brand-badge-small">{{ brand.name }}</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-right">{{ item.goal.goal_value|floatformat:0 }} Kč</td>
+                    <td class="text-right">{{ item.goal.goal_base|floatformat:0 }} Kč</td>
+                    <td class="text-right">
+                        <strong>{{ item.current_turnover|floatformat:0 }} Kč</strong>
+                    </td>
+                    <td class="text-center">
+                        <div class="percentage-display">
+                            <strong>{{ item.goal_percentage|floatformat:1 }}%</strong>
+                        </div>
+                        <div class="mini-progress-container">
+                            <div class="mini-progress-fill" style="width: {{ item.goal_percentage|floatformat:0 }}%"></div>
+                        </div>
+                    </td>
+                    <td class="text-right ideal-column">
+                        {{ item.ideal_turnover|floatformat:0 }} Kč<br>
+                        <small class="progress-note">{{ item.progress_ratio|floatformat:1 }}% času</small>
+                    </td>
+                    <td class="text-center">
+                        {% if item.track_status == 'on_track' %}
+                            <span class="track-badge on-track">✓ Na cestě</span>
+                        {% elif item.track_status == 'slightly_behind' %}
+                            <span class="track-badge slightly-behind">⚠ Mírně pozadu</span>
+                        {% else %}
+                            <span class="track-badge behind">✗ Pozadu</span>
+                        {% endif %}
+                        <div class="track-percentage">
+                            {{ item.ideal_percentage|floatformat:0 }}% ideálu
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'manager_client_detail' item.user.id %}" class="btn btn-sm btn-primary">
+                            Detail
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="pagination">
+        <span class="page-links">
+            {% if page_obj.has_previous %}
+                <a href="?page=1{% if selected_region != 'all' %}&region={{ selected_region }}{% endif %}{% if selected_brand != 'all' %}&brand={{ selected_brand }}{% endif %}">&laquo; První</a>
+                <a href="?page={{ page_obj.previous_page_number }}{% if selected_region != 'all' %}&region={{ selected_region }}{% endif %}{% if selected_brand != 'all' %}&brand={{ selected_brand }}{% endif %}">Předchozí</a>
+            {% endif %}
+            
+            <span class="current">
+                Stránka {{ page_obj.number }} z {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if selected_region != 'all' %}&region={{ selected_region }}{% endif %}{% if selected_brand != 'all' %}&brand={{ selected_brand }}{% endif %}">Další</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_region != 'all' %}&region={{ selected_region }}{% endif %}{% if selected_brand != 'all' %}&brand={{ selected_brand }}{% endif %}">Poslední &raquo;</a>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="no-data">
+        <p>Nenalezeny žádné aktivní cíle odpovídající zadaným kritériím.</p>
+    </div>
+    {% endif %}
+    
+    <!-- Legend -->
+    <div class="legend-section">
+        <h3>Vysvětlivky</h3>
+        <div class="legend-grid">
+            <div class="legend-item">
+                <span class="track-badge on-track">✓ Na cestě</span>
+                <p>Klient má 95% nebo více ideálního obratu pro aktuální časový bod</p>
+            </div>
+            <div class="legend-item">
+                <span class="track-badge slightly-behind">⚠ Mírně pozadu</span>
+                <p>Klient má 85-94% ideálního obratu</p>
+            </div>
+            <div class="legend-item">
+                <span class="track-badge behind">✗ Pozadu</span>
+                <p>Klient má méně než 85% ideálního obratu</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
