@@ -19,6 +19,10 @@ from pa_bonus.exports import generate_telemarketing_export
 import datetime
 from dateutil.relativedelta import relativedelta
 
+import openpyxl
+from openpyxl.styles import Font, PatternFill
+import io
+
 # Create your views here.
 
 logger = logging.getLogger(__name__)
@@ -1337,19 +1341,60 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
 class GoalsOverviewView(ManagerGroupRequiredMixin, ListView):
     """
     Manager view showing overview of all extra goals with filtering and progress tracking.
-    
-    Displays a comprehensive list of all clients with active goals, their progress,
-    and comparison to ideal trajectory.
+    Now includes export functionality for full contract data and current period data.
     """
     template_name = 'manager/goals_overview.html'
     context_object_name = 'goal_data'
     paginate_by = 300
     
-    def get_queryset(self):
-        from django.db.models import Prefetch
+    def get(self, request, *args, **kwargs):
+        # Check if this is an export request
+        export_type = request.GET.get('export')
+        if export_type in ['full', 'current']:
+            return self.handle_export(export_type)
+        
+        # Otherwise, handle normal page request
+        return super().get(request, *args, **kwargs)
+    
+    def handle_export(self, export_type):
+        """
+        Handle export requests for either full contract data or current period data.
+        
+        Args:
+            export_type (str): Either 'full' or 'current'
+            
+        Returns:
+            HttpResponse: Excel file download response
+        """
         today = timezone.now().date()
         
-        # Base query - get all active goals
+        # Get the same queryset as the main view but without pagination
+        queryset = self.get_base_queryset()
+        
+        # Process the data for export
+        export_data = []
+        for goal in queryset:
+            user = goal.user_contract.user_id
+            
+            if export_type == 'full':
+                # Full export: entire contract period
+                export_data.append(self.get_full_export_row(goal, user, today))
+            else:
+                # Current period export: current milestone only
+                current_period_data = self.get_current_period_data(goal, user, today)
+                if current_period_data:
+                    export_data.append(current_period_data)
+        
+        # Generate Excel file
+        return self.generate_excel_response(export_data, export_type)
+    
+    def get_base_queryset(self):
+        """
+        Get the base queryset with all filters applied, similar to get_queryset 
+        but without pagination limits.
+        """
+        today = timezone.now().date()
+        
         queryset = UserContractGoal.objects.filter(
             goal_period_from__lte=today,
             goal_period_to__gte=today
@@ -1374,12 +1419,187 @@ class GoalsOverviewView(ManagerGroupRequiredMixin, ListView):
                 brands__id=brand_id
             ).distinct()
         
-        # Order by user last name
-        queryset = queryset.order_by('user_contract__user_id__last_name')
+        return queryset.order_by('user_contract__user_id__last_name')
+    
+    def get_full_export_row(self, goal, user, today):
+        """
+        Generate a row of data for the full export (entire contract period).
+        """
+        # Calculate total turnover for the entire goal period
+        current_turnover = calculate_turnover_for_goal(
+            user,
+            goal.brands.all(),
+            goal.goal_period_from,
+            min(today, goal.goal_period_to)
+        )
         
-        return queryset
+        # Calculate percentage and remaining turnover
+        percentage = (float(current_turnover) / goal.goal_value) if goal.goal_value > 0 else 0
+        remaining_turnover = max(0, goal.goal_value - float(current_turnover))
+
+        # Get brand names as comma-separated string
+        brand_names = ', '.join([brand.name for brand in goal.brands.all()])
+        
+        return {
+            'client_id': user.user_number,
+            'client_name': f"{user.first_name} {user.last_name}",
+            'client_region': user.region.name if user.region else 'No Region',
+            'goal_brands': brand_names,
+            'goal_period_from': goal.goal_period_from,
+            'goal_period_to': goal.goal_period_to,
+            'goal_value': goal.goal_value,
+            'current_turnover': float(current_turnover),
+            'percentage_of_goal': round(percentage, 2),
+            'turnover_remaining': float(remaining_turnover)
+        }
+    
+    def get_current_period_data(self, goal, user, today):
+        """
+        Generate a row of data for the current period export (current milestone).
+        """
+        # Find the current evaluation period
+        periods = goal.get_evaluation_periods()
+        current_period = None
+        
+        for start, end, is_final in periods:
+            if start <= today <= end:
+                current_period = (start, end, is_final)
+                break
+        
+        # If no current period found, skip this goal
+        if not current_period:
+            return None
+        
+        start_date, end_date, is_final = current_period
+        
+        # Calculate targets for this period
+        targets = goal.get_period_targets(start_date, end_date)
+        
+        # Calculate actual turnover for this period
+        period_turnover = calculate_turnover_for_goal(
+            user,
+            goal.brands.all(),
+            start_date,
+            min(today, end_date)
+        )
+        
+        # Calculate percentage and remaining turnover
+        percentage = (float(period_turnover) / targets['goal_value']) if targets['goal_value'] > 0 else 0
+        remaining_turnover = max(0, targets['goal_value'] - float(period_turnover))
+        
+        # Get brand names as comma-separated string
+        brand_names = ', '.join([brand.name for brand in goal.brands.all()])
+        
+        return {
+            'client_id': user.user_number,
+            'client_name': f"{user.first_name} {user.last_name}",
+            'client_region': user.region.name if user.region else 'No Region',
+            'goal_brands': brand_names,
+            'milestone_period_from': start_date,
+            'milestone_period_to': end_date,
+            'period_goal_value': targets['goal_value'],
+            'period_turnover': float(period_turnover),
+            'percentage_of_goal': round(percentage, 2),
+            'turnover_remaining': float(remaining_turnover)
+        }
+    
+    def generate_excel_response(self, data, export_type):
+        """
+        Generate an Excel file from the export data and return as HTTP response.
+        """
+        # Create workbook and worksheet
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        
+        if export_type == 'full':
+            ws.title = 'Full Goals Export'
+            headers = [
+                'Client ID', 'Client Name', 'Client Region', 'Goal Brands',
+                'Goal Period From', 'Goal Period To', 'Goal Value', 'Current Turnover', 
+                'Percentage of Goal', 'Turnover Remaining'
+            ]
+            filename = f'goals_full_export_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        else:
+            ws.title = 'Current Period Export'
+            headers = [
+                'Client ID', 'Client Name', 'Client Region', 'Goal Brands',
+                'Milestone Period From', 'Milestone Period To', 'Period Goal Value',
+                'Period Turnover', 'Percentage of Goal', 'Turnover Remaining'
+            ]
+            filename = f'goals_current_period_export_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        
+        # Add headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color='CCCCCC', end_color='CCCCCC', fill_type='solid')
+        
+        # Add data rows
+        for row_idx, row_data in enumerate(data, 2):
+            if export_type == 'full':
+                values = [
+                    row_data['client_id'],
+                    row_data['client_name'],
+                    row_data['client_region'],
+                    row_data['goal_brands'],
+                    row_data['goal_period_from'],
+                    row_data['goal_period_to'],
+                    row_data['goal_value'],
+                    row_data['current_turnover'],
+                    row_data['percentage_of_goal'],
+                    row_data['turnover_remaining']
+                ]
+            else:
+                values = [
+                    row_data['client_id'],
+                    row_data['client_name'],
+                    row_data['client_region'],
+                    row_data['goal_brands'],
+                    row_data['milestone_period_from'],
+                    row_data['milestone_period_to'],
+                    row_data['period_goal_value'],
+                    row_data['period_turnover'],
+                    row_data['percentage_of_goal'],
+                    row_data['turnover_remaining']
+                ]
+            
+            for col, value in enumerate(values, 1):
+                ws.cell(row=row_idx, column=col, value=value)
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to BytesIO
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Create HTTP response
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+
+    # Keep the existing get_queryset and get_context_data methods unchanged
+    def get_queryset(self):
+        # ... existing code remains the same
+        return self.get_base_queryset()
     
     def get_context_data(self, **kwargs):
+        # ... existing code remains the same
         context = super().get_context_data(**kwargs)
         today = timezone.now().date()
         

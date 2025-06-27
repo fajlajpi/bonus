@@ -377,7 +377,7 @@ class ExtraGoalsDetailView(LoginRequiredMixin, View):
                 })
             
             # Calculate overall progress
-            total_actual = sum(p['actual'] for p in period_data if p['end'] <= today)
+            total_actual = sum(p['actual'] for p in period_data)
             total_progress = (total_actual / goal.goal_value * 100) if goal.goal_value > 0 else 0
             
             goals_data.append({

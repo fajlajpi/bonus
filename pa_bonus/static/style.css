@@ -2047,3 +2047,33 @@ textarea.form-control {
     grid-template-columns: 1fr;
   }
 }
+/* Export Buttons */
+.export-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--success-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.export-button:hover {
+  background-color: #38A169;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.export-button .button-icon {
+  font-size: 1.2rem;
+}
+
+/* Ensure export buttons work well in dashboard actions */
+.dashboard-actions .export-button {
+  min-width: 180px;
+  justify-content: center;
+}
