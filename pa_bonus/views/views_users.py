@@ -8,6 +8,7 @@ from django.utils import timezone
 from pa_bonus.models import (PointsTransaction, UserContract, Reward, RewardRequest, RewardRequestItem,
                              UserContractGoal, InvoiceBrandTurnover)
 from pa_bonus.utilities import calculate_turnover_for_goal
+import datetime
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     """
@@ -302,6 +303,40 @@ class ExtraGoalsDetailView(LoginRequiredMixin, View):
     template_name = 'extra_goals_detail.html'
     login_url = 'login'
     
+    def _calculate_potential_points(self, goal, targets, already_awarded=0):
+        """
+        Calculate potential points for a milestone if the goal is achieved.
+        
+        Args:
+            goal: UserContractGoal instance
+            targets: Dict with 'goal_value' and 'goal_base' for the period
+            already_awarded: Points already awarded for this goal (for cap calculation)
+            
+        Returns:
+            int: Potential points that would be awarded
+        """
+        # Calculate raw points: percentage of the increase from base to goal
+        raw_points = int((targets['goal_value'] - targets['goal_base']) * goal.bonus_percentage)
+        
+        # Apply simple cap logic - for user display, we can use a simplified version
+        # The actual cap is proportional to contract length, but for display we'll show the raw calculation
+        return max(0, raw_points)
+    
+    def _get_total_awarded_points(self, goal):
+        """
+        Get total points already awarded for this goal across all evaluations.
+        
+        Args:
+            goal: UserContractGoal instance
+            
+        Returns:
+            int: Total points already awarded
+        """
+        from django.db.models import Sum
+        return goal.evaluations.aggregate(
+            total=Sum('bonus_points')
+        )['total'] or 0
+    
     def get(self, request):
         user = request.user
         today = timezone.now().date()
@@ -330,6 +365,9 @@ class ExtraGoalsDetailView(LoginRequiredMixin, View):
             periods = goal.get_evaluation_periods()
             period_data = []
             
+            # Get total points already awarded for cap calculations
+            already_awarded = self._get_total_awarded_points(goal)
+            
             for start_date, end_date, is_final in periods:
                 # Get targets for this period
                 targets = goal.get_period_targets(start_date, end_date)
@@ -349,30 +387,36 @@ class ExtraGoalsDetailView(LoginRequiredMixin, View):
                 if evaluation:
                     status = 'achieved' if evaluation.is_achieved else 'failed'
                     bonus_points = evaluation.bonus_points
+                    potential_points = 0  # No potential points for completed evaluations
                 elif end_date < today:
                     status = 'pending_evaluation'
                     bonus_points = 0
+                    potential_points = 0  # Will be calculated when evaluated
                 elif start_date <= today <= end_date:
                     status = 'in_progress'
                     bonus_points = 0
+                    # Calculate potential points for in-progress periods
+                    potential_points = self._calculate_potential_points(goal, targets, already_awarded)
                 else:
                     status = 'future'
                     bonus_points = 0
+                    potential_points = 0  # Don't show potential for future periods
                 
                 # Calculate progress percentage
                 progress = (actual_turnover / targets['goal_value'] * 100) if targets['goal_value'] > 0 else 0
                 
                 period_data.append({
                     'start': start_date,
-                    'end': end_date,
+                    'end': end_date if is_final else end_date - datetime.timedelta(days=1),
                     'is_final': is_final,
                     'target': targets['goal_value'],
                     'baseline': targets['goal_base'],
                     'actual': actual_turnover,
-                    'progress': min(progress, 100),  # Cap at 100% for display
+                    'progress': progress,
                     'status': status,
                     'evaluation': evaluation,
                     'bonus_points': bonus_points,
+                    'potential_points': potential_points,  # New field for potential points
                     'is_current': start_date <= today <= end_date
                 })
             

@@ -104,10 +104,15 @@
                             </div>
                             {% endif %}
                             {% if period.bonus_points > 0 %}
-                            <div class="detail-row bonus-points">
-                                <span>Bonusové body:</span>
-                                <span class="points-value">+{{ period.bonus_points }}</span>
-                            </div>
+                                <div class="detail-row bonus-points">
+                                    <span>Bonusové body:</span>
+                                    <span class="points-value">+{{ period.bonus_points }} bodů</span>
+                                </div>
+                            {% elif period.status == 'in_progress' and period.potential_points > 0 %}
+                                <div class="detail-row bonus-points">
+                                    <span>Při splnění získáte:</span>
+                                    <span class="points-value potential">{{ period.potential_points }} bodů</span>
+                                </div>
                             {% endif %}
                         </div>
                     </div>

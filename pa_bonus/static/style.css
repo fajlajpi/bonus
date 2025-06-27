@@ -2077,3 +2077,9 @@ textarea.form-control {
   min-width: 180px;
   justify-content: center;
 }
+/* Potential Points Styling */
+.points-value.potential {
+  color: #9CA3AF;
+  opacity: 0.8;
+  font-style: italic;
+}
