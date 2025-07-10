@@ -31,7 +31,7 @@ def calculate_turnover_for_goal(user, brands, start_date, end_date):
     invoice_turnover = InvoiceBrandTurnover.objects.filter(
         invoice__client_number=user.user_number,
         invoice__invoice_date__gte=start_date,
-        invoice__invoice_date__lte=end_date,
+        invoice__invoice_date__lt=end_date,
         invoice__invoice_type='INVOICE',
         brand__in=brands
     ).aggregate(
@@ -42,7 +42,7 @@ def calculate_turnover_for_goal(user, brands, start_date, end_date):
     credit_turnover = InvoiceBrandTurnover.objects.filter(
         invoice__client_number=user.user_number,
         invoice__invoice_date__gte=start_date,
-        invoice__invoice_date__lte=end_date,
+        invoice__invoice_date__lt=end_date,
         invoice__invoice_type='CREDIT_NOTE',
         brand__in=brands
     ).aggregate(
