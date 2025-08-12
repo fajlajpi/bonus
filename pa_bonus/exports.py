@@ -16,6 +16,33 @@ def generate_telemarketing_export(request_id):
     Returns:
         bytes: Excel file content or None if the request is not found or not in ACCEPTED status
     """
+
+    def apply_item_styling(row_num):
+        # Data cells style (light green background for columns B, E, F)
+        data_font = Font(name='Arial', size=11)
+        data_fill = PatternFill(start_color='E6FFE6', end_color='E6FFE6', fill_type='solid')
+        data_alignment = Alignment(horizontal='left', vertical='center')
+        data_alignment_center = Alignment(horizontal='center', vertical='center')
+
+        ws[f'B{row_num}'].fill = data_fill
+        ws[f'B{row_num}'].alignment = data_alignment
+        ws[f'B{row_num}'].font = data_font
+        
+        ws[f'C{row_num}'].alignment = data_alignment
+        ws[f'C{row_num}'].font = data_font
+
+        ws[f'D{row_num}'].fill = data_fill
+        ws[f'D{row_num}'].alignment = data_alignment_center
+        ws[f'D{row_num}'].font = data_font
+        
+        ws[f'E{row_num}'].fill = data_fill
+        ws[f'E{row_num}'].alignment = data_alignment_center
+        ws[f'E{row_num}'].font = data_font
+        
+        ws[f'F{row_num}'].fill = data_fill
+        ws[f'F{row_num}'].alignment = data_alignment_center
+        ws[f'F{row_num}'].font = data_font
+
     try:
         # Get the reward request
         request = get_object_or_404(RewardRequest, pk=request_id)
@@ -38,13 +65,7 @@ def generate_telemarketing_export(request_id):
         header_font = Font(name='Arial', size=11, bold=True)
         header_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
         header_alignment = Alignment(horizontal='center', vertical='center')
-        
-        # Data cells style (light green background for columns B, E, F)
-        data_font = Font(name='Arial', size=11)
-        data_fill = PatternFill(start_color='E6FFE6', end_color='E6FFE6', fill_type='solid')
-        data_alignment = Alignment(horizontal='left', vertical='center')
-        data_alignment_center = Alignment(horizontal='center', vertical='center')
-        
+               
         # Set column widths
         ws.column_dimensions['A'].width = 20
         ws.column_dimensions['B'].width = 25
@@ -52,6 +73,9 @@ def generate_telemarketing_export(request_id):
         ws.column_dimensions['D'].width = 10
         ws.column_dimensions['E'].width = 15
         ws.column_dimensions['F'].width = 15
+
+        # Variable for running point tally
+        total_points = 0
         
         # First row: Client code and heading
         ws['A1'] = request.user.get_full_name()  # Client name
@@ -90,28 +114,25 @@ def generate_telemarketing_export(request_id):
             ws[f'D{row_num}'] = item.reward.point_cost
             ws[f'E{row_num}'] = 1.0
             ws[f'F{row_num}'] = item.quantity
+
+            # Add point cost to tally
+            total_points += item.reward.point_cost * item.quantity
             
             # Apply styles to data cells
-            ws[f'B{row_num}'].fill = data_fill
-            ws[f'B{row_num}'].alignment = data_alignment
-            ws[f'B{row_num}'].font = data_font
-            
-            ws[f'C{row_num}'].alignment = data_alignment
-            ws[f'C{row_num}'].font = data_font
-
-            ws[f'D{row_num}'].fill = data_fill
-            ws[f'D{row_num}'].alignment = data_alignment_center
-            ws[f'D{row_num}'].font = data_font
-            
-            ws[f'E{row_num}'].fill = data_fill
-            ws[f'E{row_num}'].alignment = data_alignment_center
-            ws[f'E{row_num}'].font = data_font
-            
-            ws[f'F{row_num}'].fill = data_fill
-            ws[f'F{row_num}'].alignment = data_alignment_center
-            ws[f'F{row_num}'].font = data_font
+            apply_item_styling(row_num)
             
             row_num += 1
+        
+        # Add a row for BONBOD point item
+        ws[f'B{row_num}'] = "BONBOD"
+        ws[f'C{row_num}'] = "Bonusový program - čerpání bodů"
+        ws[f'D{row_num}'] = ""
+        ws[f'E{row_num}'] = 0
+        ws[f'F{row_num}'] = total_points
+
+        apply_item_styling(row_num)
+
+        row_num += 1
         
         # Add customer note if it exists
         if request.note:
