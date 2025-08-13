@@ -20,7 +20,6 @@
       <th>ID</th>
       <th>Client Number</th>
       <th>Client Name</th>
-      <th>Email</th>
       <th>Status</th>
       <th>Total Points</th>
       <th>Requested At</th>
@@ -34,7 +33,6 @@
       <td>{{ request.id }}</td>
       <td>{{ request.user.user_number }}</td>
       <td>{{ request.user.first_name }} {{ request.user.last_name }}</td>
-      <td>{{ request.user.email }}</td>
       <td>{{ request.get_status_display }}</td>
       <td>{{ request.total_points }}</td>
       <td>{{ request.requested_at }}</td>
