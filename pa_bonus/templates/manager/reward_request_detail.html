@@ -2,32 +2,71 @@
 {% load pa_bonus_extras %}
 {% block title %} Manage Request #{{ request_obj.id }} {% endblock %}
 {% block content %}
-<h2>Žádost o čerpání #{{ request_obj.id }} – {{ request_obj.user.email }}</h2>
+<h2>Žádost o čerpání #{{ request_obj.id }}</h2>
 
-<div class="points-summary">
-    <p class="total-points">Klient má {{ user_balance }} bodů k dispozici</p>
-    <p class="total-points">Celková hodnota žádosti: <span id="total-points">0</span></p>
+<!-- Client Information Table -->
+<div class="client-info-section">
+    <h3>Client Information</h3>
+    <table class="client-info-table">
+        <tr>
+            <td><strong>Client Number:</strong></td>
+            <td>{{ request_obj.user.user_number }}</td>
+        </tr>
+        <tr>
+            <td><strong>Full Name:</strong></td>
+            <td>{{ request_obj.user.first_name }} {{ request_obj.user.last_name }}</td>
+        </tr>
+        <tr>
+            <td><strong>Email:</strong></td>
+            <td>{{ request_obj.user.email }}</td>
+        </tr>
+        <tr>
+            <td><strong>Region:</strong></td>
+            <td>{{ request_obj.user.region.name|default:"No Region" }}</td>
+        </tr>
+        <tr>
+            <td><strong>Available Balance:</strong></td>
+            <td>{{ user_balance }} bodů</td>
+        </tr>
+    </table>
 </div>
 
-<form method="post">
-  {% csrf_token %}
+<div class="points-summary">
+    <p class="total-points">Celková hodnota žádosti: {{ request_obj.total_points }} bodů</p>
+</div>
 
-  <h3>Reward Items</h3>
-  <table class="transactions-table">
-    <thead><tr><th>Reward</th><th>Point Cost</th><th>Quantity</th></tr></thead>
-    <tbody>
-        {% for reward in all_rewards %}
+<!-- Requested Items (Read-only) -->
+<h3>Requested Items</h3>
+{% if items %}
+<table class="transactions-table">
+    <thead>
         <tr>
-          <td>{{ reward.name }}</td>
-          <td>{{ reward.point_cost }}</td>
-          <td>
-            <input class="reward-input" type="number" name="reward_{{ reward.id }}" min="0"
-                   value="{{ item_quantities|default_if_none:''|dict_get:reward.id }}">
-          </td>
+            <th>Code</th>
+            <th>Reward Name</th>
+            <th>Point Cost Each</th>
+            <th>Quantity</th>
+            <th>Total Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.reward.abra_code }}</td>
+            <td>{{ item.reward.name }}</td>
+            <td>{{ item.point_cost }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.quantity|multiply:item.point_cost }}</td>
         </tr>
         {% endfor %}
     </tbody>
-  </table>
+</table>
+{% else %}
+<p>No items in this request.</p>
+{% endif %}
+
+<!-- Management Form -->
+<form method="post">
+  {% csrf_token %}
 
   <h3>Customer Note (VISIBLE TO CLIENT)</h3>
   <textarea name="customer_note" rows="4" style="width: 100%;">{{ request_obj.note }}</textarea>
@@ -39,43 +78,73 @@
     {% endfor %}
   </select>
 
-  {% if request_obj.status == 'ACCEPTED' %}
-    <a href="{% url 'export_telemarketing_file' request_obj.id %}" class="export-button">
-        Export for Telemarketing
-    </a>
-  {% endif %}
-
   <h3>Manager Message (VISIBLE TO CLIENT)</h3>
   <textarea name="manager_message" rows="4" cols="50">{{ request_obj.description }}</textarea>
+  
   <h3>Options</h3>
   <label>
     <input type="checkbox" name="allow_negative">
     Allow negative balance (override point limit)
   </label>
+  
   <div style="margin-top: 20px;">
     <button type="submit">Save Changes</button>
+    <a href="{% url 'export_telemarketing_file' request_obj.id %}" class="export-button" style="margin-left: 10px;">
+        Export for Telemarketing
+    </a>
   </div>
 </form>
 
-<script>
-  function recalculateTotal() {
-    const inputs = document.querySelectorAll("input[name^='reward_']");
-    let total = 0;
+<style>
+.client-info-section {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
 
-    inputs.forEach(input => {
-      const qty = parseInt(input.value) || 0;
-      const cost = parseInt(input.closest('tr').children[1].textContent) || 0;
-      total += qty * cost;
-    });
+.client-info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-    document.getElementById("total-points").textContent = total;
-  }
+.client-info-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+}
 
-  document.querySelectorAll("input[name^='reward_']").forEach(input => {
-    input.addEventListener("input", recalculateTotal);
-  });
+.client-info-table td:first-child {
+    width: 150px;
+    background-color: #e9ecef;
+}
 
-  // Trigger on load
-  document.addEventListener("DOMContentLoaded", recalculateTotal);
-</script>
+.export-button {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.export-button:hover {
+    background-color: #218838;
+    color: white;
+    text-decoration: none;
+}
+
+.points-summary {
+    background-color: #e7f3ff;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+
+.total-points {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin: 0;
+}
+</style>
 {% endblock %}

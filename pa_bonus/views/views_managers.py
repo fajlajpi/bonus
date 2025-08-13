@@ -256,22 +256,18 @@ class ManagerRewardRequestListView(ManagerGroupRequiredMixin, ListView):
 class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
     """
     (Managers Only) Detail of Reward Request with editing and confirming capability.
+    Updated to show client information and read-only item list.
     """
     template_name = 'manager/reward_request_detail.html'
 
     def get(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
-        items = reward_request.rewardrequestitem_set.select_related('reward')
-        item_quantities = {
-            item.reward.id: item.quantity for item in items
-        }
-        all_rewards = Reward.objects.filter(is_active=True)
+        items = reward_request.rewardrequestitem_set.select_related('reward').filter(quantity__gt=0)
         user_balance = reward_request.user.get_balance()
+        
         return render(request, self.template_name, {
             'request_obj': reward_request,
             'items': items,
-            'item_quantities': item_quantities,
-            'all_rewards': all_rewards,
             'user_balance': user_balance,
         })
 
@@ -279,9 +275,6 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         old_status = reward_request.status
-        
-        # Update the reward request items 
-        self._update_reward_items(reward_request, request.POST)
         
         # Update the customer note
         customer_note = request.POST.get('customer_note', '')
@@ -298,22 +291,6 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         
         messages.success(request, f"Request {reward_request.pk} updated.")
         return redirect('manager_reward_requests')
-    
-    def _update_reward_items(self, reward_request, post_data):
-        """Update the reward request items from form data."""
-        # Clear existing items
-        reward_request.rewardrequestitem_set.all().delete()
-        
-        # Add new items
-        for reward in Reward.objects.filter(is_active=True):
-            field_name = f'reward_{reward.id}'
-            qty = post_data.get(field_name)
-            if qty and qty.isdigit() and int(qty) > 0:
-                RewardRequestItem.objects.create(
-                    reward_request=reward_request,
-                    reward=reward,
-                    quantity=int(qty)
-                )
     
     def _update_point_transaction(self, reward_request, old_status, new_status):
         """Update the point transaction to match the current state of the request."""

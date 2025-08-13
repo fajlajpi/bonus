@@ -6,11 +6,18 @@ register = template.Library()
 
 @register.filter
 def multiply(value, arg):
-    return value * arg
+    """Multiplies the value by the argument."""
+    try:
+        return int(value) * int(arg)
+    except (ValueError, TypeError):
+        return 0
 
 @register.filter
-def dict_get(d, key):
-    return d.get(key, 0)
+def dict_get(dictionary, key):
+    """Gets a value from a dictionary by key."""
+    if hasattr(dictionary, 'get'):
+        return dictionary.get(key)
+    return None
 
 @register.filter
 def divide(value, arg):
