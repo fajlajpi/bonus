@@ -10,7 +10,7 @@
     <table class="client-info-table">
         <tr>
             <td><strong>Client Number:</strong></td>
-            <td>{{ request_obj.user.user_number }}</td>
+            <td>{{ request_obj.user.user_number }} | <a href="https://report.primavera-and.cz:8080/pentaho/api/repos/%3Apublic%3APAA%3Akarta-klienta%3Akarta%20klienta.wcdf/generatedContent?kodZakaznika={{ request_obj.user.user_number }}" target="_blank">OTEVŘÍT REPORTING</a></td>
         </tr>
         <tr>
             <td><strong>Full Name:</strong></td>
