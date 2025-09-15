@@ -63,61 +63,7 @@ Q_CLUSTER = {
 }
 
 # Increase logging severity for production
-# LOGGING['loggers']['pa_bonus']['level'] = 'WARNING'
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': '/home/iepgvjxg/public_html/logs/django_error.log',
-            'formatter': 'verbose',
-        },
-        'debug_file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/home/iepgvjxg/public_html/logs/django_debug.log',
-            'formatter': 'verbose',
-        },
-        'console': {
-            'level': 'ERROR',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
-    'root': {
-        'handlers': ['file', 'console'],
-        'level': 'ERROR',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file', 'debug_file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'pa_bonus': {
-            'handlers': ['file', 'debug_file'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'pa_bonus.tasks': {
-            'handlers': ['file', 'debug_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
+LOGGING['loggers']['pa_bonus']['level'] = 'WARNING'
 
 # Static files
 STATIC_URL = '/static/'
