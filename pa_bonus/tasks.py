@@ -26,26 +26,39 @@ FT_CREDIT_NOTE = 'CREDIT_NOTE'
 def process_uploaded_file(upload_id):
     """Main function to process an uploaded file and create invoice records."""
     upload = FileUpload.objects.get(id=upload_id)
-    logger.info(f"Starting to process upload {upload_id}")
+    logger.info(f"Starting to process upload {upload_id}, file: {upload.file.name}")
     
     try:
         mark_upload_as_processing(upload)
+        
+        # Add file validation
+        logger.info(f"File path: {upload.file.path}")
+        logger.info(f"File size: {upload.file.size} bytes")
+        
         df = read_file(upload.file.path)
+        logger.info(f"File read successfully. Shape: {df.shape}")
+        logger.info(f"Columns: {list(df.columns)}")
+        
         filetype = validate_columns(df)
+        logger.info(f"File type determined: {filetype}")
         
         # Convert and validate dates
         df = process_dates(df)
+        logger.info(f"Dates processed. Sample dates: {df['Datum'].head().tolist()}")
         
         # First pass: create Invoice and InvoiceBrandTurnover records
         successful_rows = process_invoice_data(df, upload, filetype)
+        logger.info(f"Invoice data processing completed. Successful rows: {successful_rows}")
         
         # Second pass: calculate and create points transactions
         points_created = process_points_from_invoices(upload, filetype)
+        logger.info(f"Points processing completed. Points transactions created: {points_created}")
         
         complete_upload(upload, successful_rows)
-        logger.info(f"Processing completed. Successful rows: {successful_rows}, Points transactions: {points_created}")
+        logger.info(f"Processing completed successfully. Successful rows: {successful_rows}, Points transactions: {points_created}")
         
     except Exception as e:
+        logger.error(f"Error processing upload {upload_id}: {str(e)}", exc_info=True)
         handle_processing_error(upload, e)
         raise
 
@@ -58,14 +71,38 @@ def mark_upload_as_processing(upload):
 
 def read_file(file_path):
     """Read the uploaded file and return a dataframe."""
-    if file_path.endswith('.csv'):
-        df = pd.read_csv(file_path)
-    else:
-        df = pd.read_excel(file_path)
+    logger.info(f"Reading file: {file_path}")
     
-    logger.info(f"File read successfully. Shape: {df.shape}")
-    return df
-
+    try:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File does not exist: {file_path}")
+        
+        if file_path.endswith('.csv'):
+            # Try different encodings for CSV files
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    df = pd.read_csv(file_path, encoding=encoding)
+                    logger.info(f"CSV file read successfully with encoding: {encoding}")
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                raise ValueError("Could not read CSV file with any supported encoding")
+        else:
+            df = pd.read_excel(file_path)
+            logger.info("Excel file read successfully")
+        
+        logger.info(f"File read successfully. Shape: {df.shape}")
+        logger.info(f"Columns: {list(df.columns)}")
+        
+        # Log sample data (first few rows, but be careful with sensitive data)
+        logger.debug(f"Sample data:\n{df.head()}")
+        
+        return df
+        
+    except Exception as e:
+        logger.error(f"Error reading file {file_path}: {str(e)}", exc_info=True)
+        raise
 
 def validate_columns(df):
     """Validate that the dataframe contains all required columns."""
@@ -92,20 +129,34 @@ def validate_columns(df):
 def process_dates(df):
     """Convert date strings in DD.MM.YYYY format to datetime objects."""
     try:
+        logger.info("Starting date processing")
+        original_count = len(df)
+        
+        # Log sample date values before conversion
+        logger.info(f"Sample date values before conversion: {df['Datum'].head().tolist()}")
+        
         # Convert 'Datum' from string to datetime
-        df['Datum'] = pd.to_datetime(df['Datum'], format='%d.%m.%Y')
-        logger.info("Successfully converted dates")
+        df['Datum'] = pd.to_datetime(df['Datum'], format='%d.%m.%Y', errors='coerce')
+        logger.info("Date conversion completed")
         
         # Check for invalid dates
         invalid_dates = df[df['Datum'].isnull()]
         if not invalid_dates.empty:
             invalid_rows = invalid_dates.index.tolist()
             logger.warning(f"Found {len(invalid_rows)} rows with invalid dates at indices: {invalid_rows}")
+            
+            # Log the problematic date values
+            for idx in invalid_rows[:5]:  # Log first 5 problematic dates
+                original_value = df.iloc[idx]['Datum'] if 'Datum' in df.columns else 'N/A'
+                logger.warning(f"Invalid date at row {idx}: '{original_value}'")
+            
             # Filter out rows with invalid dates
             df = df.dropna(subset=['Datum'])
             logger.info(f"Removed {len(invalid_rows)} rows with invalid dates, new shape: {df.shape}")
             
+        logger.info(f"Date processing completed. Processed {len(df)} out of {original_count} rows")
         return df
+        
     except Exception as e:
         logger.error(f"Error processing dates: {str(e)}", exc_info=True)
         raise ValueError(f"Failed to process dates: {str(e)}")
