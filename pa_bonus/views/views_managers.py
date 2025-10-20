@@ -241,7 +241,7 @@ class ManagerRewardRequestListView(ManagerGroupRequiredMixin, ListView):
     """
     template_name = 'manager/reward_requests_list.html'
     context_object_name = 'reward_requests'
-    paginate_by = 25
+    # paginate_by = 25
 
     def get_queryset(self):
         """
