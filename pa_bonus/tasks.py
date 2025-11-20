@@ -250,7 +250,7 @@ def process_brand_turnovers(invoice, invoice_data, brand_prefixes):
     
     for prefix, brand in brand_prefixes.items():
         # Filter rows for this brand
-        brand_rows = invoice_data[invoice_data['Kód'].str.startswith(prefix)]
+        brand_rows = invoice_data[invoice_data['Kód'].fillna('').str.startswith(prefix)]
         
         if brand_rows.empty:
             continue
