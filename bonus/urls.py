@@ -67,6 +67,14 @@ urlpatterns.extend([
     path('manager/user-activity/', vm.UserActivityDashboardView.as_view(), name='user_activity_dashboard'),
     path('manager/goals/evaluate/', vm.GoalEvaluationView.as_view(), name='goal_evaluation'),
     path('manager/goals/overview/', vm.GoalsOverviewView.as_view(), name='goals_overview'),
+    # Enhanced Reward Request Management
+    path('manager/reward-requests-enhanced/', 
+         vm.EnhancedRewardRequestListView.as_view(), 
+         name='enhanced_reward_requests'),
+    path('manager/reward-requests/quick-edit/<int:pk>/', 
+         vm.RewardRequestQuickEditView.as_view(), 
+         name='reward_request_quick_edit'),
+
 ])
 
 # ADMIN URLS

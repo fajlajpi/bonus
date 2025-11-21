@@ -532,6 +532,11 @@ class RewardRequest(models.Model):
     description = models.TextField()
     total_points = models.IntegerField(default=0)
     note = models.TextField(blank=True, null=True, verbose_name="Customer Note")
+    indexes = [
+        models.Index(fields=['status', '-requested_at']),
+        models.Index(fields=['user', '-requested_at']),
+        models.Index(fields=['requested_at']),
+    ]
 
     def __str__(self):
         return f"Request {self.id} | by {self.user} | on {self.requested_at.strftime('%Y-%m-%d')} | TOTAL: {self.total_points} pts"

@@ -2,10 +2,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import permission_required
 from django.contrib import messages
 from django.views.generic import ListView, View
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
+from django.core.paginator import Paginator
 from django.utils import timezone
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q, F, Case, When, IntegerField
 from django.db import transaction
+from django.urls import reverse
 import logging
 from pa_bonus.forms import FileUploadForm
 from pa_bonus.tasks import process_uploaded_file, process_stock_file
@@ -17,6 +19,7 @@ from pa_bonus.utilities import ManagerGroupRequiredMixin, calculate_turnover_for
 from pa_bonus.exports import generate_telemarketing_export
 
 import datetime
+from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
 import openpyxl
@@ -1663,3 +1666,362 @@ class GoalsOverviewView(ManagerGroupRequiredMixin, ListView):
             }
         
         return context
+    
+
+class EnhancedRewardRequestListView(ManagerGroupRequiredMixin, View):
+    """
+    Enhanced reward request management interface with comprehensive features.
+    Combines list view, analytics, and bulk operations in a single interface.
+    """
+    template_name = 'manager/reward_requests_enhanced.html'
+    
+    def get(self, request):
+        # Get filter parameters
+        status_filter = request.GET.get('status', '')
+        search_query = request.GET.get('search', '')
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        client_filter = request.GET.get('client', '')
+        sort_by = request.GET.get('sort', '-requested_at')
+        
+        # Build base queryset with optimized joins
+        queryset = RewardRequest.objects.select_related('user', 'user__region').prefetch_related(
+            'rewardrequestitem_set__reward',
+            'pointstransaction_set'
+        )
+        
+        # Apply filters
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__first_name__icontains=search_query) |
+                Q(user__last_name__icontains=search_query) |
+                Q(user__user_number__icontains=search_query) |
+                Q(id__icontains=search_query)
+            )
+        
+        if date_from:
+            queryset = queryset.filter(requested_at__gte=date_from)
+        
+        if date_to:
+            # Add 1 day to include the entire end date
+            end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+            queryset = queryset.filter(requested_at__lt=end_date)
+        
+        if client_filter:
+            queryset = queryset.filter(user_id=client_filter)
+        
+        # Apply sorting
+        queryset = queryset.order_by(sort_by)
+        
+        # Get all requests for the current filters (before pagination)
+        all_requests = list(queryset)
+        
+        # Paginate for display (but keep all_requests for analytics)
+        paginator = Paginator(queryset, 50)  # Show 50 per page
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+        
+        # Calculate analytics for filtered results
+        analytics = self._calculate_analytics(all_requests)
+        
+        # Get status counts for tabs
+        status_counts = self._get_status_counts()
+        
+        # Get list of clients for filter dropdown
+        clients_with_requests = User.objects.filter(
+            rewardrequest__isnull=False
+        ).distinct().order_by('first_name', 'last_name')
+        
+        # Prepare reward inventory summary
+        reward_inventory = self._get_reward_inventory(status_filter or 'PENDING')
+        
+        context = {
+            'requests': page_obj,
+            'all_requests': all_requests,  # For expandable details
+            'page_obj': page_obj,
+            'status_filter': status_filter,
+            'search_query': search_query,
+            'date_from': date_from,
+            'date_to': date_to,
+            'client_filter': client_filter,
+            'sort_by': sort_by,
+            'status_counts': status_counts,
+            'analytics': analytics,
+            'reward_inventory': reward_inventory,
+            'clients_with_requests': clients_with_requests,
+            'request_statuses': RewardRequest.REQUEST_STATUS,
+        }
+        
+        return render(request, self.template_name, context)
+    
+    def post(self, request):
+        """Handle bulk operations"""
+        action = request.POST.get('action')
+        selected_ids = request.POST.getlist('selected_requests')
+        
+        if not selected_ids:
+            messages.warning(request, "No requests selected for bulk operation.")
+            return redirect('enhanced_reward_requests')
+        
+        if action == 'bulk_status_update':
+            new_status = request.POST.get('new_status')
+            if new_status:
+                self._bulk_update_status(selected_ids, new_status)
+                messages.success(request, f"Updated {len(selected_ids)} requests to {new_status}")
+        
+        elif action == 'bulk_export':
+            # Generate export file
+            return self._generate_bulk_export(selected_ids)
+        
+        return redirect('enhanced_reward_requests')
+    
+    def _calculate_analytics(self, requests):
+        """Calculate comprehensive analytics for the filtered requests"""
+        if not requests:
+            return {
+                'total_requests': 0,
+                'total_points': 0,
+                'avg_points': 0,
+                'status_breakdown': {},
+                'top_rewards': [],
+                'recent_activity': []
+            }
+        
+        total_points = sum(r.total_points for r in requests)
+        
+        # Status breakdown
+        status_breakdown = {}
+        for status_code, status_label in RewardRequest.REQUEST_STATUS:
+            count = sum(1 for r in requests if r.status == status_code)
+            if count > 0:
+                status_breakdown[status_label] = {
+                    'count': count,
+                    'points': sum(r.total_points for r in requests if r.status == status_code)
+                }
+        
+        # Top requested rewards
+        reward_counts = {}
+        for request in requests:
+            for item in request.rewardrequestitem_set.all():
+                reward_key = (item.reward.id, item.reward.name, item.reward.abra_code)
+                if reward_key not in reward_counts:
+                    reward_counts[reward_key] = {'quantity': 0, 'points': 0, 'requests': 0}
+                reward_counts[reward_key]['quantity'] += item.quantity
+                reward_counts[reward_key]['points'] += item.quantity * item.point_cost
+                reward_counts[reward_key]['requests'] += 1
+        
+        top_rewards = sorted(
+            [{'id': k[0], 'name': k[1], 'code': k[2], **v} for k, v in reward_counts.items()],
+            key=lambda x: x['quantity'],
+            reverse=True
+        )[:10]
+        
+        # Recent activity (last 7 days)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        recent_requests = [r for r in requests if r.requested_at >= seven_days_ago]
+        
+        return {
+            'total_requests': len(requests),
+            'total_points': total_points,
+            'avg_points': total_points // len(requests) if requests else 0,
+            'status_breakdown': status_breakdown,
+            'top_rewards': top_rewards,
+            'recent_count': len(recent_requests),
+            'recent_points': sum(r.total_points for r in recent_requests)
+        }
+    
+    def _get_status_counts(self):
+        """Get counts for each status for the tab navigation"""
+        counts = RewardRequest.objects.values('status').annotate(count=Count('id'))
+        status_dict = {item['status']: item['count'] for item in counts}
+        
+        # Include total
+        total = sum(status_dict.values())
+        
+        result = [('', 'All', total)]
+        for status_code, status_label in RewardRequest.REQUEST_STATUS:
+            count = status_dict.get(status_code, 0)
+            result.append((status_code, status_label, count))
+        
+        return result
+    
+    def _get_reward_inventory(self, status='PENDING'):
+        """Get reward inventory summary for a specific status"""
+        items = RewardRequestItem.objects.filter(
+            reward_request__status=status
+        ).values(
+            'reward__id',
+            'reward__name',
+            'reward__abra_code',
+            'reward__point_cost'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            request_count=Count('reward_request', distinct=True),
+            total_points=Sum(F('quantity') * F('point_cost'))
+        ).order_by('-total_quantity')[:20]
+        
+        return items
+    
+    @transaction.atomic
+    def _bulk_update_status(self, request_ids, new_status):
+        """Update status for multiple requests"""
+        requests = RewardRequest.objects.filter(id__in=request_ids)
+        
+        for reward_request in requests:
+            old_status = reward_request.status
+            reward_request.status = new_status
+            reward_request.save()
+            
+            # Update associated transactions
+            self._update_point_transaction(reward_request, old_status, new_status)
+    
+    def _update_point_transaction(self, reward_request, old_status, new_status):
+        """Update the point transaction to match the current state of the request"""
+        try:
+            transaction = PointsTransaction.objects.get(
+                reward_request=reward_request,
+                type='REWARD_CLAIM'
+            )
+        except PointsTransaction.DoesNotExist:
+            logger.warning(f"No transaction found for reward request {reward_request.id}")
+            return
+        except PointsTransaction.MultipleObjectsReturned:
+            logger.error(f"Multiple transactions found for reward request {reward_request.id}")
+            return
+        
+        # Update transaction status based on request status
+        if new_status in ['REJECTED', 'CANCELLED']:
+            transaction.status = 'CANCELLED'
+        elif old_status in ['REJECTED', 'CANCELLED'] and new_status not in ['REJECTED', 'CANCELLED']:
+            transaction.status = 'CONFIRMED'
+        
+        # Ensure transaction amount matches request total
+        if transaction.status == 'CONFIRMED':
+            transaction.value = -reward_request.total_points
+        
+        transaction.save()
+    
+    def _generate_bulk_export(self, request_ids):
+        """Generate Excel export for selected requests"""
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Reward Requests"
+        
+        # Headers
+        headers = ['Request ID', 'Client Number', 'Client Name', 'Status', 'Total Points', 
+                  'Requested Date', 'Items', 'Note']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="6B9AC4", end_color="6B9AC4", fill_type="solid")
+        
+        # Data
+        requests = RewardRequest.objects.filter(id__in=request_ids).select_related('user')
+        for row, request in enumerate(requests, 2):
+            items_str = ', '.join([
+                f"{item.quantity}x {item.reward.name}"
+                for item in request.rewardrequestitem_set.all()
+            ])
+            
+            ws.cell(row=row, column=1, value=request.id)
+            ws.cell(row=row, column=2, value=request.user.user_number)
+            ws.cell(row=row, column=3, value=f"{request.user.first_name} {request.user.last_name}")
+            ws.cell(row=row, column=4, value=request.get_status_display())
+            ws.cell(row=row, column=5, value=request.total_points)
+            ws.cell(row=row, column=6, value=request.requested_at.strftime('%Y-%m-%d %H:%M'))
+            ws.cell(row=row, column=7, value=items_str)
+            ws.cell(row=row, column=8, value=request.note or '')
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Create response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename=reward_requests_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        
+        wb.save(response)
+        return response
+
+
+class RewardRequestQuickEditView(ManagerGroupRequiredMixin, View):
+    """Handle quick inline editing of reward requests"""
+    
+    @transaction.atomic
+    def post(self, request, pk):
+        reward_request = get_object_or_404(RewardRequest, pk=pk)
+        
+        # Quick status update
+        new_status = request.POST.get('status')
+        if new_status and new_status in [s[0] for s in RewardRequest.REQUEST_STATUS]:
+            old_status = reward_request.status
+            reward_request.status = new_status
+            
+            # Update manager message if provided
+            manager_message = request.POST.get('manager_message', '')
+            if manager_message:
+                reward_request.description = manager_message
+            
+            reward_request.save()
+            
+            # Update associated transaction
+            self._update_point_transaction(reward_request, old_status, new_status)
+            
+            messages.success(request, f"Request #{pk} updated to {reward_request.get_status_display()}")
+        
+        # Rebuild the query string from the filter_ prefixed parameters
+        query_params = {}
+        for key, value in request.POST.items():
+            if key.startswith('filter_'):
+                actual_key = key.replace('filter_', '')
+                query_params[actual_key] = value
+        
+        # Build the redirect URL
+        base_url = reverse('enhanced_reward_requests')
+        if query_params:
+            from urllib.parse import urlencode
+            redirect_url = f"{base_url}?{urlencode(query_params)}"
+        else:
+            redirect_url = base_url
+        
+        return HttpResponseRedirect(redirect_url)
+    
+    def _update_point_transaction(self, reward_request, old_status, new_status):
+        """Update the point transaction to match the current state of the request"""
+        try:
+            transaction = PointsTransaction.objects.get(
+                reward_request=reward_request,
+                type='REWARD_CLAIM'
+            )
+        except PointsTransaction.DoesNotExist:
+            logger.warning(f"No transaction found for reward request {reward_request.id}")
+            return
+        except PointsTransaction.MultipleObjectsReturned:
+            logger.error(f"Multiple transactions found for reward request {reward_request.id}")
+            return
+        
+        # Update transaction status based on request status
+        if new_status in ['REJECTED', 'CANCELLED']:
+            transaction.status = 'CANCELLED'
+        elif old_status in ['REJECTED', 'CANCELLED'] and new_status not in ['REJECTED', 'CANCELLED']:
+            transaction.status = 'CONFIRMED'
+        
+        # Ensure transaction amount matches request total
+        if transaction.status == 'CONFIRMED':
+            transaction.value = -reward_request.total_points
+        
+        transaction.save()
