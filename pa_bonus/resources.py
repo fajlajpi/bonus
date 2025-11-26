@@ -197,7 +197,7 @@ class UserContractResource(resources.ModelResource):
     class Meta:
         model = UserContract
         import_id_fields = ['user_email']  # Use email instead of ID
-        fields = ('user_email', 'contract_date_from', 'contract_date_to', 'is_active', 'brand_bonuses')
+        fields = ('id', 'user_email', 'contract_date_from', 'contract_date_to', 'is_active', 'brand_bonuses')
 
     def before_import_row(self, row, **kwargs):
         """
