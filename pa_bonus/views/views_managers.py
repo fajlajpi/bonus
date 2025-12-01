@@ -636,7 +636,6 @@ class ClientListView(ManagerGroupRequiredMixin, View):
     def get(self, request):
         from django.db.models import Sum, Count, F, Q, Value, DecimalField
         from django.db.models.functions import Coalesce
-        import datetime
         
         # Get filter parameters
         region_id = request.GET.get('region', '')
@@ -791,9 +790,9 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
         client = get_object_or_404(User, pk=pk)
         
         # Get filter parameters for date range
-        year_from = request.GET.get('year_from', datetime.now().year)
+        year_from = request.GET.get('year_from', timezone.now().year)
         month_from = request.GET.get('month_from', 1)
-        year_to = request.GET.get('year_to', datetime.now().year)
+        year_to = request.GET.get('year_to', timezone.now().year)
         month_to = request.GET.get('month_to', 12)
         
         try:
@@ -803,9 +802,9 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             month_to = int(month_to)
         except (ValueError, TypeError):
             # Use default values if conversion fails
-            year_from = datetime.now().year
+            year_from = timezone.now().year
             month_from = 1
-            year_to = datetime.now().year
+            year_to = timezone.now().year
             month_to = 12
         
         # Calculate date range for filtering
