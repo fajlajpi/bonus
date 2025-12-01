@@ -18,8 +18,7 @@ from pa_bonus.utilities import ManagerGroupRequiredMixin, calculate_turnover_for
 
 from pa_bonus.exports import generate_telemarketing_export
 
-import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 
 import openpyxl
@@ -382,11 +381,11 @@ class TransactionApprovalView(ManagerGroupRequiredMixin, View):
         available_years = range(today.year - 2, today.year + 1)
         
         # Get month range for filtering
-        start_date = datetime.date(selected_year, selected_month, 1)
+        start_date = date(selected_year, selected_month, 1)
         if selected_month == 12:
-            end_date = datetime.date(selected_year + 1, 1, 1) - datetime.timedelta(days=1)
+            end_date = date(selected_year + 1, 1, 1) - timedelta(days=1)
         else:
-            end_date = datetime.date(selected_year, selected_month + 1, 1) - datetime.timedelta(days=1)
+            end_date = date(selected_year, selected_month + 1, 1) - timedelta(days=1)
         
         # Get pending transactions for the selected month
         pending_transactions = PointsTransaction.objects.filter(
@@ -409,14 +408,14 @@ class TransactionApprovalView(ManagerGroupRequiredMixin, View):
         )
         
         # Get available months (1-12)
-        available_months = [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+        available_months = [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
         
         context = {
             'pending_transactions': pending_transactions,
             'stats': stats,
             'selected_year': selected_year,
             'selected_month': selected_month,
-            'month_name': datetime.date(selected_year, selected_month, 1).strftime('%B'),
+            'month_name': date(selected_year, selected_month, 1).strftime('%B'),
             'available_years': available_years,
             'available_months': available_months,
             'is_approval_month': is_approval_month,
@@ -435,11 +434,11 @@ class TransactionApprovalView(ManagerGroupRequiredMixin, View):
         selected_month = int(request.POST.get('month'))
         
         # Get month range for filtering
-        start_date = datetime.date(selected_year, selected_month, 1)
+        start_date = date(selected_year, selected_month, 1)
         if selected_month == 12:
-            end_date = datetime.date(selected_year + 1, 1, 1) - datetime.timedelta(days=1)
+            end_date = date(selected_year + 1, 1, 1) - timedelta(days=1)
         else:
-            end_date = datetime.date(selected_year, selected_month + 1, 1) - datetime.timedelta(days=1)
+            end_date = date(selected_year, selected_month + 1, 1) - timedelta(days=1)
         
         # Update pending transactions to confirmed
         pending_transactions = PointsTransaction.objects.filter(
@@ -641,9 +640,9 @@ class ClientListView(ManagerGroupRequiredMixin, View):
         
         # Get filter parameters
         region_id = request.GET.get('region', '')
-        year_from = request.GET.get('year_from', datetime.datetime.now().year)
+        year_from = request.GET.get('year_from', datetime.now().year)
         month_from = request.GET.get('month_from', 1)
-        year_to = request.GET.get('year_to', datetime.datetime.now().year)
+        year_to = request.GET.get('year_to', datetime.now().year)
         month_to = request.GET.get('month_to', 12)
         
         try:
@@ -653,17 +652,17 @@ class ClientListView(ManagerGroupRequiredMixin, View):
             month_to = int(month_to)
         except (ValueError, TypeError):
             # Use default values if conversion fails
-            year_from = datetime.datetime.now().year
+            year_from = datetime.now().year
             month_from = 1
-            year_to = datetime.datetime.now().year
+            year_to = datetime.now().year
             month_to = 12
         
         # Calculate date range for filtering
-        date_from = datetime.date(year_from, month_from, 1)
+        date_from = date(year_from, month_from, 1)
         if month_to == 12:
-            date_to = datetime.date(year_to + 1, 1, 1) - datetime.timedelta(days=1)
+            date_to = date(year_to + 1, 1, 1) - timedelta(days=1)
         else:
-            date_to = datetime.date(year_to, month_to + 1, 1) - datetime.timedelta(days=1)
+            date_to = date(year_to, month_to + 1, 1) - timedelta(days=1)
         
         # Base query - get all active users that are not staff
         clients = User.objects.filter(is_active=True, is_staff=False)
@@ -743,11 +742,11 @@ class ClientListView(ManagerGroupRequiredMixin, View):
                 })
         
         # Calculate date ranges for quick filter buttons
-        current_year = datetime.datetime.now().year
-        ytd_from = datetime.date(current_year, 1, 1)
-        ytd_to = datetime.date.today()
-        last_year_from = datetime.date(current_year - 1, 1, 1)
-        last_year_to = datetime.date(current_year - 1, 12, 31)
+        current_year = datetime.now().year
+        ytd_from = date(current_year, 1, 1)
+        ytd_to = date.today()
+        last_year_from = date(current_year - 1, 1, 1)
+        last_year_to = date(current_year - 1, 12, 31)
         
         # Prepare context
         context = {
@@ -765,7 +764,7 @@ class ClientListView(ManagerGroupRequiredMixin, View):
             'last_year_from': last_year_from,
             'last_year_to': last_year_to,
             'current_year': current_year,
-            'months': [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+            'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
         }
         
         return render(request, self.template_name, context)
@@ -792,9 +791,9 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
         client = get_object_or_404(User, pk=pk)
         
         # Get filter parameters for date range
-        year_from = request.GET.get('year_from', datetime.datetime.now().year)
+        year_from = request.GET.get('year_from', datetime.now().year)
         month_from = request.GET.get('month_from', 1)
-        year_to = request.GET.get('year_to', datetime.datetime.now().year)
+        year_to = request.GET.get('year_to', datetime.now().year)
         month_to = request.GET.get('month_to', 12)
         
         try:
@@ -804,17 +803,17 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             month_to = int(month_to)
         except (ValueError, TypeError):
             # Use default values if conversion fails
-            year_from = datetime.datetime.now().year
+            year_from = datetime.now().year
             month_from = 1
-            year_to = datetime.datetime.now().year
+            year_to = datetime.now().year
             month_to = 12
         
         # Calculate date range for filtering
-        date_from = datetime.date(year_from, month_from, 1)
+        date_from = date(year_from, month_from, 1)
         if month_to == 12:
-            date_to = datetime.date(year_to + 1, 1, 1) - datetime.timedelta(days=1)
+            date_to = date(year_to + 1, 1, 1) - timedelta(days=1)
         else:
-            date_to = datetime.date(year_to, month_to + 1, 1) - datetime.timedelta(days=1)
+            date_to = date(year_to, month_to + 1, 1) - timedelta(days=1)
         
         # Get client's active contract
         try:
@@ -933,7 +932,7 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             'month_from': month_from,
             'year_to': year_to,
             'month_to': month_to,
-            'months': [(i, datetime.date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+            'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
         }
         
         return render(request, self.template_name, context)
@@ -950,7 +949,7 @@ class UserActivityDashboardView(ManagerGroupRequiredMixin, View):
         import datetime
         
         # Get activity for the last 30 days
-        thirty_days_ago = timezone.now().date() - datetime.timedelta(days=30)
+        thirty_days_ago = timezone.now().date() - timedelta(days=30)
         
         # Daily activity counts
         daily_activity = UserActivity.objects.filter(
@@ -970,7 +969,7 @@ class UserActivityDashboardView(ManagerGroupRequiredMixin, View):
         ).order_by('-total_visits')[:20]
         
         # Recently active users (last 7 days)
-        seven_days_ago = timezone.now().date() - datetime.timedelta(days=7)
+        seven_days_ago = timezone.now().date() - timedelta(days=7)
         recently_active = UserActivity.objects.filter(
             date__gte=seven_days_ago
         ).values('user').distinct().count()
@@ -1255,8 +1254,8 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
             try:
                 goal_id, start_str, end_str = eval_key.split(':')
                 goal = UserContractGoal.objects.get(id=goal_id)
-                start_date = datetime.datetime.strptime(start_str, '%Y-%m-%d').date()
-                end_date = datetime.datetime.strptime(end_str, '%Y-%m-%d').date()
+                start_date = datetime.strptime(start_str, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_str, '%Y-%m-%d').date()
             except (ValueError, UserContractGoal.DoesNotExist):
                 continue
             
