@@ -50,6 +50,10 @@
     <div class="dashboard-section">
       <h3>Top 10 Clients by Available Points</h3>
       <div class="dashboard-actions" style="margin-bottom: 1rem;">
+        <a href="{% url 'manager_client_create' %}" class="dashboard-button">
+          <span class="button-icon">➕</span>
+          <span class="button-text">Add New Client</span>
+        </a>
         <a href="{% url 'manager_clients' %}" class="dashboard-button">
           <span class="button-icon">👥</span>
           <span class="button-text">View All Clients</span>

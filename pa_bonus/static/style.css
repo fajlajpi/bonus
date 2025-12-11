@@ -2867,3 +2867,202 @@ textarea.form-control {
       display: block !important;
   }
 }
+/* ========================================
+   CLIENT CREATION FORM STYLES
+   ======================================== */
+
+/* Page header styling */
+.page-header {
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--border-color, #e0e0e0);
+  padding-bottom: 1rem;
+}
+
+.page-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: var(--primary-color, #333);
+}
+
+.page-description {
+  margin: 0;
+  color: var(--text-muted, #666);
+  font-size: 0.95rem;
+}
+
+/* Form sections */
+.form-section {
+  background: var(--card-background, #fff);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  margin: 0 0 0.5rem 0;
+  color: var(--primary-color, #333);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.section-description {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-muted, #666);
+  font-size: 0.9rem;
+}
+
+/* Form rows and groups */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-color, #333);
+}
+
+/* Form controls */
+.form-control {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color, #007bff);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-control[type="date"] {
+  cursor: pointer;
+}
+
+select.form-control[multiple] {
+  min-height: 150px;
+}
+
+/* Form text and help text */
+.form-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-muted, #666);
+}
+
+/* Checkboxes */
+.form-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.form-check-input {
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+}
+
+.form-check-label {
+  cursor: pointer;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Error styling */
+.field-error {
+  color: var(--error-color, #dc3545);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-color, #e0e0e0);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.btn-primary {
+  background-color: var(--primary-color, #007bff);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover, #0056b3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color, #6c757d);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-hover, #545b62);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
+
+/* Goal fields initially hidden */
+#goal-fields {
+  margin-top: 1rem;
+}

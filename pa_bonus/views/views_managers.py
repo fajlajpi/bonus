@@ -9,7 +9,7 @@ from django.db.models import Sum, Count, Q, F, Case, When, IntegerField
 from django.db import transaction
 from django.urls import reverse
 import logging
-from pa_bonus.forms import FileUploadForm
+from pa_bonus.forms import FileUploadForm, ClientCreationForm
 from pa_bonus.tasks import process_uploaded_file, process_stock_file
 from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction,
                              EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand,
@@ -25,7 +25,6 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill
 import io
 
-# Create your views here.
 
 logger = logging.getLogger(__name__)
 
@@ -1859,7 +1858,7 @@ class EnhancedRewardRequestListView(ManagerGroupRequiredMixin, View):
             total_quantity=Sum('quantity'),
             request_count=Count('reward_request', distinct=True),
             total_points=Sum(F('quantity') * F('point_cost'))
-        ).order_by('-total_quantity')[:20]
+        ).order_by('-total_quantity')[:200]
         
         return items
     
@@ -2023,3 +2022,107 @@ class RewardRequestQuickEditView(ManagerGroupRequiredMixin, View):
             transaction.value = -reward_request.total_points
         
         transaction.save()
+
+class ClientCreateView(ManagerGroupRequiredMixin, View):
+    """
+    View for creating a new client with contract, optional goal, and
+    optional retroactive transaction processing.
+    """
+    
+    template_name = 'manager/client_create.html'
+    
+    def get(self, request):
+        """Display the empty client creation form."""
+        form = ClientCreationForm()
+        return render(request, self.template_name, {'form': form})
+    
+    def post(self, request):
+        """Process the client creation form submission."""
+        form = ClientCreationForm(request.POST)
+        
+        if form.is_valid():
+            try:
+                # The form's save method handles the entire creation process
+                # including optional retroactive transaction processing
+                user, transaction_stats = form.save()
+                
+                # Build success message
+                success_message = (
+                    f'Client "{user.get_full_name() or user.username}" has been created successfully. '
+                    f'Default password is set to their customer number: {user.user_number}'
+                )
+                
+                # Add transaction processing results to message if applicable
+                if transaction_stats:
+                    success_message += self._format_transaction_stats(transaction_stats)
+                
+                messages.success(request, success_message)
+                
+                # Log any errors from transaction processing
+                if transaction_stats and transaction_stats.get('errors'):
+                    for error in transaction_stats['errors']:
+                        logger.error(f"Transaction processing error: {error}")
+                        messages.warning(request, f"Warning: {error}")
+                
+                # Redirect to the client detail page
+                return redirect('manager_client_detail', pk=user.id)
+                
+            except Exception as e:
+                logger.error(f"Error creating client: {str(e)}", exc_info=True)
+                messages.error(
+                    request,
+                    f'Error creating client: {str(e)}'
+                )
+        else:
+            # Form validation failed
+            messages.error(
+                request,
+                'Please correct the errors below.'
+            )
+        
+        # Re-display form with errors
+        return render(request, self.template_name, {'form': form})
+    
+    def _format_transaction_stats(self, stats):
+        """
+        Format transaction processing statistics into a readable message.
+        
+        Args:
+            stats (dict): Statistics from retroactive transaction processing
+            
+        Returns:
+            str: Formatted message describing the results
+        """
+        message_parts = []
+        
+        if stats['invoices_found'] > 0:
+            message_parts.append(
+                f"\n\nHistorical Transaction Processing:"
+                f"\n- Found {stats['invoices_found']} historical invoice(s)"
+            )
+            
+            if stats['invoices_processed'] > 0:
+                message_parts.append(
+                    f"- Processed {stats['invoices_processed']} invoice(s)"
+                )
+            
+            if stats['transactions_created'] > 0:
+                message_parts.append(
+                    f"- Created {stats['transactions_created']} new transaction(s)"
+                )
+            
+            if stats['transactions_skipped'] > 0:
+                message_parts.append(
+                    f"- Skipped {stats['transactions_skipped']} duplicate transaction(s)"
+                )
+            
+            if stats['brands_without_bonus'] > 0:
+                message_parts.append(
+                    f"- Skipped {stats['brands_without_bonus']} brand(s) not in contract"
+                )
+        else:
+            message_parts.append(
+                "\n\nNo historical invoices found for this client number."
+            )
+        
+        return ''.join(message_parts)
