@@ -38,6 +38,11 @@
             <button type="submit" class="btn btn-primary">Filtrovat</button>
         </div>
     </form>
+
+    <a href="{% url 'goal_evaluation' %}?type={{ evaluation_type }}&region={{ selected_region }}&export=preview" 
+        class="btn btn-secondary">
+    Export Preview (Excel)
+    </a>
     
     {% if evaluations %}
     <form method="post" action="{% url 'goal_evaluation' %}">

@@ -1153,11 +1153,15 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
                 return 'FINAL', 0, False
 
     def get(self, request):
+        """
+        Display pending evaluations or handle export request.
+        Added: ?export=preview parameter to download Excel preview.
+        """
         from django.db.models import Q, Exists, OuterRef
         today = timezone.now().date()
         
         # Get filter parameters
-        evaluation_type = request.GET.get('type', 'pending')  # pending, all, evaluated
+        evaluation_type = request.GET.get('type', 'pending')
         region_id = request.GET.get('region', '')
         
         # Base query - get goals with evaluation periods that have ended
@@ -1202,6 +1206,20 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
                     end_date
                 )
                 
+                # Calculate full year turnover for diagnostics
+                full_year_actual = calculate_turnover_for_goal(
+                    goal.user_contract.user_id,
+                    goal.brands.all(),
+                    goal.goal_period_from,
+                    goal.goal_period_to
+                )
+                
+                # Get already awarded points
+                already_awarded = self._get_total_awarded_points(goal)
+                
+                # Calculate points cap
+                points_cap = self._calculate_points_cap(goal)
+                
                 # Determine evaluation type and potential bonus
                 eval_type, bonus_points, is_achieved = self._determine_evaluation_result(
                     goal, start_date, end_date, actual_turnover, targets, is_final
@@ -1220,8 +1238,21 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
                     'bonus_points': bonus_points,
                     'is_achieved': is_achieved,
                     'existing_evaluation': existing_evaluation,
-                    'brands': list(goal.brands.all())
+                    'brands': list(goal.brands.all()),
+                    # Additional diagnostic fields for export
+                    'full_year_actual': full_year_actual,
+                    'full_year_goal': goal.goal_value,
+                    'full_year_base': goal.goal_base,
+                    'full_year_met': full_year_actual >= goal.goal_value,
+                    'points_cap': points_cap,
+                    'already_awarded': already_awarded,
+                    'goal_period_from': goal.goal_period_from,
+                    'goal_period_to': goal.goal_period_to,
                 })
+        
+        # Check if this is an export request
+        if request.GET.get('export') == 'preview':
+            return self.generate_evaluation_export(pending_evaluations)
         
         # Get regions for filter
         regions = Region.objects.filter(is_active=True).order_by('name')
@@ -1238,6 +1269,130 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
         }
         
         return render(request, self.template_name, context)
+
+    def generate_evaluation_export(self, evaluations):
+        """
+        Generate an Excel export of pending evaluations for review.
+        Includes diagnostic columns to help verify the calculation logic.
+        
+        Args:
+            evaluations: List of evaluation dictionaries from get()
+            
+        Returns:
+            HttpResponse: Excel file download
+        """
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Evaluation Preview'
+        
+        # Define headers - including diagnostic columns
+        headers = [
+            'Client ID',
+            'Client Name',
+            'Region',
+            'Brands',
+            'Period Start',
+            'Period End',
+            'Is Final Period',
+            'Period Target',
+            'Period Base',
+            'Period Actual',
+            'Period Achieved',
+            'Full Year Goal',
+            'Full Year Base', 
+            'Full Year Actual',
+            'Full Year Met',
+            'Evaluation Type',
+            'Points to Award',
+            'Already Awarded',
+            'Points Cap',
+            'Existing Evaluation',
+        ]
+        
+        # Style for headers
+        header_font = Font(bold=True)
+        header_fill = PatternFill(start_color='CCCCCC', end_color='CCCCCC', fill_type='solid')
+        
+        # Highlight colors for key columns
+        warning_fill = PatternFill(start_color='FFCCCB', end_color='FFCCCB', fill_type='solid')  # Light red
+        success_fill = PatternFill(start_color='90EE90', end_color='90EE90', fill_type='solid')  # Light green
+        
+        # Write headers
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+        
+        # Write data rows
+        for row_idx, eval_data in enumerate(evaluations, 2):
+            user = eval_data['user']
+            brand_names = ', '.join([b.name for b in eval_data['brands']])
+            
+            values = [
+                user.user_number,
+                f"{user.first_name} {user.last_name}",
+                user.region.name if user.region else 'No Region',
+                brand_names,
+                eval_data['period_start'],
+                eval_data['period_end'],
+                'Yes' if eval_data['is_final'] else 'No',
+                float(eval_data['target_turnover']),
+                float(eval_data['baseline_turnover']),
+                float(eval_data['actual_turnover']),
+                'Yes' if eval_data['is_achieved'] else 'No',
+                float(eval_data['full_year_goal']),
+                float(eval_data['full_year_base']),
+                float(eval_data['full_year_actual']),
+                'Yes' if eval_data['full_year_met'] else 'No',
+                eval_data['evaluation_type'],
+                eval_data['bonus_points'],
+                eval_data['already_awarded'],
+                eval_data['points_cap'],
+                'Yes' if eval_data['existing_evaluation'] else 'No',
+            ]
+            
+            for col, value in enumerate(values, 1):
+                cell = ws.cell(row=row_idx, column=col, value=value)
+                
+                # Highlight rows where points are being awarded but full year not met
+                # This is the scenario you're concerned about
+                if col == 17 and eval_data['bonus_points'] > 0 and not eval_data['full_year_met']:
+                    cell.fill = warning_fill
+                
+                # Highlight full year met column
+                if col == 15:
+                    if eval_data['full_year_met']:
+                        cell.fill = success_fill
+                    else:
+                        cell.fill = warning_fill
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 40)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Save to BytesIO
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        # Create HTTP response
+        filename = f'goal_evaluation_preview_{timezone.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
     
     @transaction.atomic
     def post(self, request):
