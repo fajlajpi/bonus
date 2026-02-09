@@ -7,8 +7,8 @@ set during a given calendar year (defaults to the previous year).
 Columns produced:
     - Client number (ZC), name (Last, First), region, brands
     - Goal period start/end, base, goal value
-    - Total turnover and per-brand turnover (Echosline, Alter Ego)
-    - Total credit notes and per-brand credit notes
+    - Net turnover (invoices minus credit notes), total and per-brand
+    - Credit note amounts (raw), total and per-brand
     - Standard invoice points (total)
     - Credit note point deductions (total)
     - Extra goal points awarded (from GoalEvaluation)
@@ -156,7 +156,7 @@ class Command(BaseCommand):
 
         # -- Turnover (invoices) per brand and total ----------------------
         goal_brands = goal.brands.all()
-        turnover_total, turnover_by_brand = self._turnover(
+        invoice_total, invoice_by_brand = self._turnover(
             user, eff_start, eff_end, brand_map, goal_brands, invoice_type="INVOICE"
         )
 
@@ -164,6 +164,13 @@ class Command(BaseCommand):
         credit_total, credit_by_brand = self._turnover(
             user, eff_start, eff_end, brand_map, goal_brands, invoice_type="CREDIT_NOTE"
         )
+
+        # -- Net turnover = invoices minus credit notes -------------------
+        net_turnover_total = float(invoice_total) - float(credit_total)
+        net_turnover_by_brand = {
+            name: float(invoice_by_brand.get(name, 0)) - float(credit_by_brand.get(name, 0))
+            for name in BRAND_NAMES
+        }
 
         # -- Standard invoice points (STANDARD_POINTS) --------------------
         standard_points = self._sum_points(
@@ -180,16 +187,16 @@ class Command(BaseCommand):
 
         return {
             "client_number": user.user_number,
-            "client_name": f"{user.last_name} {user.first_name}",
+            "client_name": f"{user.last_name}, {user.first_name}",
             "region": user.region.name if user.region else "",
             "brands": brand_names,
             "goal_from": goal.goal_period_from,
             "goal_to": goal.goal_period_to,
             "goal_base": goal.goal_base,
             "goal_value": goal.goal_value,
-            "turnover_total": float(turnover_total),
+            "turnover_total": net_turnover_total,
             **{
-                f"turnover_{name}": float(turnover_by_brand.get(name, 0))
+                f"turnover_{name}": net_turnover_by_brand[name]
                 for name in BRAND_NAMES
             },
             "credit_total": float(credit_total),
@@ -306,10 +313,10 @@ class Command(BaseCommand):
             ("Konec cile", 14),
             ("Zaklad", 14),
             ("Cil", 14),
-            ("Obrat celkem", 16),
+            ("Obrat celkem (netto)", 20),
         ]
         for name in BRAND_NAMES:
-            headers.append((f"Obrat {name}", 18))
+            headers.append((f"Obrat {name} (netto)", 20))
 
         headers += [
             ("Dobropisy celkem", 18),
