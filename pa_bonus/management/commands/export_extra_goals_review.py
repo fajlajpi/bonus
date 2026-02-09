@@ -155,13 +155,14 @@ class Command(BaseCommand):
         brand_names = ", ".join(b.name for b in goal.brands.all())
 
         # -- Turnover (invoices) per brand and total ----------------------
+        goal_brands = goal.brands.all()
         turnover_total, turnover_by_brand = self._turnover(
-            user, eff_start, eff_end, brand_map, invoice_type="INVOICE"
+            user, eff_start, eff_end, brand_map, goal_brands, invoice_type="INVOICE"
         )
 
         # -- Credit notes per brand and total -----------------------------
         credit_total, credit_by_brand = self._turnover(
-            user, eff_start, eff_end, brand_map, invoice_type="CREDIT_NOTE"
+            user, eff_start, eff_end, brand_map, goal_brands, invoice_type="CREDIT_NOTE"
         )
 
         # -- Standard invoice points (STANDARD_POINTS) --------------------
@@ -204,10 +205,14 @@ class Command(BaseCommand):
     # ------------------------------------------------------------------
     # Helper: turnover (or credit notes) per brand
     # ------------------------------------------------------------------
-    def _turnover(self, user, start, end, brand_map, invoice_type):
+    def _turnover(self, user, start, end, brand_map, goal_brands, invoice_type):
         """
         Sum InvoiceBrandTurnover amounts for the given user, date range, and
-        invoice type.  Returns (total, {brand_name: amount}).
+        invoice type.  The total is restricted to the brands assigned to the
+        goal (goal_brands), while the per-brand breakdown uses the hard-coded
+        BRAND_NAMES for the dedicated columns.
+
+        Returns (total, {brand_name: amount}).
         """
         base_qs = InvoiceBrandTurnover.objects.filter(
             invoice__client_number=user.user_number,
@@ -216,7 +221,8 @@ class Command(BaseCommand):
             invoice__invoice_type=invoice_type,
         )
 
-        total = base_qs.aggregate(
+        # Total: only brands that belong to this goal
+        total = base_qs.filter(brand__in=goal_brands).aggregate(
             t=Coalesce(Sum("amount"), Value(0, output_field=DecimalField()))
         )["t"]
 
