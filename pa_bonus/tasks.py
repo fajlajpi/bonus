@@ -82,7 +82,7 @@ def read_file(file_path):
             # Try different encodings for CSV files
             for encoding in ['utf-8', 'latin-1', 'cp1252']:
                 try:
-                    df = pd.read_csv(file_path, encoding=encoding)
+                    df = pd.read_csv(file_path, encoding=encoding, dtype={'ZČ': str})
                     logger.info(f"CSV file read successfully with encoding: {encoding}")
                     break
                 except UnicodeDecodeError:
@@ -90,7 +90,7 @@ def read_file(file_path):
             else:
                 raise ValueError("Could not read CSV file with any supported encoding")
         else:
-            df = pd.read_excel(file_path)
+            df = pd.read_excel(file_path, dtype={'ZČ': str})
             logger.info("Excel file read successfully")
         
         logger.info(f"File read successfully. Shape: {df.shape}")
