@@ -3066,3 +3066,14 @@ select.form-control[multiple] {
 #goal-fields {
   margin-top: 1rem;
 }
+
+/* Reports Hub */
+.dashboard-section p {
+  margin-bottom: var(--spacing-sm);
+  color: #555;
+  line-height: 1.5;
+}
+
+.dashboard-section form {
+  display: inline;
+}

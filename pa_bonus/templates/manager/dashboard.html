@@ -156,22 +156,18 @@
       </div>
     </div>
     
-    <!-- Reporting Section - Coming Soon -->
+    <!-- Reporting Section -->
     <div class="dashboard-section">
       <h3>Reporting</h3>
       <div class="dashboard-actions">
-        <a href="{% url 'user_activity_dashboard' %}" class="dashboard-button">
-          <span class="button-icon">📊</span>
-          <span class="button-text">User Activity Dashboard</span>
-        </a>
-        <div class="dashboard-button disabled">
-          <span class="button-icon">📊</span>
-          <span class="button-text">Monthly Reports <small>(Coming Soon)</small></span>
-        </div>
-        <a href="{% url 'goals_overview' %}" class="dashboard-button">
-          <span class="button-icon">📈</span>
-          <span class="button-text">Extra Goals Progress</span>
-        </a>
+          <a href="{% url 'reports_hub' %}" class="dashboard-button">
+              <span class="button-icon">&#128202;</span>
+              <span class="button-text">Reports Hub</span>
+          </a>
+          <a href="{% url 'user_activity_dashboard' %}" class="dashboard-button">
+              <span class="button-icon">&#128200;</span>
+              <span class="button-text">User Activity Dashboard</span>
+          </a>
       </div>
     </div>
   </div>

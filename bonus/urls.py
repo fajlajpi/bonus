@@ -19,7 +19,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, RedirectView
-from pa_bonus.views import views_managers as vm, views_users as vu, views_public as vp
+from pa_bonus.views import views_managers as vm, views_users as vu, views_public as vp, views_reports as vr
 from pa_bonus.forms import EmailAuthenticationForm
 
 def home_redirect(request):
@@ -75,7 +75,8 @@ urlpatterns.extend([
     path('manager/reward-requests/quick-edit/<int:pk>/', 
          vm.RewardRequestQuickEditView.as_view(), 
          name='reward_request_quick_edit'),
-
+    path('manager/reports/', vr.ReportsHubView.as_view(), name='reports_hub'),
+    path('manager/reports/download/', vr.ReportDownloadView.as_view(), name='report_download'),
 ])
 
 # ADMIN URLS
