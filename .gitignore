@@ -21,3 +21,4 @@ db.sqlite3
 
 # private file for secret data
 private.py
+.claude/settings.local.json

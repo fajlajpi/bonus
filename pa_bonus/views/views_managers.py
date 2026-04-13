@@ -2178,6 +2178,77 @@ class RewardRequestQuickEditView(ManagerGroupRequiredMixin, View):
         
         transaction.save()
 
+class BatchSaveRewardRequestsView(ManagerGroupRequiredMixin, View):
+    """Batch-save status and manager message for multiple reward requests in one POST."""
+
+    @transaction.atomic
+    def post(self, request):
+        request_ids = request.POST.getlist('request_ids')
+        if not request_ids:
+            messages.warning(request, "No requests submitted for batch save.")
+            return redirect('enhanced_reward_requests')
+
+        valid_statuses = [s[0] for s in RewardRequest.REQUEST_STATUS]
+        saved = 0
+
+        for rid in request_ids:
+            new_status = request.POST.get(f'status_{rid}', '')
+            manager_message = request.POST.get(f'manager_message_{rid}', '')
+
+            if not new_status or new_status not in valid_statuses:
+                continue
+
+            try:
+                reward_request = RewardRequest.objects.select_for_update().get(pk=rid)
+            except RewardRequest.DoesNotExist:
+                continue
+
+            old_status = reward_request.status
+            reward_request.status = new_status
+            if manager_message:
+                reward_request.description = manager_message
+            reward_request.save()
+            self._update_point_transaction(reward_request, old_status, new_status)
+            saved += 1
+
+        messages.success(request, f"Saved {saved} request(s).")
+
+        # Preserve filters
+        query_params = {}
+        for key, value in request.POST.items():
+            if key.startswith('filter_'):
+                query_params[key.replace('filter_', '')] = value
+
+        base_url = reverse('enhanced_reward_requests')
+        if query_params:
+            from urllib.parse import urlencode
+            return HttpResponseRedirect(f"{base_url}?{urlencode(query_params)}")
+        return redirect('enhanced_reward_requests')
+
+    def _update_point_transaction(self, reward_request, old_status, new_status):
+        try:
+            txn = PointsTransaction.objects.get(
+                reward_request=reward_request,
+                type='REWARD_CLAIM'
+            )
+        except PointsTransaction.DoesNotExist:
+            logger.warning(f"No transaction found for reward request {reward_request.id}")
+            return
+        except PointsTransaction.MultipleObjectsReturned:
+            logger.error(f"Multiple transactions found for reward request {reward_request.id}")
+            return
+
+        if new_status in ['REJECTED', 'CANCELLED']:
+            txn.status = 'CANCELLED'
+        elif old_status in ['REJECTED', 'CANCELLED'] and new_status not in ['REJECTED', 'CANCELLED']:
+            txn.status = 'CONFIRMED'
+
+        if txn.status == 'CONFIRMED':
+            txn.value = -reward_request.total_points
+
+        txn.save()
+
+
 class ClientCreateView(ManagerGroupRequiredMixin, View):
     """
     View for creating a new client with contract, optional goal, and

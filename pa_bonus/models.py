@@ -525,6 +525,7 @@ class RewardRequest(models.Model):
         ('REJECTED', 'Rejected'),
         ('FINISHED', 'Finished'),
         ('CANCELLED', 'Cancelled'),
+        ('OVERDUE_INVOICE', 'Faktura po splatnosti'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     requested_at = models.DateTimeField(auto_now_add=True)

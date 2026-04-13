@@ -9,43 +9,43 @@
     <div class="reward-admin-wrapper" style="width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; padding: 0 2rem; background-color: var(--background-color);">
         <div class="reward-admin-container" style="max-width: 1600px; margin: 0 auto; background-color: var(--container-bg); padding: var(--spacing-lg); border-radius: var(--border-radius-lg);">
             <h1>Reward Requests Management</h1>
-            
+
             <!-- Status Tabs Navigation -->
             <div class="status-tabs">
-                <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}" 
+                <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}"
                    class="tab-link {% if not status_filter %}active{% endif %}">
                     All <span class="tab-count">{{ status_counts.0.2 }}</span>
                 </a>
                 {% for status_code, status_label, count in status_counts %}
                     {% if status_code %}
-                    <a href="?status={{ status_code }}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                    <a href="?status={{ status_code }}{% if search_query %}&search={{ search_query }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
                        class="tab-link {% if status_filter == status_code %}active{% endif %}">
                         {{ status_label }} <span class="tab-count">{{ count }}</span>
                     </a>
                     {% endif %}
                 {% endfor %}
             </div>
-            
+
             <!-- Search and Filter Bar -->
             <form method="get" class="filter-bar">
                 <input type="hidden" name="status" value="{{ status_filter }}">
-                
+
                 <div class="filter-row">
                     <div class="filter-group">
-                        <input type="text" name="search" placeholder="Search by name, number, or ID..." 
+                        <input type="text" name="search" placeholder="Search by name, number, or ID..."
                                value="{{ search_query }}" class="search-input">
                     </div>
-                    
+
                     <div class="filter-group">
                         <label>From:</label>
                         <input type="date" name="date_from" value="{{ date_from }}">
                     </div>
-                    
+
                     <div class="filter-group">
                         <label>To:</label>
                         <input type="date" name="date_to" value="{{ date_to }}">
                     </div>
-                    
+
                     <div class="filter-group">
                         <select name="client">
                             <option value="">All Clients</option>
@@ -56,7 +56,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    
+
                     <div class="filter-group">
                         <select name="sort">
                             <option value="-requested_at" {% if sort_by == '-requested_at' %}selected{% endif %}>Newest First</option>
@@ -66,12 +66,12 @@
                             <option value="user__last_name" {% if sort_by == 'user__last_name' %}selected{% endif %}>Client Name</option>
                         </select>
                     </div>
-                    
+
                     <button type="submit" class="btn-filter">Filter</button>
                     <a href="{% url 'enhanced_reward_requests' %}" class="btn-reset">Reset</a>
                 </div>
             </form>
-            
+
             <!-- Analytics Summary (Collapsible) -->
             <div class="analytics-section">
                 <input type="checkbox" id="analytics-toggle" class="toggle-checkbox">
@@ -79,7 +79,7 @@
                     <h3>Analytics & Summary</h3>
                     <span class="toggle-indicator">▼</span>
                 </label>
-                
+
                 <div class="analytics-content">
                     <div class="analytics-grid">
                         <!-- Summary Cards -->
@@ -100,7 +100,7 @@
                             <div class="stat-label">Last 7 Days</div>
                         </div>
                     </div>
-                    
+
                     <!-- Status Breakdown -->
                     {% if analytics.status_breakdown %}
                     <div class="status-breakdown">
@@ -115,7 +115,7 @@
                         </div>
                     </div>
                     {% endif %}
-                    
+
                     <!-- Top Rewards -->
                     {% if analytics.top_rewards %}
                     <div class="top-rewards">
@@ -146,7 +146,7 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <!-- Inventory Summary (Collapsible) -->
             <div class="inventory-section">
                 <input type="checkbox" id="inventory-toggle" class="toggle-checkbox">
@@ -154,7 +154,7 @@
                     <h3>Reward Inventory Summary ({{ status_filter|default:"PENDING" }} Status)</h3>
                     <span class="toggle-indicator">▼</span>
                 </label>
-                
+
                 <div class="inventory-content">
                     <table class="compact-table">
                         <thead>
@@ -184,12 +184,18 @@
                     </table>
                 </div>
             </div>
-            
+
             <!-- Main Requests List with Expandable Details -->
             <div class="requests-section">
                 <div class="section-header-static">
                     <h3>Requests List</h3>
                     <div class="bulk-actions">
+                        <!-- Expand / Collapse All -->
+                        <button type="button" class="btn-expand-all" id="expand-all-btn" onclick="toggleExpandAll()">Expand All</button>
+
+                        <!-- Save All Changes -->
+                        <button type="button" class="btn-save-all" onclick="saveAllChanges()">Save All Changes</button>
+
                         <form method="post" id="bulk-form" style="display: inline;">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="bulk_status_update">
@@ -204,7 +210,7 @@
                         <button type="button" class="btn-export" onclick="exportSelected()">Export Selected</button>
                     </div>
                 </div>
-                
+
                 <div class="requests-list">
                     <table class="requests-table">
                         <thead>
@@ -225,7 +231,7 @@
                             {% for request in requests %}
                             <tr class="request-row status-{{ request.status|lower }}">
                                 <td class="checkbox-col">
-                                    <input type="checkbox" name="selected_requests" value="{{ request.id }}" 
+                                    <input type="checkbox" name="selected_requests" value="{{ request.id }}"
                                            form="bulk-form" class="request-checkbox">
                                 </td>
                                 <td class="request-id">{{ request.id }}</td>
@@ -252,7 +258,7 @@
                                     <label for="expand-{{ request.id }}" class="expand-btn">▼</label>
                                 </td>
                             </tr>
-                            
+
                             <!-- Expandable Detail Row -->
                             <tr class="detail-row">
                                 <td colspan="8">
@@ -275,12 +281,12 @@
                                                     <dd>{{ request.user.get_balance }} points</dd>
                                                     <dt>Client Link:</dt>
                                                     <dd>
-                                                        <a href="https://report.primavera-and.cz:8080/pentaho/api/repos/%3Apublic%3APAA%3Akarta-klienta%3Akarta%20klienta.wcdf/generatedContent?kodZakaznika={{ request.user.user_number }}" 
+                                                        <a href="https://report.primavera-and.cz:8080/pentaho/api/repos/%3Apublic%3APAA%3Akarta-klienta%3Akarta%20klienta.wcdf/generatedContent?kodZakaznika={{ request.user.user_number }}"
                                                            target="_blank">Open in Reporting →</a>
                                                     </dd>
                                                 </dl>
                                             </div>
-                                            
+
                                             <!-- Request Items -->
                                             <div class="detail-section">
                                                 <h4>Requested Items</h4>
@@ -292,6 +298,7 @@
                                                             <th>Qty</th>
                                                             <th>Points</th>
                                                             <th>Total</th>
+                                                            <th>Current Stock</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -302,44 +309,49 @@
                                                             <td>{{ item.quantity }}</td>
                                                             <td>{{ item.point_cost }}</td>
                                                             <td>{{ item.quantity|multiply:item.point_cost }}</td>
+                                                            <td>
+                                                                <span class="availability-badge availability-{{ item.reward.availability|lower }}">
+                                                                    {{ item.reward.get_availability_display }}
+                                                                </span>
+                                                            </td>
                                                         </tr>
                                                         {% endfor %}
                                                     </tbody>
                                                     <tfoot>
                                                         <tr>
-                                                            <th colspan="4">Total:</th>
+                                                            <th colspan="5">Total:</th>
                                                             <th>{{ request.total_points }}</th>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
                                             </div>
-                                            
+
                                             <!-- Notes and Actions -->
                                             <div class="detail-section">
                                                 <h4>Notes & Actions</h4>
-                                                
+
                                                 {% if request.note %}
                                                 <div class="note-box">
                                                     <strong>Customer Note:</strong>
                                                     <p>{{ request.note }}</p>
                                                 </div>
                                                 {% endif %}
-                                                
+
                                                 {% if request.description %}
                                                 <div class="note-box">
                                                     <strong>Manager Message:</strong>
                                                     <p>{{ request.description }}</p>
                                                 </div>
                                                 {% endif %}
-                                                
-                                                <!-- Quick Edit Form - FIXED VERSION -->
+
+                                                <!-- Quick Edit Form -->
                                                 <form method="post" action="{% url 'reward_request_quick_edit' request.id %}" class="quick-edit-form">
                                                     {% csrf_token %}
                                                     <!-- Store current query parameters to maintain filters after save -->
                                                     {% for key, value in request.GET.items %}
                                                         <input type="hidden" name="filter_{{ key }}" value="{{ value }}">
                                                     {% endfor %}
-                                                    
+
                                                     <div class="form-row">
                                                         <label>Status:</label>
                                                         <select name="status">
@@ -350,21 +362,25 @@
                                                             {% endfor %}
                                                         </select>
                                                     </div>
-                                                    
+
                                                     <div class="form-row">
                                                         <label>Manager Message:</label>
                                                         <textarea name="manager_message" rows="2">{{ request.description }}</textarea>
                                                     </div>
-                                                    
+
                                                     <div class="form-actions">
                                                         <button type="submit" class="btn-save">Save Changes</button>
                                                         <a href="{% url 'manager_reward_request_detail' request.id %}" class="btn-detail">
                                                             Full Detail View →
                                                         </a>
-                                                        {% if request.status == 'ACCEPTED' %}
                                                         <a href="{% url 'export_telemarketing_file' request.id %}" class="btn-export">
                                                             Export Telemarketing
                                                         </a>
+                                                        {% if request.status == 'OVERDUE_INVOICE' %}
+                                                        <button type="button" class="btn-clipboard"
+                                                            onclick="copyOverdueMessage('{{ request.user.user_number|escapejs }}', '{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}')">
+                                                            Kopírovat zprávu
+                                                        </button>
                                                         {% endif %}
                                                     </div>
                                                 </form>
@@ -377,7 +393,7 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Pagination -->
                 {% if page_obj.has_other_pages %}
                 <div class="pagination">
@@ -389,7 +405,7 @@
                             <a href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">« First</a>
                             <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">‹ Previous</a>
                         {% endif %}
-                        
+
                         {% for num in page_obj.paginator.page_range %}
                             {% if page_obj.number == num %}
                                 <span class="current-page">{{ num }}</span>
@@ -397,7 +413,7 @@
                                 <a href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
                             {% endif %}
                         {% endfor %}
-                        
+
                         {% if page_obj.has_next %}
                             <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Next ›</a>
                             <a href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Last »</a>
@@ -410,7 +426,6 @@
     </div>
 </div>
 
-<!-- Minimal JavaScript for functionality -->
 <script>
 function toggleAllCheckboxes() {
     const selectAll = document.getElementById('select-all');
@@ -435,28 +450,24 @@ function exportSelected() {
         alert('Please select at least one request to export');
         return;
     }
-    
-    // Create a form and submit it
+
     const form = document.createElement('form');
     form.method = 'post';
     form.action = window.location.pathname;
-    
-    // Add CSRF token
+
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const csrfInput = document.createElement('input');
     csrfInput.type = 'hidden';
     csrfInput.name = 'csrfmiddlewaretoken';
     csrfInput.value = csrfToken;
     form.appendChild(csrfInput);
-    
-    // Add action
+
     const actionInput = document.createElement('input');
     actionInput.type = 'hidden';
     actionInput.name = 'action';
     actionInput.value = 'bulk_export';
     form.appendChild(actionInput);
-    
-    // Add selected IDs
+
     checkboxes.forEach(checkbox => {
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -464,9 +475,102 @@ function exportSelected() {
         input.value = checkbox.value;
         form.appendChild(input);
     });
-    
+
     document.body.appendChild(form);
     form.submit();
+}
+
+// ── Expand / Collapse All ────────────────────────────────────────────────────
+let allExpanded = false;
+
+function toggleExpandAll() {
+    const checkboxes = document.querySelectorAll('.expand-checkbox');
+    allExpanded = !allExpanded;
+    checkboxes.forEach(cb => { cb.checked = allExpanded; });
+    document.getElementById('expand-all-btn').textContent = allExpanded ? 'Collapse All' : 'Expand All';
+}
+
+// ── Save All Changes ─────────────────────────────────────────────────────────
+function saveAllChanges() {
+    const forms = document.querySelectorAll('.quick-edit-form');
+    if (forms.length === 0) {
+        alert('No requests on this page to save.');
+        return;
+    }
+
+    if (!confirm(`Save changes for all ${forms.length} visible request(s)?`)) {
+        return;
+    }
+
+    const formData = new FormData();
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    // Pass current filter params so the redirect restores them
+    const params = new URLSearchParams(window.location.search);
+    params.forEach((value, key) => {
+        formData.append('filter_' + key, value);
+    });
+
+    forms.forEach(form => {
+        // Extract request ID from the form action, e.g. /quick-edit/42/
+        const match = form.action.match(/\/quick-edit\/(\d+)\//);
+        if (!match) return;
+        const rid = match[1];
+
+        formData.append('request_ids', rid);
+        formData.append('status_' + rid, form.querySelector('[name=status]').value);
+        formData.append('manager_message_' + rid, form.querySelector('[name=manager_message]').value);
+    });
+
+    fetch('{% url "reward_request_batch_save" %}', {
+        method: 'POST',
+        body: formData,
+    }).then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+        } else if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Error saving changes. Please try again.');
+        }
+    }).catch(() => {
+        alert('Network error. Please try again.');
+    });
+}
+
+// ── Clipboard: Overdue Invoice message ───────────────────────────────────────
+function copyOverdueMessage(userNumber, userName) {
+    const text = 'Váš klient ZČ ' + userNumber + ' ' + userName +
+        ' má žádost o bonus, ale má fakturu po splatnosti.' +
+        ' Prosím kontaktujte ho pro vyřešení a dejte vědět, až bude vyřešeno.';
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Zpráva zkopírována do schránky.');
+        }).catch(() => {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    try {
+        document.execCommand('copy');
+        alert('Zpráva zkopírována do schránky.');
+    } catch (e) {
+        alert('Kopírování se nezdařilo. Text: ' + text);
+    }
+    document.body.removeChild(el);
 }
 </script>
 {% endblock %}
