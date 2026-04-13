@@ -37,6 +37,8 @@
                             Dokončena
                         {% elif reward_request.status == 'CANCELLED' %}
                             Zrušena
+                        {% elif reward_request.status == 'OVERDUE_INVOICE' %}
+                            Faktura po splatnosti
                         {% endif %}
                     </span>
                 </td>

@@ -96,6 +96,12 @@
             <p>Tato žádost byla zrušena. Vaše body byly vráceny na váš bodový účet.</p>
             <p>Pro vytvoření nové žádosti se vraťte do <a href="{% url 'rewards' %}">sekce odměn</a>.</p>
         </div>
+    {% elif request.status == 'OVERDUE_INVOICE' %}
+        <div class="status-info overdue-invoice">
+            <h3>Stav žádosti: Faktura po splatnosti</h3>
+            <p>Zpracování vaší žádosti je pozastaveno z důvodu nezaplacené faktury po splatnosti.</p>
+            <p>Pro vyřešení, nebo pokud jste již fakturu uhradili, prosím kontaktujte svého obchodního zástupce nebo napište na kontaktní email <a href="mailto:bonus@primavera-and.cz?subject=BONUS%20Faktura%20po%20splatnosti">bonus@primavera-and.cz</a>.</p>
+        </div>
     {% endif %}
 {% endif %}
 
