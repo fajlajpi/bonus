@@ -258,9 +258,6 @@ class InvoiceBrandTurnoverAdmin(admin.ModelAdmin):
 # TEST ADDITION, A BIT MESSY
 import csv
 import datetime
-from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.db.models import Sum, Value, DecimalField
 from django.db.models.functions import Coalesce
