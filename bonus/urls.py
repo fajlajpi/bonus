@@ -42,7 +42,8 @@ urlpatterns.extend([
     path('contact/', TemplateView.as_view(template_name='contact.html'), name='contact'),
     path('privacy-policy/', TemplateView.as_view(template_name='privacy_policy.html'), name='privacy_policy'),
     path('katalog/', vp.PublicCatalogueView.as_view(), name='public_catalogue'),
-    path('registrace', RedirectView.as_view(url="https://docs.google.com/forms/d/e/1FAIpQLSc6MCWiLwryMeB5FwUgraf_2XvmvuYedqcx1nDHjLOzlJEQeQ/viewform?usp=sf_link"), name='registration')
+    path('registrace', RedirectView.as_view(url="https://docs.google.com/forms/d/e/1FAIpQLSc6MCWiLwryMeB5FwUgraf_2XvmvuYedqcx1nDHjLOzlJEQeQ/viewform?usp=sf_link"), name='registration'),
+    path('oznameni/', TemplateView.as_view(template_name='announcement_detail.html'), name='announcement_detail'),
 ])
 
 # CLIENT FACING URLS

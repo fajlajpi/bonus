@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Oznámení – Podrobnosti{% endblock %}
+
+{% block content %}
+<div class="announcement-detail-container">
+
+    <p class="back-link"><a href="{% url 'dashboard' %}">&larr; Zpět na přehled</a></p>
+
+    <h2>Změny v podmínkách bonusového programu</h2>
+
+    <p>
+        Jsme rádi, že s námi od začátku roku 2025 sbíráte body a vybíráte si odměny. Po téměř 18 měsících
+        fungování Bonusového programu přistupujeme k důležitým změnám, které nám pomohou program dlouhodobě
+        udržovat a dále rozvíjet.
+    </p>
+
+    <h2>Omezení platnosti bodů na 18 měsíců</h2>
+
+    <p>
+        Jako ve většině podobných bonusových programů, i pro nás je technicky a účetně obtížné držet
+        bonusové body na kontech neomezeně dlouhou dobu. Po důkladném zvážení jsme proto přistoupili k
+        <strong>omezení platnosti bonusových bodů na dobu 18 měsíců.</strong>
+    </p>
+    <p>
+        Platnost bonusových bodů se počítá od data faktury, ze které byly připsány. První body proto mohou expirovat
+        na začátku července 2026. Bude se jednat o body z faktur z ledna 2025. Pokud jste body již použili a vytvořili
+        žádost o odměnu, samozřejmě se používají nejprve ty nejstarší, a proto se Vás nebude expirace okamžitě týkat.
+    </p>
+    <p>
+        V průběhu května budeme aktualizovat webové stránky tak, abyste ve svém přehledu viděli informaci o tom, kterých
+        bodů se expirace týká. Okamžitě v přehledu uvidíte také varování, pokud budou některé vaše body expirovat v
+        nadcházejících 30 dnech.
+    </p>
+
+    <h2>Změny bodových hodnot u elektroniky</h2>
+
+    <p>
+        Vzhledem k proměnlivým cenám elektroniky na trhu budeme s platností od 1. 8. 2026 upravovat bodové hodnoty některých odměn.
+        Změna se týká bonusů Samsung, Xiaomi, JBL a další elektroniky od externích dodavatelů. Netýká se kadeřnické elektroniky,
+        nábytku, propagačního materiálu ani dalších odměn z distribuce Primavera Andorrana.
+    </p>
+
+    <p class="back-link"><a href="{% url 'dashboard' %}">&larr; Zpět na přehled</a></p>
+
+</div>
+{% endblock %}

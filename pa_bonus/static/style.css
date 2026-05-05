@@ -600,41 +600,91 @@ small {
 .transactions-table td:last-child {
   text-align: right;
 }
-/* Test Environment Warning */
-.test-environment-warning {
-  background-color: #FFF3CD;
-  border: 1px solid #FFEEBA;
-  color: #856404;
-  padding: var(--spacing-sm);
+
+/* Site Announcement Banner */
+.site-announcement {
+  background-color: #D4EDDA;
+  border: 1px solid #B7DFC3;
+  color: #2D6A4F;
+  padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
   border-radius: var(--border-radius-md);
   text-align: center;
-  font-size: 0.95rem;
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
 }
-
-.test-environment-warning p {
+ 
+.site-announcement h2 {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: #2D6A4F;
+  font-size: 1.4rem;
+}
+ 
+.site-announcement p {
   margin: 0;
+  font-size: 0.95rem;
 }
-
-.test-environment-warning a {
-  color: #775c00;
+ 
+.site-announcement a {
+  color: #1B4332;
   text-decoration: underline;
+  font-weight: bold;
 }
-
-.test-environment-warning a:hover {
-  color: #5c4500;
+ 
+.site-announcement a:hover {
+  color: #143D2B;
 }
-
-/* Make the warning more prominent on smaller screens */
+ 
 @media (max-width: 768px) {
-  .test-environment-warning {
-    padding: var(--spacing-xs);
+  .site-announcement {
+    padding: var(--spacing-sm);
+  }
+ 
+  .site-announcement h2 {
+    font-size: 1.2rem;
+  }
+ 
+  .site-announcement p {
     font-size: 0.85rem;
   }
 }
+ 
+/* Announcement Detail Page */
+.announcement-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+ 
+.announcement-detail-container h2 {
+  color: var(--primary-color);
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-sm);
+  font-size: 1.5rem;
+}
+ 
+.announcement-detail-container h2:first-of-type {
+  margin-top: 0;
+}
+ 
+.announcement-detail-container p {
+  margin-bottom: var(--spacing-sm);
+}
+ 
+.back-link {
+  margin: var(--spacing-sm) 0;
+}
+ 
+.back-link a {
+  color: var(--link-color);
+  font-weight: bold;
+}
+ 
+.back-link a:hover {
+  color: var(--link-hover);
+}
+
 /* Rewards Table */
 .rewards-table {
   width: 100%;
