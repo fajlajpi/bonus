@@ -28,6 +28,17 @@
             <td><strong>Available Balance:</strong></td>
             <td>{{ user_balance }} bodů</td>
         </tr>
+        {% if request_obj.abra_submitted_at %}
+        <tr>
+            <td><strong>ABRA Order:</strong></td>
+            <td>
+                <strong>{{ request_obj.abra_displayname }}</strong>
+                (id: <code>{{ request_obj.abra_order_id }}</code>)
+                — submitted {{ request_obj.abra_submitted_at|date:"d.m.Y H:i" }}
+            </td>
+        </tr>
+        {% endif %}
+
     </table>
 </div>
 
@@ -87,11 +98,29 @@
     Allow negative balance (override point limit)
   </label>
   
-  <div style="margin-top: 20px;">
+  <div class="form-actions-row">
     <button type="submit">Save Changes</button>
-    <a href="{% url 'export_telemarketing_file' request_obj.id %}" class="export-button" style="margin-left: 10px;">
+
+    <a href="{% url 'export_telemarketing_file' request_obj.id %}"
+       class="export-button">
         Export for Telemarketing
     </a>
+
+    {% if request_obj.abra_submitted_at %}
+        <span class="abra-submitted-info">
+            Already in ABRA:
+            <strong>{{ request_obj.abra_displayname }}</strong>
+            ({{ request_obj.abra_submitted_at|date:"d.m.Y H:i" }})
+        </span>
+    {% elif request_obj.status == 'ACCEPTED' %}
+        <button type="submit"
+                class="abra-button"
+                formaction="{% url 'submit_reward_request_to_abra' request_obj.id %}"
+                formmethod="post"
+                onclick="return confirm('Opravdu chcete odeslat tuto žádost do ABRA jako novou objednávku přijatou?');">
+            Submit to ABRA
+        </button>
+    {% endif %}
   </div>
 </form>
 

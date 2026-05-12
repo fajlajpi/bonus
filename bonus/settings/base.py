@@ -161,3 +161,25 @@ PENTAHO_PASSWORD = os.getenv("PENTAHO_PASSWORD", "")
 # These rarely change, but can be overridden if needed:
 PENTAHO_CDA_PATH = "/public/PAA/karta-klienta/karta klienta.cda"
 PENTAHO_DATA_ACCESS_ID = "sqlFaktury"
+
+# =============================================================================
+# ABRA GEN ERP integration
+# =============================================================================
+# All values default to the ones from the standalone test script so that
+# development environments keep working without per-developer setup.
+# Production MUST override ABRA_USERNAME and ABRA_TOKEN via environment
+# variables - they are intentionally empty by default so a misconfigured
+# deployment fails loudly at AbraClient() construction rather than silently
+# authenticating against the wrong tenant.
+#
+# ABRA_PERIOD_ID changes annually in ABRA Gen. Putting it in an env var
+# means the yearly rollover is a config change, not a code deploy.
+# =============================================================================
+
+ABRA_BASE_URL    = os.environ.get('ABRA_BASE_URL', 'http://37.46.208.216:881/primavera')
+# USERNAME AND PASSWORD ARE DEFINED SEPARATELY IN DEVELOPMENT AND PRODUCTION SETTINGS
+ABRA_DOCQUEUE_ID = os.environ.get('ABRA_DOCQUEUE_ID', 'RO00000101')
+ABRA_PERIOD_ID   = os.environ.get('ABRA_PERIOD_ID', '4FI0000101')
+ABRA_STORE_ID    = os.environ.get('ABRA_STORE_ID', 'C000000101')
+ABRA_DIVISION_ID = os.environ.get('ABRA_DIVISION_ID', '6000000101')
+ABRA_VATRATE_ID  = os.environ.get('ABRA_VATRATE_ID', '02100X0000')

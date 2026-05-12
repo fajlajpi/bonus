@@ -124,3 +124,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = '/home/iepgvjxg/public_html/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/home/iepgvjxg/public_html/media/'
+
+# CREDENTIALS FOR ABRA INTEGRATION
+ABRA_USERNAME    = os.environ.get('ABRA_USERNAME', '')
+ABRA_TOKEN       = os.environ.get('ABRA_TOKEN', '')

@@ -203,32 +203,52 @@ class FileUploadAdmin(admin.ModelAdmin):
 @admin.register(Reward)
 class RewardAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = RewardResource
-    list_display = ('abra_code', 'name', 'point_cost', 'brand', 'is_active', 'availability', 'in_showcase')
-    list_filter = ('brand', 'is_active')
+    list_display = (
+        'abra_code', 'name', 'point_cost', 'brand',
+        'is_active', 'availability', 'in_showcase',
+        'is_in_abra_storecards',
+    )
+    list_filter = ('brand', 'is_active', 'is_in_abra_storecards')
     search_fields = ('abra_code', 'name')
     readonly_fields = ('created_at',)
-    actions = [reward_availability_set_available, reward_availability_set_on_demand, reward_availability_set_unavailable,
-               reward_set_active, reward_set_inactive]
+    actions = [
+        reward_availability_set_available,
+        reward_availability_set_on_demand,
+        reward_availability_set_unavailable,
+        reward_set_active,
+        reward_set_inactive,
+        'add_to_showcase',
+        'remove_from_showcase',
+    ]
 
-    actions.extend(['add_to_showcase', 'remove_from_showcase'])
-    
     def add_to_showcase(self, request, queryset):
         updated = queryset.update(in_showcase=True)
         self.message_user(request, f"{updated} rewards added to public showcase.")
     add_to_showcase.short_description = "Add selected rewards to public showcase"
-    
+
     def remove_from_showcase(self, request, queryset):
         updated = queryset.update(in_showcase=False)
         self.message_user(request, f"{updated} rewards removed from public showcase.")
     remove_from_showcase.short_description = "Remove selected rewards from public showcase"
 
+
 @admin.register(RewardRequest)
 class RewardRequestAdmin(admin.ModelAdmin):
-    list_display = ('user', 'requested_at', 'status', 'total_points')
-    list_filter = ('status',)
-    search_fields = ('user__username', 'user__email')
+    list_display = (
+        'user', 'requested_at', 'status', 'total_points',
+        'abra_displayname', 'abra_submitted_at',
+    )
+    list_filter = ('status', 'abra_submitted_at')
+    search_fields = (
+        'user__username', 'user__email', 'user__user_number',
+        'abra_displayname', 'abra_order_id',
+    )
+    readonly_fields = (
+        'abra_submitted_at', 'abra_order_id', 'abra_displayname',
+    )
     actions = [approve_requests, reject_requests]
     inlines = [RewardRequestItemInline]
+
 
 @admin.register(RewardRequestItem)
 class RewardRequestItemAdmin(admin.ModelAdmin):

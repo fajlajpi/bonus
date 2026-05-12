@@ -66,6 +66,11 @@ urlpatterns.extend([
     path('manager/reward-requests/', vm.ManagerRewardRequestListView.as_view(), name="manager_reward_requests"),
     path('manager/reward-requests/<int:pk>/', vm.ManagerRewardRequestDetailView.as_view(), name='manager_reward_request_detail'),
     path('manager/reward-requests/<int:pk>/export/', vm.ExportTelemarketingFileView.as_view(), name='export_telemarketing_file'),
+    path(
+        'manager/reward-requests/<int:pk>/submit-to-abra/',
+        vm.SubmitToAbraView.as_view(),
+        name='submit_reward_request_to_abra',
+    ),
     path('manager/transactions/approve/', vm.TransactionApprovalView.as_view(), name='transaction_approval'),
     path('manager/sms-export/', vm.SMSExportView.as_view(), name='sms_export'),
     path('manager/clients/create/', vm.ClientCreateView.as_view(), name='manager_client_create'),

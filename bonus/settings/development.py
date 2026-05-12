@@ -36,6 +36,10 @@ EMAIL_HOST_USER = private.smtp_login
 EMAIL_HOST_PASSWORD = private.smtp_pass
 DEFAULT_FROM_EMAIL = f'Bonusový Program <{private.smtp_login}>'
 
+# CREDENTIALS FOR ABRA INTEGRATION
+ABRA_USERNAME    = private.abra_username
+ABRA_TOKEN       = private.abra_token
+
 # DJANGO Q FOR ASYNC TASKS
 Q_CLUSTER = {
     'name': 'bonus',

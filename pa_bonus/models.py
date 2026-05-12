@@ -496,6 +496,16 @@ class Reward(models.Model):
     description = models.TextField()
     availability = models.CharField(max_length=20, choices=AVAILABILITY_TYPE, default='ON_DEMAND')
     brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.SET_NULL)
+
+    is_in_abra_storecards = models.BooleanField(
+        default=True,
+        help_text=(
+            "Whether this reward exists as a storecard in ABRA. If False, "
+            "ABRA submissions will use a text+price line pair (rowtype 2 + "
+            "rowtype 1 cancelling discount) instead of a storecard row."
+        ),
+    )
+
     is_active = models.BooleanField(default=True)
     in_showcase = models.BooleanField(default=False, help_text="Display this item in the public showcase")
     image = models.ImageField(upload_to='reward_images/', null=True, blank=True)
@@ -533,6 +543,18 @@ class RewardRequest(models.Model):
     description = models.TextField()
     total_points = models.IntegerField(default=0)
     note = models.TextField(blank=True, null=True, verbose_name="Customer Note")
+    abra_submitted_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="When this request was successfully posted to ABRA as a Received Order.",
+    )
+    abra_order_id = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="ABRA internal id of the created Received Order, e.g. 'NM2I700101'.",
+    )
+    abra_displayname = models.CharField(
+        max_length=50, blank=True, default='',
+        help_text="ABRA display name of the created order, e.g. 'OP-924/2026'.",
+    )
     indexes = [
         models.Index(fields=['status', '-requested_at']),
         models.Index(fields=['user', '-requested_at']),

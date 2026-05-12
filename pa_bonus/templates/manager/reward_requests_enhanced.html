@@ -224,6 +224,7 @@
                                 <th>Points</th>
                                 <th>Date</th>
                                 <th>Note</th>
+                                <th>ABRA</th>
                                 <th class="expand-col"></th>
                             </tr>
                         </thead>
@@ -254,6 +255,14 @@
                                     <span class="note-indicator" title="{{ request.note }}">✓</span>
                                     {% endif %}
                                 </td>
+                                <td class="abra-cell" data-request-id="{{ request.id }}">
+                                    {% if request.abra_submitted_at %}
+                                    <span class="abra-badge submitted"
+                                          title="Submitted {{ request.abra_submitted_at|date:'d.m.Y H:i' }} — id {{ request.abra_order_id }}">
+                                        {{ request.abra_displayname }}
+                                    </span>
+                                    {% endif %}
+                                </td>
                                 <td class="expand-col">
                                     <label for="expand-{{ request.id }}" class="expand-btn">▼</label>
                                 </td>
@@ -261,7 +270,7 @@
 
                             <!-- Expandable Detail Row -->
                             <tr class="detail-row">
-                                <td colspan="8">
+                                <td colspan="9">
                                     <input type="checkbox" id="expand-{{ request.id }}" class="expand-checkbox">
                                     <div class="detail-content">
                                         <div class="detail-grid">
@@ -387,6 +396,22 @@
                                                         <a href="{% url 'export_telemarketing_file' request.id %}" class="btn-export">
                                                             Export Telemarketing
                                                         </a>
+
+                                                        {% if request.abra_submitted_at %}
+                                                            <span class="btn-abra abra-submitted"
+                                                                  title="ABRA id: {{ request.abra_order_id }} — submitted {{ request.abra_submitted_at|date:'d.m.Y H:i' }}">
+                                                                ✓ ABRA: {{ request.abra_displayname }}
+                                                            </span>
+                                                        {% elif request.status == 'ACCEPTED' %}
+                                                            <button type="button"
+                                                                    class="btn-abra"
+                                                                    data-request-id="{{ request.id }}"
+                                                                    onclick="submitToAbra(this)">
+                                                                Submit to ABRA
+                                                            </button>
+                                                            <div class="abra-result hidden" id="abra-result-{{ request.id }}"></div>
+                                                        {% endif %}
+
                                                         {% if request.status == 'OVERDUE_INVOICE' %}
                                                         <button type="button" class="btn-clipboard"
                                                             onclick="copyOverdueMessage('{{ request.user.user_number|escapejs }}', '{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}')">
@@ -677,6 +702,85 @@ function renderInvoiceResult(data, userNumber) {
                     <tbody>${rows}</tbody>
                 </table>
             </div>`;
+}
+
+/**
+ * Submit a reward request to ABRA as a new Received Order.
+ * Called when clicking the "Submit to ABRA" button in an expanded row.
+ *
+ * On success: the button morphs into a "submitted" pill showing the new
+ * ABRA display name, and the row's ABRA column is updated in place.
+ * On error: an inline message appears below the button; the button stays
+ * clickable so the manager can retry after the underlying issue is fixed.
+ */
+ function submitToAbra(button) {
+    const requestId = button.dataset.requestId;
+    const resultsDiv = document.getElementById('abra-result-' + requestId);
+
+    if (!confirm('Opravdu chcete odeslat tuto žádost do ABRA jako novou objednávku přijatou?')) {
+        return;
+    }
+
+    if (button.disabled) return;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Submitting…';
+    button.classList.add('loading');
+
+    if (resultsDiv) {
+        resultsDiv.classList.add('hidden');
+        resultsDiv.classList.remove('error');
+    }
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/manager/reward-requests/${requestId}/submit-to-abra/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Accept': 'application/json',
+        },
+    })
+        .then(response => response.json())
+        .then(data => {
+            button.classList.remove('loading');
+            if (data.success) {
+                // Replace the button with a success pill in the form-actions row
+                button.outerHTML = `<span class="btn-abra abra-submitted"
+                                          title="ABRA id: ${escapeHtml(data.abra_order_id)} — submitted just now">
+                                        ✓ ABRA: ${escapeHtml(data.displayname)}
+                                    </span>`;
+                // Update the badge in the main row
+                const cell = document.querySelector(`.abra-cell[data-request-id="${requestId}"]`);
+                if (cell) {
+                    cell.innerHTML = `<span class="abra-badge submitted"
+                                            title="Just submitted — id ${escapeHtml(data.abra_order_id)}">
+                                          ${escapeHtml(data.displayname)}
+                                      </span>`;
+                }
+            } else {
+                button.textContent = originalText;
+                button.disabled = false;
+                showAbraError(resultsDiv, data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            console.error('ABRA submission failed:', error);
+            button.classList.remove('loading');
+            button.textContent = originalText;
+            button.disabled = false;
+            showAbraError(resultsDiv, 'Network error. Please try again.');
+        });
+}
+
+function showAbraError(resultsDiv, message) {
+    if (!resultsDiv) {
+        alert(message);
+        return;
+    }
+    resultsDiv.textContent = message;
+    resultsDiv.classList.remove('hidden');
+    resultsDiv.classList.add('error');
 }
 
 

@@ -491,32 +491,6 @@ small {
     font-size: 0.9rem;
   }
 }
-.sms-export-container {
-  max-width: 800px;
-}
-
-.sms-preview {
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
-  margin: var(--spacing-md) 0;
-}
-
-.sms-text {
-  font-family: monospace;
-  padding: var(--spacing-sm);
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: var(--border-radius-sm);
-}
-
-.export-instructions {
-  margin-top: var(--spacing-lg);
-  background-color: var(--neutral-bg);
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-md);
-}
 
 .export-instructions ol {
   padding-left: var(--spacing-md);
@@ -580,15 +554,6 @@ small {
 .request-detail-container {
   max-width: 800px;
   margin: 0 auto;
-}
-
-.summary-row {
-  font-weight: bold;
-  background-color: var(--neutral-bg);
-}
-
-.text-right {
-  text-align: right;
 }
 
 .transactions-table th, .transactions-table td {
@@ -2407,6 +2372,11 @@ textarea.form-control {
   box-shadow: var(--shadow-sm);
 }
 
+.requests-list {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
 .section-header-static {
   display: flex;
   justify-content: space-between;
@@ -3273,4 +3243,85 @@ select.form-control[multiple] {
 
 .invoice-mini-table tr:last-child td {
   border-bottom: none;
+}
+/* ============================================================
+   ABRA Integration — Submit to ABRA button, submitted badges,
+   error feedback. Used by the per-row form-actions in
+   reward_requests_enhanced.html.
+   ============================================================ */
+
+/* The Submit to ABRA button. After submission, the button is replaced
+   in the DOM by a <span> carrying the same classes plus .abra-submitted,
+   so all visual states share these base styles. */
+   .btn-abra {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    text-decoration: none;
+    font-weight: bold;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-abra:hover:not(:disabled):not(.abra-submitted) {
+    background-color: var(--link-hover);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-abra.loading {
+    opacity: 0.7;
+    cursor: progress;
+}
+
+.btn-abra.abra-submitted {
+    background-color: var(--success-color);
+    cursor: default;
+}
+
+/* Inline error message shown below the button on a failed submission. */
+.abra-result {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius-md);
+    font-size: 0.9rem;
+}
+
+.abra-result.hidden {
+    display: none;
+}
+
+.abra-result.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+/* Compact badge shown in the main row's ABRA column. The narrow .abra-cell
+   width plus nowrap keeps the column from blowing out the table on Full HD. */
+.abra-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.abra-badge.submitted {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.abra-cell {
+    width: 1px;
+    white-space: nowrap;
+    text-align: center;
 }

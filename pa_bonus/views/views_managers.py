@@ -26,6 +26,13 @@ from openpyxl.styles import Font, PatternFill
 import io
 from pa_bonus.services.pentaho import get_unpaid_invoices
 
+from pa_bonus.integrations.abra import (
+    submit_reward_request,
+    AbraError,
+    AbraConfigurationError,
+    AbraNotFoundError,
+)
+
 
 
 logger = logging.getLogger(__name__)
@@ -334,24 +341,87 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         
 class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
     """
-    Export a telemarketing file for a specific reward request
+    Export a telemarketing file for a specific reward request.
     """
     def get(self, request, pk):
         output = generate_telemarketing_export(pk)
-        
+
         if output is None:
             messages.error(request, "Reward request not found or not in ACCEPTED status.")
             return redirect('manager_reward_requests')
-        
-        # Prepare response
+
         response = HttpResponse(
             output,
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
-        response['Content-Disposition'] = f'attachment; filename=reward_request_{pk}_{timezone.now().strftime("%Y%m%d")}.xlsx'
-        
-        messages.success(request, f"Reward request {pk} has been exported and marked as FINISHED.")
+        response['Content-Disposition'] = (
+            f'attachment; filename=reward_request_{pk}_'
+            f'{timezone.now().strftime("%Y%m%d")}.xlsx'
+        )
+        messages.success(request, f"Reward request {pk} has been exported for telemarketing.")
         return response
+
+class SubmitToAbraView(ManagerGroupRequiredMixin, View):
+    """
+    POST a RewardRequest into ABRA and return JSON.
+
+    Designed to be called from the enhanced list page via fetch(); the
+    caller updates the row in place without a navigation. GET is kept as
+    a redirect so a stray address-bar visit doesn't 405.
+    """
+
+    def get(self, request, pk):
+        return redirect('enhanced_reward_requests')
+
+    def post(self, request, pk):
+        reward_request = get_object_or_404(RewardRequest, pk=pk)
+
+        if reward_request.status != 'ACCEPTED':
+            return JsonResponse({
+                'success': False,
+                'error': 'Only requests in ACCEPTED status can be submitted to ABRA.',
+            }, status=400)
+
+        if reward_request.abra_submitted_at:
+            return JsonResponse({
+                'success': False,
+                'error': (
+                    f'Already submitted as {reward_request.abra_displayname} on '
+                    f'{reward_request.abra_submitted_at.strftime("%d.%m.%Y %H:%M")}.'
+                ),
+            }, status=409)
+
+        try:
+            result = submit_reward_request(reward_request)
+        except AbraConfigurationError as exc:
+            logger.error("ABRA configuration error: %s", exc)
+            return JsonResponse({
+                'success': False,
+                'error': f'ABRA is not configured: {exc}. Contact the administrator.',
+            }, status=500)
+        except AbraNotFoundError as exc:
+            logger.warning("ABRA lookup failure for request %s: %s", pk, exc)
+            return JsonResponse({'success': False, 'error': str(exc)}, status=404)
+        except AbraError as exc:
+            logger.error("ABRA submission failed for request %s", pk, exc_info=True)
+            return JsonResponse({
+                'success': False,
+                'error': f'ABRA submission failed: {exc}',
+            }, status=502)
+
+        reward_request.abra_submitted_at = timezone.now()
+        reward_request.abra_order_id = result.abra_order_id
+        reward_request.abra_displayname = result.displayname
+        reward_request.save(update_fields=[
+            'abra_submitted_at', 'abra_order_id', 'abra_displayname',
+        ])
+
+        return JsonResponse({
+            'success': True,
+            'displayname': result.displayname,
+            'abra_order_id': result.abra_order_id,
+        })
+
 
 
 class TransactionApprovalView(ManagerGroupRequiredMixin, View):
