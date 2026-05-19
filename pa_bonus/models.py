@@ -532,6 +532,9 @@ class RewardRequest(models.Model):
         ('DRAFT', 'Draft'),
         ('PENDING', 'Pending'),
         ('ACCEPTED', 'Accepted'),
+        ('SHIPPED', 'Shipped'),
+        ('PARTIALLY_SHIPPED', 'Partially shipped'),
+        ('ORDERED_FROM_SUPPLIER', 'Ordered from supplier'),
         ('REJECTED', 'Rejected'),
         ('FINISHED', 'Finished'),
         ('CANCELLED', 'Cancelled'),
@@ -539,7 +542,7 @@ class RewardRequest(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     requested_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=REQUEST_STATUS, default='DRAFT')
+    status = models.CharField(max_length=25, choices=REQUEST_STATUS, default='DRAFT')
     description = models.TextField()
     total_points = models.IntegerField(default=0)
     note = models.TextField(blank=True, null=True, verbose_name="Customer Note")

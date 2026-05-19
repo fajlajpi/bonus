@@ -16,6 +16,9 @@
             <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Draft</option>
             <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Pending</option>
             <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
+            <option value="SHIPPED" {% if selected_status == 'SHIPPED' %}selected{% endif %}>Shipped</option>
+            <option value="PARTIALLY_SHIPPED" {% if selected_status == 'PARTIALLY_SHIPPED' %}selected{% endif %}>Partially shipped</option>
+            <option value="ORDERED_FROM_SUPPLIER" {% if selected_status == 'ORDERED_FROM_SUPPLIER' %}selected{% endif %}>Ordered from supplier</option>
             <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Rejected</option>
             <option value="FINISHED" {% if selected_status == 'FINISHED' %}selected{% endif %}>Finished</option>
             <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>

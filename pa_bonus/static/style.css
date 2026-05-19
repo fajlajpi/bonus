@@ -2477,6 +2477,18 @@ textarea.form-control {
   border-left: 4px solid #9ca3af;
 }
 
+.request-row.status-shipped {
+  border-left: 4px solid #3b82f6;
+}
+
+.request-row.status-partially_shipped {
+  border-left: 4px solid #8b5cf6;
+}
+
+.request-row.status-ordered_from_supplier {
+  border-left: 4px solid #f59e0b;
+}
+
 .request-row.status-cancelled {
   border-left: 4px solid #6b7280;
 }
@@ -2537,6 +2549,21 @@ textarea.form-control {
 .status-badge.status-cancelled {
   background-color: #f3f4f6;
   color: #4b5563;
+}
+
+.status-badge.status-shipped {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.status-partially_shipped {
+  background-color: #ede9fe;
+  color: #5b21b6;
+}
+
+.status-badge.status-ordered_from_supplier {
+  background-color: #fef3c7;
+  color: #92400e;
 }
 
 .note-indicator {

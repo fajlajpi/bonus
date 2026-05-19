@@ -31,6 +31,12 @@
                             Čeká na potvrzení
                         {% elif reward_request.status == 'ACCEPTED' %}
                             Potvrzena
+                        {% elif reward_request.status == 'SHIPPED' %}
+                            Expedováno
+                        {% elif reward_request.status == 'PARTIALLY_SHIPPED' %}
+                            Částečně expedováno
+                        {% elif reward_request.status == 'ORDERED_FROM_SUPPLIER' %}
+                            Objednáno od dodavatele
                         {% elif reward_request.status == 'REJECTED' %}
                             Odmítnuta
                         {% elif reward_request.status == 'FINISHED' %}
