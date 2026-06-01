@@ -225,21 +225,23 @@ def upload_stock(request):
     
     return render(request, 'manager/upload_stock.html', {'form': form})
 
-@permission_required('pa_bonus.add_fileupload', raise_exception=True)
-def upload_history(request):
+class UploadHistoryView(ManagerGroupRequiredMixin, View):
     """
-    Displays the history of uploaded files.
-
-    This view lists all uploaded files in the order of uploading.
-
-    Args:
-        request (HttpRequest): The HTTP request object.
-
-    Returns:
-        HttpResponse: Renders the upload history template with the list of uploads.
+    (Managers Only) Displays the history of uploaded files with a status summary.
     """
-    uploads = FileUpload.objects.all().order_by('-uploaded_at')
-    return render(request, 'upload_history.html', {'uploads': uploads})
+
+    def get(self, request):
+        uploads = FileUpload.objects.select_related('uploaded_by').order_by('-uploaded_at')
+        status_summary = {
+            item['status']: item['count']
+            for item in uploads.values('status').annotate(count=Count('id'))
+        }
+        context = {
+            'uploads': uploads,
+            'total': uploads.count(),
+            'status_summary': status_summary,
+        }
+        return render(request, 'manager/upload_history.html', context)
 
 class ManagerRewardRequestListView(ManagerGroupRequiredMixin, ListView):
     """

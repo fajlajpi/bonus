@@ -17,7 +17,7 @@ from pa_bonus.models import (
     FileUpload, Reward, RewardRequest, RewardRequestItem, create_manager_group_and_permissions
 )
 from pa_bonus.views import (
-    upload_file, upload_history, DashboardView, HistoryView,
+    upload_file,
     RewardsView, RewardsRequestConfirmationView
 )
 from pa_bonus.tasks import process_uploaded_file
