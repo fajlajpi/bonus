@@ -23,11 +23,13 @@ Architecture Notes:
 import io
 import logging
 from abc import abstractmethod
+from collections import defaultdict
 from datetime import date
 
+from dateutil.relativedelta import relativedelta
 from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Sum, Q, Value, DecimalField
+from django.db.models import F, IntegerField, Sum, Q, Value, DecimalField
 from django.db.models.functions import Coalesce
 
 from openpyxl import Workbook
@@ -702,6 +704,173 @@ class ItemisedRewardsReport(BaseReport):
                 item.quantity * item.point_cost,
                 reward.get_availability_display(),
             ])
+
+        return rows
+
+
+class PointExpirationSummaryReport(BaseReport):
+    """
+    Report 7: Point Expiration Summary.
+
+    For each of the next 12 month-end deadlines, shows how many points are
+    set to expire that month and how many confirmed points will remain in the
+    program afterwards (ignoring any new points that may be added).
+    """
+
+    report_id = "point_expiration_summary"
+    title = "Point Expiration Summary"
+    description = (
+        "Upcoming month-end expiration deadlines for the next 12 months: "
+        "points expiring each month and the total points remaining in the program "
+        "after each deadline (new points not accounted for)."
+    )
+    filename_prefix = "point_expiration_summary"
+    display_order = 60
+
+    def get_headers(self) -> list[str]:
+        return [
+            "Month End",
+            "Points Expiring This Month",
+            "Points Remaining in Program After",
+        ]
+
+    def get_column_formats(self) -> dict[int, str]:
+        return {
+            1: NUMBER_FORMAT_INTEGER,
+            2: NUMBER_FORMAT_INTEGER,
+        }
+
+    def get_rows(self) -> list[list]:
+        from pa_bonus.models import PointsTransaction
+
+        today = timezone.now().date()
+        month_ends = [today + relativedelta(months=i, day=31) for i in range(12)]
+
+        current_balance = (
+            PointsTransaction.objects
+            .filter(status='CONFIRMED')
+            .aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
+        )
+
+        credits = (
+            PointsTransaction.objects
+            .filter(
+                status='CONFIRMED',
+                value__gt=0,
+                expires_at__isnull=False,
+                expires_at__in=month_ends,
+            )
+            .annotate(
+                remaining_points=F('value') - Coalesce(
+                    Sum('allocations_out__amount'),
+                    Value(0, output_field=IntegerField()),
+                )
+            )
+            .filter(remaining_points__gt=0)
+        )
+
+        by_month: dict = defaultdict(int)
+        for credit in credits:
+            by_month[credit.expires_at] += credit.remaining_points
+
+        rows = []
+        running_balance = current_balance
+        for me in month_ends:
+            expiring = by_month.get(me, 0)
+            running_balance -= expiring
+            rows.append([
+                me.strftime("%B %Y"),
+                expiring,
+                running_balance,
+            ])
+
+        return rows
+
+
+class PointExpirationByClientReport(BaseReport):
+    """
+    Report 8: Point Expiration by Client.
+
+    One row per client with points expiring within the next 12 months.
+    Columns 7–18 show, per month-end deadline, how many of that client's
+    points expire then (summed across all brands).  Clients with no expiring
+    points in the window are omitted.
+    """
+
+    report_id = "point_expiration_by_client"
+    title = "Point Expiration by Client"
+    description = (
+        "Per-client breakdown of expiring points for each of the next 12 "
+        "month-end deadlines. Points are summed across all brands. Only "
+        "clients with points expiring in the period are listed."
+    )
+    filename_prefix = "point_expiration_by_client"
+    display_order = 70
+
+    def _month_ends(self):
+        today = timezone.now().date()
+        return [today + relativedelta(months=i, day=31) for i in range(12)]
+
+    def get_headers(self) -> list[str]:
+        fixed = [
+            "Client Number", "Last Name", "First Name",
+            "Region", "Email", "Phone",
+        ]
+        month_cols = [f"End of {me.strftime('%B %Y')}" for me in self._month_ends()]
+        return fixed + month_cols
+
+    def get_column_formats(self) -> dict[int, str]:
+        return {i: NUMBER_FORMAT_INTEGER for i in range(6, 18)}
+
+    def get_rows(self) -> list[list]:
+        from pa_bonus.models import User, PointsTransaction
+
+        month_ends = self._month_ends()
+
+        users = (
+            User.objects
+            .filter(is_staff=False, is_superuser=False)
+            .select_related('region')
+            .order_by('last_name', 'first_name')
+        )
+
+        credits = (
+            PointsTransaction.objects
+            .filter(
+                status='CONFIRMED',
+                value__gt=0,
+                expires_at__isnull=False,
+                expires_at__in=month_ends,
+            )
+            .annotate(
+                remaining_points=F('value') - Coalesce(
+                    Sum('allocations_out__amount'),
+                    Value(0, output_field=IntegerField()),
+                )
+            )
+            .filter(remaining_points__gt=0)
+        )
+
+        # {user_id -> {expires_at -> total_remaining}}
+        by_user: dict = defaultdict(lambda: defaultdict(int))
+        for credit in credits:
+            by_user[credit.user_id][credit.expires_at] += credit.remaining_points
+
+        rows = []
+        for user in users:
+            user_expiry = by_user.get(user.pk)
+            if not user_expiry:
+                continue
+
+            month_values = [user_expiry.get(me, 0) for me in month_ends]
+            rows.append([
+                user.user_number,
+                user.last_name,
+                user.first_name,
+                user.region.name if user.region else "",
+                user.email,
+                user.user_phone or "",
+            ] + month_values)
 
         return rows
 
