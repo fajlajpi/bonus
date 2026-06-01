@@ -51,6 +51,7 @@ urlpatterns.extend([
     path('dashboard/', vu.DashboardView.as_view(), name='dashboard'),
     path('history/', vu.HistoryView.as_view(), name='history'),
     path('history/detail/<int:pk>/', vu.HistoryDetailView.as_view(), name='history_detail'),
+    path('points/expiration/', vu.PointExpirationView.as_view(), name='point_expiration'),
     path('rewards/', vu.RewardsView.as_view(), name='rewards'),
     path('rewards/requests/', vu.RewardsRequestsView.as_view(), name='reward_requests'),
     path('rewards/requests/detail/<int:pk>', vu.RewardsRequestConfirmationView.as_view(), name='rewards_request_detail'), 

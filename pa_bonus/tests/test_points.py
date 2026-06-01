@@ -11,7 +11,10 @@ import pytest
 from datetime import date
 
 from pa_bonus.models import User, Brand, PointsTransaction, PointAllocation
-from pa_bonus.services.points import allocate_debit, void_debit, expire_credits
+from pa_bonus.services.points import (
+    allocate_debit, void_debit, expire_credits,
+    expiration_schedule, expiring_points_total,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -301,3 +304,56 @@ class TestExpiration:
         result = expire_credits(as_of=date(2099, 1, 1))
         assert result == []
         assert c.remaining == 100
+
+
+# ---------------------------------------------------------------------------
+# Client-facing expiration views (dashboard figure + overview schedule)
+# ---------------------------------------------------------------------------
+@pytest.mark.django_db
+class TestExpirationReadModel:
+    def test_total_counts_only_points_within_horizon(self):
+        user = make_user()
+        # Within 3 months of as_of, after, and never-expiring.
+        credit(user, 100, expires=date(2025, 3, 1))   # in window
+        credit(user, 50, expires=date(2025, 8, 1))    # beyond window
+        credit(user, 30, expires=None)                # never expires
+
+        total = expiring_points_total(user, as_of=date(2025, 1, 1), horizon_months=3)
+        assert total == 100
+
+    def test_total_uses_remaining_not_face_value(self):
+        user = make_user()
+        c = credit(user, 100, expires=date(2025, 3, 1))
+        d = debit(user, 40, day=date(2025, 1, 5))
+        allocate_debit(d)
+        assert c.remaining == 60
+
+        total = expiring_points_total(user, as_of=date(2025, 1, 1), horizon_months=3)
+        assert total == 60
+
+    def test_total_includes_overdue_unprocessed_points(self):
+        user = make_user()
+        # Already past expiry but not yet swept by the job -> still "at risk".
+        credit(user, 70, expires=date(2024, 12, 1))
+        total = expiring_points_total(user, as_of=date(2025, 1, 1), horizon_months=3)
+        assert total == 70
+
+    def test_schedule_orders_soonest_first_and_skips_spent(self):
+        user = make_user()
+        later = credit(user, 100, expires=date(2026, 1, 1))
+        sooner = credit(user, 100, expires=date(2025, 6, 1))
+        spent = credit(user, 100, expires=date(2025, 9, 1))
+        # Fully consume the `spent` credit so it drops out of the schedule.
+        d = debit(user, 100, day=date(2025, 1, 1))
+        allocate_debit(d)  # soonest-to-expire is `sooner` -> consumed first
+
+        schedule = expiration_schedule(user)
+        ids = [c.id for c in schedule]
+        # `sooner` was fully consumed; remaining ones ordered by expiry.
+        assert ids == [spent.id, later.id]
+        assert all(c.remaining_points > 0 for c in schedule)
+
+    def test_schedule_excludes_never_expiring_credits(self):
+        user = make_user()
+        credit(user, 100, expires=None)
+        assert expiration_schedule(user) == []

@@ -47,6 +47,8 @@
                         Extra body
                     {% elif transaction.type == 'ADJUSTMENT' %}
                         Manuální korekce
+                    {% elif transaction.type == 'EXPIRATION' %}
+                        Expirace bodů
                     {% endif %}
                 </td>
                 <td>

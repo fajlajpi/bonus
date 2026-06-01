@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load pa_bonus_extras %}
+
+{% block title %} Přehled expirace bodů {% endblock title %}
+
+{% block content %}
+<div class="history-container">
+    <h2>Přehled expirace bodů</h2>
+
+    <div class="intro-text">
+        <p>Body připsané za fakturaci mají omezenou platnost. Níže vidíte, kdy a kolik
+            Vašich dosud nevyčerpaných bodů vyexpiruje. Při čerpání odměn se vždy
+            přednostně použijí body, kterým platnost končí nejdříve, abyste o body
+            zbytečně nepřišli.</p>
+    </div>
+
+    {% if schedule %}
+    <div class="points-summary">
+        <p>Celkem bodů s omezenou platností: <strong>{{ total_expiring }} bodů</strong></p>
+        {% if expiring_points > 0 %}
+        <p class="expiring-points-warning">
+            Z toho v následujících 3 měsících vyexpiruje <strong>{{ expiring_points }} bodů</strong>.
+        </p>
+        {% endif %}
+    </div>
+
+    <table class="transactions-table">
+        <thead>
+            <tr>
+                <th>Datum expirace</th>
+                <th>Značka</th>
+                <th>Připsáno</th>
+                <th>Body k expiraci</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for credit in schedule %}
+            <tr>
+                <td>{{ credit.expires_at|czech_date }}</td>
+                <td>{{ credit.brand.name|default:"—" }}</td>
+                <td>{{ credit.date|czech_date }}</td>
+                <td class="value">{{ credit.remaining_points }} bodů</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Žádné body s omezenou platností. Vaše body aktuálně neexpirují.</p>
+    {% endif %}
+
+    <p class="expiring-points-link">
+        <a href="{% url 'dashboard' %}">Zpět na přehled</a>
+    </p>
+</div>
+{% endblock %}

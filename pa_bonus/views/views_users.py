@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 from pa_bonus.models import (PointsTransaction, UserContract, Reward, RewardRequest, RewardRequestItem,
                              UserContractGoal, InvoiceBrandTurnover)
-from pa_bonus.services.points import allocate_debit
+from pa_bonus.services.points import allocate_debit, expiration_schedule, expiring_points_total
 from pa_bonus.utilities import calculate_turnover_for_goal
 import datetime
 
@@ -83,7 +83,11 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         # Calculate current point total
         total_points = user.get_balance()
         context['total_points'] = total_points
-        
+
+        # Points at risk of expiring within the next 3 months (for the dashboard
+        # warning and the link to the full expiration overview).
+        context['expiring_points'] = expiring_points_total(user, as_of=today)
+
         return context
 
 class HistoryView(LoginRequiredMixin, ListView):
@@ -123,6 +127,28 @@ class HistoryDetailView(LoginRequiredMixin, DetailView):
         return PointsTransaction.objects.filter(
             user = self.request.user
         ).select_related('brand')
+
+class PointExpirationView(LoginRequiredMixin, TemplateView):
+    """
+    Shows the user exactly when and how many of their points will expire.
+
+    Lists every confirmed credit that still holds unspent points and has an
+    expiry date, soonest first, plus the total and the subset expiring within the
+    next 3 months (matching the dashboard warning).
+    """
+    template_name = 'point_expiration.html'
+    login_url = 'login'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        today = timezone.now().date()
+
+        schedule = expiration_schedule(user)
+        context['schedule'] = schedule
+        context['total_expiring'] = sum(c.remaining_points for c in schedule)
+        context['expiring_points'] = expiring_points_total(user, as_of=today)
+        return context
 
 class RewardsView(LoginRequiredMixin, View):
     """

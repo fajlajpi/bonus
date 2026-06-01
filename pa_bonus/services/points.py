@@ -21,8 +21,10 @@ Usage:
 """
 import logging
 
+from dateutil.relativedelta import relativedelta
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Sum, Value, IntegerField
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from pa_bonus.models import PointsTransaction, PointAllocation
@@ -169,3 +171,58 @@ def expire_credits(as_of=None, dry_run=False):
         PointAllocation.objects.create(credit=credit, debit=debit, amount=remaining)
 
     return expired
+
+
+def credits_with_remaining(user):
+    """
+    Confirmed credits for a user that have an expiry and still hold unspent points,
+    annotated with `remaining_points` and ordered soonest-to-expire first.
+
+    This is the read side of the same model the allocation engine writes: a credit's
+    remaining is its value minus everything allocated away. Returns a queryset so
+    callers can aggregate or slice further.
+    """
+    return (
+        PointsTransaction.objects
+        .filter(user=user, status='CONFIRMED', value__gt=0, expires_at__isnull=False)
+        .annotate(
+            remaining_points=F('value') - Coalesce(
+                Sum('allocations_out__amount'),
+                Value(0, output_field=IntegerField()),
+            )
+        )
+        .filter(remaining_points__gt=0)
+        .select_related('brand')
+        .order_by('expires_at', 'date')
+    )
+
+
+def expiration_schedule(user):
+    """
+    The full list of a user's credits that will expire, soonest first.
+
+    Returns:
+        list[PointsTransaction]: Each carries `remaining_points`, `expires_at`,
+            `brand` and grant `date` for display on the expiration overview page.
+    """
+    return list(credits_with_remaining(user))
+
+
+def expiring_points_total(user, as_of=None, horizon_months=3):
+    """
+    How many still-unspent points will expire within the next `horizon_months`.
+
+    Counts credits whose expiry falls on or before the horizon, including any that
+    are already overdue but not yet processed by the expiration job, so the figure
+    shown to the client never understates what is at risk.
+
+    Returns:
+        int: Total points expiring within the horizon (0 if none).
+    """
+    as_of = as_of or timezone.now().date()
+    horizon = as_of + relativedelta(months=horizon_months)
+    return sum(
+        credit.remaining_points
+        for credit in credits_with_remaining(user)
+        if credit.expires_at <= horizon
+    )
