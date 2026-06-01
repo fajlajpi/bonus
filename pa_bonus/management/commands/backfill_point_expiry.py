@@ -18,7 +18,7 @@ as you like:
 """
 from django.core.management.base import BaseCommand
 
-from pa_bonus.models import PointsTransaction
+from pa_bonus.models import PointsTransaction, extra_points_expiry
 
 
 class Command(BaseCommand):
@@ -40,7 +40,7 @@ class Command(BaseCommand):
 
         credits = (
             PointsTransaction.objects
-            .filter(status='CONFIRMED', value__gt=0, brand__isnull=False)
+            .filter(status='CONFIRMED', value__gt=0)
             .select_related('brand')
         )
         if not overwrite:
@@ -48,7 +48,16 @@ class Command(BaseCommand):
 
         changed = 0
         for credit in credits:
-            new_expiry = credit.brand.expiry_for(credit.date)
+            # Branded credits use their brand's window; extra (goal) points use
+            # the fixed window from their period end. Other brand-less credits
+            # (e.g. manual adjustments) have no policy and are skipped.
+            if credit.brand_id:
+                new_expiry = credit.brand.expiry_for(credit.date)
+            elif credit.type == 'EXTRA_POINTS':
+                new_expiry = extra_points_expiry(credit.date)
+            else:
+                continue
+
             if new_expiry == credit.expires_at:
                 continue
             changed += 1

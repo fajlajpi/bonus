@@ -375,6 +375,29 @@ class GoalEvaluation(models.Model):
         return f"Evaluation for {self.goal} on {self.evaluation_date}"
 
 
+# Extra (goal) points aren't tied to a single brand — a goal can span several —
+# so they can't use a per-brand validity window. Instead they use this fixed
+# window, measured from the end of the goal period they reward (which is the
+# transaction's own date), expiring at the end of that month.
+EXTRA_POINTS_VALIDITY_MONTHS = 18
+
+
+def extra_points_expiry(period_end):
+    """
+    Returns the end-of-month expiry for extra (goal) points awarded for a period.
+
+    Args:
+        period_end (date | None): The end of the goal period the points reward.
+
+    Returns:
+        date | None: Last day the points stay valid, or None if period_end is None.
+    """
+    if period_end is None:
+        return None
+    target = period_end + relativedelta(months=EXTRA_POINTS_VALIDITY_MONTHS)
+    return target + relativedelta(day=31)
+
+
 class PointsTransaction(models.Model):
     """
     Represents one points transaction in the system.
@@ -476,14 +499,17 @@ class PointsTransaction(models.Model):
         """
         Materialise expires_at for credits at creation time.
 
-        The expiry is computed once, from the brand's policy in force at grant
-        time, and never recomputed; changing a brand's window later does not move
-        the goalposts on points already granted. Debits and brand-less credits get
-        no expiry.
+        The expiry is computed once and never recomputed; changing a policy later
+        does not move the goalposts on points already granted. Branded credits use
+        their brand's window; extra (goal) points use the fixed EXTRA_POINTS window
+        measured from their period end (the transaction date). Debits and other
+        brand-less credits get no expiry.
         """
-        if (self.expires_at is None and self.value > 0
-                and self.brand_id and self.date):
-            self.expires_at = self.brand.expiry_for(self.date)
+        if self.expires_at is None and self.value > 0 and self.date:
+            if self.brand_id:
+                self.expires_at = self.brand.expiry_for(self.date)
+            elif self.type == 'EXTRA_POINTS':
+                self.expires_at = extra_points_expiry(self.date)
         super().save(*args, **kwargs)
 
 class PointAllocation(models.Model):

@@ -10,10 +10,12 @@ only touches genuinely-expired, still-unspent points.
 import pytest
 from datetime import date
 
-from pa_bonus.models import User, Brand, PointsTransaction, PointAllocation
+from pa_bonus.models import (
+    User, Brand, PointsTransaction, PointAllocation, extra_points_expiry,
+)
 from pa_bonus.services.points import (
     allocate_debit, void_debit, expire_credits,
-    expiration_schedule, expiring_points_total,
+    expiration_schedule, expiring_points_total, clients_expiring_summary,
 )
 
 
@@ -87,6 +89,35 @@ class TestExpiresAtAutoSet:
         brand = Brand.objects.create(name="B", prefix="B", points_validity_months=None)
         txn = credit(user, 100, expires=None, brand=brand)
         assert txn.expires_at is None
+
+
+@pytest.mark.django_db
+class TestExtraPointsExpiry:
+    def test_helper_is_end_of_month_18_months_later(self):
+        # Period ends mid-quarter -> 18 months on, end of that month.
+        assert extra_points_expiry(date(2025, 3, 31)) == date(2026, 9, 30)
+        assert extra_points_expiry(date(2025, 12, 31)) == date(2027, 6, 30)
+
+    def test_extra_points_credit_auto_sets_expiry_from_period_end(self):
+        user = make_user()
+        # date == goal period end; no brand. save() should stamp +18 months.
+        txn = PointsTransaction.objects.create(
+            user=user, value=500, date=date(2025, 12, 31),
+            description="Extra bonus", type="EXTRA_POINTS", status="CONFIRMED",
+        )
+        assert txn.expires_at == date(2027, 6, 30)
+
+    def test_extra_points_then_expire_and_allocate(self):
+        user = make_user()
+        PointsTransaction.objects.create(
+            user=user, value=500, date=date(2025, 6, 30),
+            description="Extra bonus", type="EXTRA_POINTS", status="CONFIRMED",
+        )
+        # Before expiry: still counts. After expiry date: swept.
+        result = expire_credits(as_of=date(2027, 2, 1))
+        assert len(result) == 1
+        assert result[0][1] == 500
+        assert user.get_balance() == 0
 
 
 # ---------------------------------------------------------------------------
@@ -357,3 +388,26 @@ class TestExpirationReadModel:
         user = make_user()
         credit(user, 100, expires=None)
         assert expiration_schedule(user) == []
+
+
+@pytest.mark.django_db
+class TestClientsExpiringSummary:
+    def test_only_includes_clients_with_expiring_points_sorted_desc(self):
+        as_of = date(2025, 1, 1)
+        u1 = make_user("201")
+        u2 = make_user("202")
+        u3 = make_user("203")
+        credit(u1, 40, expires=date(2025, 2, 1))   # in window
+        credit(u2, 90, expires=date(2025, 3, 1))   # in window, larger
+        credit(u3, 50, expires=date(2025, 9, 1))   # outside window -> excluded
+
+        summary = clients_expiring_summary([u1, u2, u3], as_of=as_of, horizon_months=3)
+
+        assert [row['user'] for row in summary] == [u2, u1]
+        assert [row['expiring_points'] for row in summary] == [90, 40]
+
+    def test_empty_when_nobody_expiring(self):
+        as_of = date(2025, 1, 1)
+        u = make_user("210")
+        credit(u, 100, expires=None)  # never expires
+        assert clients_expiring_summary([u], as_of=as_of) == []

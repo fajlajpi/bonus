@@ -144,9 +144,7 @@ class PointExpirationView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         today = timezone.now().date()
 
-        schedule = expiration_schedule(user)
-        context['schedule'] = schedule
-        context['total_expiring'] = sum(c.remaining_points for c in schedule)
+        context['schedule'] = expiration_schedule(user)
         context['expiring_points'] = expiring_points_total(user, as_of=today)
         return context
 
