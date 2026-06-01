@@ -389,6 +389,21 @@ class TestExpirationReadModel:
         credit(user, 100, expires=None)
         assert expiration_schedule(user) == []
 
+    def test_schedule_horizon_limits_to_window(self):
+        user = make_user()
+        soon = credit(user, 100, expires=date(2025, 3, 1))    # within 3 months
+        mid = credit(user, 50, expires=date(2025, 8, 1))      # within 9, not 3
+        far = credit(user, 30, expires=date(2026, 1, 1))      # beyond 9
+
+        as_of = date(2025, 1, 1)
+        three = expiration_schedule(user, as_of=as_of, horizon_months=3)
+        nine = expiration_schedule(user, as_of=as_of, horizon_months=9)
+        full = expiration_schedule(user, as_of=as_of)
+
+        assert [c.id for c in three] == [soon.id]
+        assert [c.id for c in nine] == [soon.id, mid.id]
+        assert [c.id for c in full] == [soon.id, mid.id, far.id]
+
 
 @pytest.mark.django_db
 class TestClientsExpiringSummary:

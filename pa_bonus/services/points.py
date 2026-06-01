@@ -197,15 +197,26 @@ def credits_with_remaining(user):
     )
 
 
-def expiration_schedule(user):
+def expiration_schedule(user, as_of=None, horizon_months=None):
     """
-    The full list of a user's credits that will expire, soonest first.
+    A user's credits that will expire, soonest first.
+
+    Args:
+        user (User): The owner of the points.
+        as_of (date | None): Reference date for the horizon; defaults to today.
+        horizon_months (int | None): If given, only include credits expiring within
+            this many months. None returns the full schedule.
 
     Returns:
         list[PointsTransaction]: Each carries `remaining_points`, `expires_at`,
-            `brand` and grant `date` for display on the expiration overview page.
+            `brand` and grant `date` for display.
     """
-    return list(credits_with_remaining(user))
+    credits = credits_with_remaining(user)
+    if horizon_months is not None:
+        as_of = as_of or timezone.now().date()
+        horizon = as_of + relativedelta(months=horizon_months)
+        credits = credits.filter(expires_at__lte=horizon)
+    return list(credits)
 
 
 def expiring_points_total(user, as_of=None, horizon_months=3):

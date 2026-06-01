@@ -25,8 +25,7 @@ from pa_bonus.models import (
 )
 from pa_bonus.utilities import SalesRepRequiredMixin
 from pa_bonus.services.points import (
-    allocate_debit, expiration_schedule, expiring_points_total,
-    clients_expiring_summary,
+    allocate_debit, expiration_schedule, clients_expiring_summary,
 )
 
 from datetime import date, timedelta, datetime
@@ -274,10 +273,18 @@ class SalesRepClientDetailView(SalesRepRequiredMixin, View):
         }
 
         # Upcoming end-of-validity: when and how many of the client's points lose
-        # validity, so the rep can tell the client precisely.
-        expiration = expiration_schedule(client)
+        # validity, so the rep can tell the client precisely. Reps can widen the
+        # horizon (3/6/9/12 months) to see further than the client's 3-month view.
+        expiry_choices = [3, 6, 9, 12]
+        try:
+            expiry_months = int(request.GET.get('expiry_months', 3))
+        except (TypeError, ValueError):
+            expiry_months = 3
+        if expiry_months not in expiry_choices:
+            expiry_months = 3
+
+        expiration = expiration_schedule(client, horizon_months=expiry_months)
         expiration_total = sum(c.remaining_points for c in expiration)
-        expiring_soon = expiring_points_total(client)
 
         recent_transactions = PointsTransaction.objects.filter(
             user=client,
@@ -294,7 +301,8 @@ class SalesRepClientDetailView(SalesRepRequiredMixin, View):
             'point_totals': point_totals,
             'expiration_schedule': expiration,
             'expiration_total': expiration_total,
-            'expiring_soon': expiring_soon,
+            'expiry_months': expiry_months,
+            'expiry_choices': expiry_choices,
             'recent_transactions': recent_transactions,
             'reward_requests': reward_requests,
             'date_from': date_from,
