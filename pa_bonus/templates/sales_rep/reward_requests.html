@@ -1,31 +1,31 @@
 {% extends "base.html" %}
-{% block title %}Reward Requests — Sales Rep{% endblock %}
+{% block title %}Žádosti o odměny — obchodní zástupce{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-  <h2>Reward Requests (My Regions)</h2>
+  <h2>Žádosti o odměny (moje regiony)</h2>
 
   <!-- Status Filter -->
   <div class="filter-bar">
     <form method="get">
       <div class="filter-row">
         <div class="filter-group">
-          <label for="status">Filter by Status</label>
+          <label for="status">Filtrovat podle stavu</label>
           <select name="status" id="status">
-            <option value="">All</option>
-            <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Draft</option>
-            <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Pending</option>
-            <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>Accepted</option>
-            <option value="SHIPPED" {% if selected_status == 'SHIPPED' %}selected{% endif %}>Shipped</option>
-            <option value="PARTIALLY_SHIPPED" {% if selected_status == 'PARTIALLY_SHIPPED' %}selected{% endif %}>Partially shipped</option>
-            <option value="ORDERED_FROM_SUPPLIER" {% if selected_status == 'ORDERED_FROM_SUPPLIER' %}selected{% endif %}>Ordered from supplier</option>
-            <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Rejected</option>
-            <option value="FINISHED" {% if selected_status == 'FINISHED' %}selected{% endif %}>Finished</option>
-            <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+            <option value="">Vše</option>
+            <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Koncept</option>
+            <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Čeká na zpracování</option>
+            <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>Přijato</option>
+            <option value="SHIPPED" {% if selected_status == 'SHIPPED' %}selected{% endif %}>Odesláno</option>
+            <option value="PARTIALLY_SHIPPED" {% if selected_status == 'PARTIALLY_SHIPPED' %}selected{% endif %}>Částečně odesláno</option>
+            <option value="ORDERED_FROM_SUPPLIER" {% if selected_status == 'ORDERED_FROM_SUPPLIER' %}selected{% endif %}>Objednáno u dodavatele</option>
+            <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Zamítnuto</option>
+            <option value="FINISHED" {% if selected_status == 'FINISHED' %}selected{% endif %}>Dokončeno</option>
+            <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>Zrušeno</option>
           </select>
         </div>
         <div class="filter-group">
-          <button type="submit" class="btn-filter">Filter</button>
+          <button type="submit" class="btn-filter">Filtrovat</button>
           <a href="{% url 'salesrep_reward_requests' %}" class="btn-reset">Reset</a>
         </div>
       </div>
@@ -38,14 +38,14 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Client</th>
-          <th>Client Number</th>
+          <th>Klient</th>
+          <th>Zákaznické číslo</th>
           <th>Region</th>
-          <th>Status</th>
-          <th>Total Points</th>
-          <th>Requested</th>
-          <th>Note</th>
-          <th>Actions</th>
+          <th>Stav</th>
+          <th>Celkem bodů</th>
+          <th>Vytvořeno</th>
+          <th>Poznámka</th>
+          <th>Akce</th>
         </tr>
       </thead>
       <tbody>
@@ -58,7 +58,7 @@
           <td>
             <span class="status-badge {{ req.status|lower }}">{{ req.get_status_display }}</span>
           </td>
-          <td class="value negative">{{ req.total_points }} pts</td>
+          <td class="value negative">{{ req.total_points }} bodů</td>
           <td>{{ req.requested_at|date:"d.m.Y" }}</td>
           <td>
             {% if req.note %}
@@ -66,12 +66,12 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'salesrep_client_detail' req.user.pk %}" class="details-link">View Client</a>
+            <a href="{% url 'salesrep_client_detail' req.user.pk %}" class="details-link">Zobrazit klienta</a>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9">No reward requests found.</td>
+          <td colspan="9">Žádné žádosti o odměny nenalezeny.</td>
         </tr>
         {% endfor %}
       </tbody>

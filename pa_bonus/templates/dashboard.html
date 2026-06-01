@@ -12,11 +12,11 @@
         <p class="total-points">{{ total_points }} bodů</p>
         {% if expiring_points > 0 %}
         <p class="expiring-points-warning">
-            V následujících 3 měsících vyexpiruje <strong>{{ expiring_points }} bodů</strong>.
+            V následujících 3 měsících skončí platnost <strong>{{ expiring_points }} bodů</strong>.
         </p>
         {% endif %}
         <p class="expiring-points-link">
-            <a href="{% url 'point_expiration' %}">Přehled expirace bodů</a>
+            <a href="{% url 'point_expiration' %}">Konec platnosti bodů</a>
         </p>
     </div>
 
@@ -78,7 +78,7 @@
         <h3>Rychlé odkazy</h3>
         <ul>
             <li><a href="{% url 'history' %}">Historie bodových transakcí</a></li>
-            <li><a href="{% url 'point_expiration' %}">Přehled expirace bodů</a></li>
+            <li><a href="{% url 'point_expiration' %}">Konec platnosti bodů</a></li>
             <li><a href="{% url 'rewards' %}">Nabídka odměn</a></li>
             <li><a href="{% url 'reward_requests' %}">Žádosti o čerpání odměn</a></li>
             <li><a href="{% url 'extra_goals_detail' %}">Extra cíle</a></li>

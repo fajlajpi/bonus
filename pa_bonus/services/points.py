@@ -163,7 +163,7 @@ def expire_credits(as_of=None, dry_run=False):
             user=credit.user,
             value=-remaining,
             date=credit.expires_at,
-            description=f"Points expired (granted {credit.date})",
+            description=f"Konec platnosti bodů (připsáno {credit.date})",
             type='EXPIRATION',
             status='CONFIRMED',
             brand=credit.brand,
@@ -226,3 +226,26 @@ def expiring_points_total(user, as_of=None, horizon_months=3):
         for credit in credits_with_remaining(user)
         if credit.expires_at <= horizon
     )
+
+
+def clients_expiring_summary(users, as_of=None, horizon_months=3):
+    """
+    Per-client totals of points expiring within the horizon, for a Sales Rep's
+    overview. Only clients with something expiring are included.
+
+    Args:
+        users (iterable[User]): The clients to summarise.
+        as_of (date | None): Reference date; defaults to today.
+        horizon_months (int): How far ahead to look.
+
+    Returns:
+        list[dict]: {'user': User, 'expiring_points': int}, highest first.
+    """
+    as_of = as_of or timezone.now().date()
+    rows = []
+    for user in users:
+        total = expiring_points_total(user, as_of=as_of, horizon_months=horizon_months)
+        if total > 0:
+            rows.append({'user': user, 'expiring_points': total})
+    rows.sort(key=lambda row: row['expiring_points'], reverse=True)
+    return rows

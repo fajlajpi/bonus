@@ -101,6 +101,7 @@ urlpatterns.extend([
     path('salesrep/', vs.SalesRepDashboardView.as_view(), name='salesrep_dashboard'),
     path('salesrep/clients/', vs.SalesRepClientListView.as_view(), name='salesrep_clients'),
     path('salesrep/clients/<int:pk>/', vs.SalesRepClientDetailView.as_view(), name='salesrep_client_detail'),
+    path('salesrep/point-expirations/', vs.SalesRepPointExpirationView.as_view(), name='salesrep_point_expirations'),
     path('salesrep/reward-requests/', vs.SalesRepRewardRequestsView.as_view(), name='salesrep_reward_requests'),
     path('salesrep/clients/<int:pk>/create-request/', vs.SalesRepCreateRewardRequestView.as_view(), name='salesrep_create_reward_request'),
 ])

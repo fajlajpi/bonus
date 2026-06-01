@@ -24,6 +24,10 @@ from pa_bonus.models import (
     Reward, RewardRequest, RewardRequestItem,
 )
 from pa_bonus.utilities import SalesRepRequiredMixin
+from pa_bonus.services.points import (
+    allocate_debit, expiration_schedule, expiring_points_total,
+    clients_expiring_summary,
+)
 
 from datetime import date, timedelta, datetime
 
@@ -269,6 +273,12 @@ class SalesRepClientDetailView(SalesRepRequiredMixin, View):
             ).aggregate(total=Coalesce(Sum('value'), Value(0), output_field=DecimalField()))['total'],
         }
 
+        # Upcoming end-of-validity: when and how many of the client's points lose
+        # validity, so the rep can tell the client precisely.
+        expiration = expiration_schedule(client)
+        expiration_total = sum(c.remaining_points for c in expiration)
+        expiring_soon = expiring_points_total(client)
+
         recent_transactions = PointsTransaction.objects.filter(
             user=client,
         ).order_by('-date', '-created_at')[:20]
@@ -282,6 +292,9 @@ class SalesRepClientDetailView(SalesRepRequiredMixin, View):
             'active_contract': active_contract,
             'brand_turnovers': brand_turnovers,
             'point_totals': point_totals,
+            'expiration_schedule': expiration,
+            'expiration_total': expiration_total,
+            'expiring_soon': expiring_soon,
             'recent_transactions': recent_transactions,
             'reward_requests': reward_requests,
             'date_from': date_from,
@@ -291,6 +304,30 @@ class SalesRepClientDetailView(SalesRepRequiredMixin, View):
             'year_to': year_to,
             'month_to': month_to,
             'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
+        }
+        return render(request, self.template_name, context)
+
+
+# ---------------------------------------------------------------------------
+# Point end-of-validity overview
+# ---------------------------------------------------------------------------
+class SalesRepPointExpirationView(SalesRepRequiredMixin, View):
+    """
+    Lists clients in the rep's region(s) who have points reaching the end of their
+    validity within the next 3 months, with the per-client and total amounts, so
+    the rep can proactively reach out before those points lapse.
+    """
+    template_name = 'sales_rep/point_expirations.html'
+
+    def get(self, request):
+        clients = get_rep_clients(request.user)
+        summary = clients_expiring_summary(clients)
+        total_expiring = sum(row['expiring_points'] for row in summary)
+
+        context = {
+            'summary': summary,
+            'total_expiring': total_expiring,
+            'client_count': len(summary),
         }
         return render(request, self.template_name, context)
 
@@ -415,7 +452,7 @@ class SalesRepCreateRewardRequestView(SalesRepRequiredMixin, View):
         reward_request.status = 'PENDING'
         reward_request.save()
 
-        PointsTransaction.objects.create(
+        claim = PointsTransaction.objects.create(
             value=-reward_request.total_points,
             date=reward_request.requested_at,
             user=client,
@@ -424,6 +461,9 @@ class SalesRepCreateRewardRequestView(SalesRepRequiredMixin, View):
             status="CONFIRMED",
             reward_request=reward_request,
         )
+        # Allocate the claim against the client's credits (soonest-to-expire first)
+        # so the points it consumed are recorded, same as a self-service claim.
+        allocate_debit(claim)
 
         messages.success(
             request,

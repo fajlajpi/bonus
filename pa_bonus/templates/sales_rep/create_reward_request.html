@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Create Reward Request for {{ client.first_name }} {{ client.last_name }}{% endblock %}
+{% block title %}Vytvořit žádost o odměnu pro {{ client.first_name }} {{ client.last_name }}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
   <div class="page-header">
-    <h2>Create Reward Request</h2>
+    <h2>Vytvořit žádost o odměnu</h2>
     <p class="page-description">
-      For client: <strong>{{ client.first_name }} {{ client.last_name }}</strong>
+      Pro klienta: <strong>{{ client.first_name }} {{ client.last_name }}</strong>
       ({{ client.user_number }})
-      · Available balance: <strong>{{ client_balance }} pts</strong>
+      · Dostupný zůstatek: <strong>{{ client_balance }} bodů</strong>
     </p>
   </div>
 
   <a href="{% url 'salesrep_client_detail' client.pk %}" class="details-link" style="display:inline-block; margin-bottom: 1rem;">
-    ← Back to Client Details
+    ← Zpět na detail klienta
   </a>
 
   {% if rewards %}
@@ -21,34 +21,34 @@
     {% csrf_token %}
 
     <div class="dashboard-section">
-      <h3>Available Rewards</h3>
+      <h3>Dostupné odměny</h3>
       <div class="table-container">
         <table class="transactions-table">
           <thead>
             <tr>
-              <th>Reward</th>
-              <th>Brand</th>
-              <th>Point Cost</th>
-              <th>Availability</th>
-              <th>Quantity</th>
+              <th>Odměna</th>
+              <th>Značka</th>
+              <th>Cena v bodech</th>
+              <th>Dostupnost</th>
+              <th>Množství</th>
             </tr>
           </thead>
           <tbody>
             {% for reward in rewards %}
             <tr>
               <td>{{ reward.name }}</td>
-              <td>{{ reward.brand.name|default:"Any" }}</td>
-              <td class="value">{{ reward.point_cost }} pts</td>
+              <td>{{ reward.brand.name|default:"Libovolná" }}</td>
+              <td class="value">{{ reward.point_cost }} bodů</td>
               <td>
                 <span class="availability-badge {{ reward.availability|lower }}">
                   {% if reward.availability == 'AVAILABLE' %}
-                    In Stock
+                    Skladem
                   {% elif reward.availability == 'AVAILABLE_LAST_UNITS' %}
-                    In Stock — Last Units
+                    Skladem — poslední kusy
                   {% elif reward.availability == 'ON_DEMAND' %}
-                    On Demand
+                    Na objednávku
                   {% elif reward.availability == 'UNAVAILABLE' %}
-                    Unavailable
+                    Nedostupné
                   {% else %}
                     {{ reward.availability }}
                   {% endif %}
@@ -72,22 +72,22 @@
 
     <!-- Optional note -->
     <div class="dashboard-section">
-      <h3>Note (optional)</h3>
+      <h3>Poznámka (nepovinné)</h3>
       <textarea name="rep_note"
                 rows="3"
                 class="form-control"
                 style="width: 100%; padding: 0.5rem;"
-                placeholder="Add a note to the request (visible to managers)..."></textarea>
+                placeholder="Přidejte poznámku k žádosti (viditelná pro manažery)..."></textarea>
     </div>
 
     <div class="form-actions" style="margin-top: 1rem;">
-      <button type="submit" class="btn-filter">Submit Reward Request</button>
-      <a href="{% url 'salesrep_client_detail' client.pk %}" class="btn-reset" style="text-decoration:none;">Cancel</a>
+      <button type="submit" class="btn-filter">Odeslat žádost o odměnu</button>
+      <a href="{% url 'salesrep_client_detail' client.pk %}" class="btn-reset" style="text-decoration:none;">Zrušit</a>
     </div>
   </form>
   {% else %}
   <div class="dashboard-section">
-    <p>No rewards available for this client's contract brands.</p>
+    <p>Pro značky ze smlouvy tohoto klienta nejsou dostupné žádné odměny.</p>
   </div>
   {% endif %}
 </div>

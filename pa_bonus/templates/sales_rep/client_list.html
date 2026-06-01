@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% load pa_bonus_extras %}
-{% block title %}My Clients{% endblock %}
+{% block title %}Moji klienti{% endblock %}
 
 {% block content %}
 <div style="width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; padding: 0 2rem; background-color: var(--background-color);">
   <div style="max-width: 1600px; margin: 0 auto; background-color: var(--container-bg); padding: var(--spacing-lg); border-radius: var(--border-radius-lg);">
 
-    <h2>My Clients</h2>
+    <h2>Moji klienti</h2>
 
     <!-- Filters -->
     <div class="filter-bar">
@@ -16,7 +16,7 @@
           <div class="filter-group">
             <label for="region">Region</label>
             <select name="region" id="region">
-              <option value="all">All Regions</option>
+              <option value="all">Všechny regiony</option>
               {% for region in regions %}
                 <option value="{{ region.id }}" {% if selected_region == region.id|slugify %}selected{% endif %}>
                   {{ region.name }}
@@ -27,7 +27,7 @@
           {% endif %}
 
           <div class="filter-group">
-            <label for="month_from">From</label>
+            <label for="month_from">Od</label>
             <select name="month_from" id="month_from">
               {% for num, name in months %}
                 <option value="{{ num }}" {% if month_from == num %}selected{% endif %}>{{ name }}</option>
@@ -35,7 +35,7 @@
             </select>
           </div>
           <div class="filter-group">
-            <label for="year_from">Year</label>
+            <label for="year_from">Rok</label>
             <select name="year_from" id="year_from">
               {% year_range 2024 2030 as years %}
               {% for y in years %}
@@ -45,7 +45,7 @@
           </div>
 
           <div class="filter-group">
-            <label for="month_to">To</label>
+            <label for="month_to">Do</label>
             <select name="month_to" id="month_to">
               {% for num, name in months %}
                 <option value="{{ num }}" {% if month_to == num %}selected{% endif %}>{{ name }}</option>
@@ -53,7 +53,7 @@
             </select>
           </div>
           <div class="filter-group">
-            <label for="year_to">Year</label>
+            <label for="year_to">Rok</label>
             <select name="year_to" id="year_to">
               {% year_range 2024 2030 as years %}
               {% for y in years %}
@@ -63,28 +63,28 @@
           </div>
 
           <div class="filter-group">
-            <button type="submit" class="btn-filter">Filter</button>
+            <button type="submit" class="btn-filter">Filtrovat</button>
             <a href="{% url 'salesrep_clients' %}" class="btn-reset">Reset</a>
           </div>
         </div>
       </form>
     </div>
 
-    <p>Showing {{ clients|length }} clients for period {{ date_from|date:"d.m.Y" }} – {{ date_to|date:"d.m.Y" }}.</p>
+    <p>Zobrazeno {{ clients|length }} klientů za období {{ date_from|date:"d.m.Y" }} – {{ date_to|date:"d.m.Y" }}.</p>
 
     <!-- Client Table -->
     <div class="table-container">
       <table class="transactions-table">
         <thead>
           <tr>
-            <th>Client</th>
-            <th>Client Number</th>
+            <th>Klient</th>
+            <th>Zákaznické číslo</th>
             <th>Region</th>
-            <th>Contract</th>
-            <th>Turnover (period)</th>
-            <th>Points (period)</th>
-            <th>Available Balance</th>
-            <th>Actions</th>
+            <th>Smlouva</th>
+            <th>Obrat (období)</th>
+            <th>Body (období)</th>
+            <th>Dostupný zůstatek</th>
+            <th>Akce</th>
           </tr>
         </thead>
         <tbody>
@@ -95,22 +95,22 @@
             <td>{{ row.user.region.name|default:"—" }}</td>
             <td>
               {% if row.contract %}
-                <span class="status-badge confirmed">Active</span>
+                <span class="status-badge confirmed">Aktivní</span>
               {% else %}
-                <span class="status-badge cancelled">None</span>
+                <span class="status-badge cancelled">Žádná</span>
               {% endif %}
             </td>
             <td>{{ row.turnover|floatformat:0 }}</td>
             <td class="value positive">{{ row.user.confirmed_points }}</td>
             <td class="value">{{ row.user.available_points }}</td>
             <td>
-              <a href="{% url 'salesrep_client_detail' row.user.pk %}" class="details-link">Details</a>
-              <a href="{% url 'salesrep_create_reward_request' row.user.pk %}" class="details-link">Order</a>
+              <a href="{% url 'salesrep_client_detail' row.user.pk %}" class="details-link">Detail</a>
+              <a href="{% url 'salesrep_create_reward_request' row.user.pk %}" class="details-link">Objednat</a>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="8">No clients found.</td>
+            <td colspan="8">Žádní klienti nenalezeni.</td>
           </tr>
           {% endfor %}
         </tbody>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load pa_bonus_extras %}
+{% block title %}Konec platnosti bodů{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <h2>Konec platnosti bodů (moje regiony)</h2>
+
+  <div class="intro-text">
+    <p>Níže jsou klienti, kterým v následujících 3 měsících končí platnost dosud
+      nevyčerpaných bodů. Kontaktujte je včas, aby body stihli využít. Detail
+      klienta ukazuje, kdy přesně a kolik bodů jim platnost končí.</p>
+  </div>
+
+  <div class="dashboard-section">
+    <div class="summary-stats">
+      <div class="stat-card">
+        <span class="stat-value">{{ total_expiring }}</span>
+        <span class="stat-label">Bodů s blížícím se koncem platnosti</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ client_count }}</span>
+        <span class="stat-label">Dotčených klientů</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="transactions-table">
+      <thead>
+        <tr>
+          <th>Klient</th>
+          <th>Zákaznické číslo</th>
+          <th>Region</th>
+          <th>Body končící do 3 měsíců</th>
+          <th>Akce</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+        <tr>
+          <td>{{ row.user.first_name }} {{ row.user.last_name }}</td>
+          <td>{{ row.user.user_number }}</td>
+          <td>{{ row.user.region.name|default:"—" }}</td>
+          <td class="value negative">{{ row.expiring_points }} bodů</td>
+          <td>
+            <a href="{% url 'salesrep_client_detail' row.user.pk %}" class="details-link">Detail klienta</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">Žádným klientům v nejbližší době nekončí platnost bodů.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

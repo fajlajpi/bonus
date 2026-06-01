@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load pa_bonus_extras %}
-{% block title %}Client Detail — {{ client.first_name }} {{ client.last_name }}{% endblock %}
+{% block title %}Detail klienta — {{ client.first_name }} {{ client.last_name }}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
@@ -8,32 +8,36 @@
   <div class="page-header">
     <h2>{{ client.first_name }} {{ client.last_name }}</h2>
     <p class="page-description">
-      Client no. {{ client.user_number }}
+      Zákaznické číslo {{ client.user_number }}
       {% if client.region %} · Region: {{ client.region.name }}{% endif %}
       {% if client.email %} · {{ client.email }}{% endif %}
     </p>
     <div class="dashboard-actions" style="margin-top: 1rem;">
       <a href="{% url 'salesrep_clients' %}" class="dashboard-button">
-        <span class="button-text">← Back to Client List</span>
+        <span class="button-text">← Zpět na seznam klientů</span>
       </a>
       <a href="{% url 'salesrep_create_reward_request' client.pk %}" class="dashboard-button">
         <span class="button-icon">🎁</span>
-        <span class="button-text">Create Reward Request</span>
+        <span class="button-text">Vytvořit žádost o odměnu</span>
       </a>
     </div>
   </div>
 
   <!-- Points Summary -->
   <div class="dashboard-section">
-    <h3>Points Summary</h3>
+    <h3>Souhrn bodů</h3>
     <div class="summary-stats">
       <div class="stat-card">
         <span class="stat-value">{{ point_totals.available }}</span>
-        <span class="stat-label">Available Balance</span>
+        <span class="stat-label">Dostupný zůstatek</span>
       </div>
       <div class="stat-card">
         <span class="stat-value">{{ point_totals.period_confirmed }}</span>
-        <span class="stat-label">Confirmed (period)</span>
+        <span class="stat-label">Potvrzeno (období)</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ expiring_soon }}</span>
+        <span class="stat-label">Konec platnosti do 3 měsíců</span>
       </div>
     </div>
   </div>
@@ -43,7 +47,7 @@
     <form method="get">
       <div class="filter-row">
         <div class="filter-group">
-          <label for="month_from">From</label>
+          <label for="month_from">Od</label>
           <select name="month_from" id="month_from">
             {% for num, name in months %}
               <option value="{{ num }}" {% if month_from == num %}selected{% endif %}>{{ name }}</option>
@@ -51,7 +55,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <label for="year_from">Year</label>
+          <label for="year_from">Rok</label>
           <select name="year_from" id="year_from">
             {% year_range 2024 2030 as years %}
             {% for y in years %}
@@ -61,7 +65,7 @@
         </div>
 
         <div class="filter-group">
-          <label for="month_to">To</label>
+          <label for="month_to">Do</label>
           <select name="month_to" id="month_to">
             {% for num, name in months %}
               <option value="{{ num }}" {% if month_to == num %}selected{% endif %}>{{ name }}</option>
@@ -69,7 +73,7 @@
           </select>
         </div>
         <div class="filter-group">
-          <label for="year_to">Year</label>
+          <label for="year_to">Rok</label>
           <select name="year_to" id="year_to">
             {% year_range 2024 2030 as years %}
             {% for y in years %}
@@ -79,7 +83,7 @@
         </div>
 
         <div class="filter-group">
-          <button type="submit" class="btn-filter">Filter</button>
+          <button type="submit" class="btn-filter">Filtrovat</button>
         </div>
       </div>
     </form>
@@ -87,27 +91,60 @@
 
   <!-- Contract Info -->
   <div class="dashboard-section">
-    <h3>Contract</h3>
+    <h3>Smlouva</h3>
     {% if active_contract %}
-      <p>Active contract: {{ active_contract.contract_date_from|date:"d.m.Y" }} – {{ active_contract.contract_date_to|date:"d.m.Y" }}</p>
+      <p>Aktivní smlouva: {{ active_contract.contract_date_from|date:"d.m.Y" }} – {{ active_contract.contract_date_to|date:"d.m.Y" }}</p>
     {% else %}
-      <p>No active contract.</p>
+      <p>Žádná aktivní smlouva.</p>
+    {% endif %}
+  </div>
+
+  <!-- Upcoming end-of-validity -->
+  <div class="dashboard-section">
+    <h3>Konec platnosti bodů</h3>
+    {% if expiration_schedule %}
+    <p>Klientovi postupně končí platnost <strong>{{ expiration_total }} bodů</strong>.
+      Při čerpání odměn se vždy přednostně použijí body, kterým platnost končí nejdříve.</p>
+    <div class="table-container">
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Konec platnosti</th>
+            <th>Značka</th>
+            <th>Připsáno</th>
+            <th>Body</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for credit in expiration_schedule %}
+          <tr>
+            <td>{{ credit.expires_at|date:"d.m.Y" }}</td>
+            <td>{{ credit.brand.name|default:"—" }}</td>
+            <td>{{ credit.date|date:"d.m.Y" }}</td>
+            <td class="value">{{ credit.remaining_points }} bodů</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>Klientovi aktuálně nekončí platnost žádných bodů.</p>
     {% endif %}
   </div>
 
   <!-- Brand Turnovers -->
   <div class="dashboard-section">
-    <h3>Turnover by Brand ({{ date_from|date:"d.m.Y" }} – {{ date_to|date:"d.m.Y" }})</h3>
+    <h3>Obrat podle značek ({{ date_from|date:"d.m.Y" }} – {{ date_to|date:"d.m.Y" }})</h3>
     <div class="table-container">
       <table class="transactions-table">
         <thead>
           <tr>
-            <th>Brand</th>
-            <th>Invoice Turnover</th>
-            <th>Credit Notes</th>
-            <th>Net Turnover</th>
-            <th>Points</th>
-            <th>In Contract</th>
+            <th>Značka</th>
+            <th>Obrat (faktury)</th>
+            <th>Dobropisy</th>
+            <th>Čistý obrat</th>
+            <th>Body</th>
+            <th>Ve smlouvě</th>
           </tr>
         </thead>
         <tbody>
@@ -118,28 +155,28 @@
             <td>{{ data.credit_turnover|floatformat:2 }}</td>
             <td>{{ data.net_turnover|floatformat:2 }}</td>
             <td class="value {% if data.points < 0 %}negative{% else %}positive{% endif %}">
-              {{ data.points }} pts
+              {{ data.points }} bodů
             </td>
             <td>
               {% if data.in_contract %}
-                <span class="status-badge confirmed">Yes</span>
+                <span class="status-badge confirmed">Ano</span>
               {% else %}
-                <span class="status-badge pending">No</span>
+                <span class="status-badge pending">Ne</span>
               {% endif %}
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="6">No turnover data for the selected period.</td>
+            <td colspan="6">Pro zvolené období nejsou žádná data o obratu.</td>
           </tr>
           {% endfor %}
           {% if brand_turnovers %}
           <tr class="summary-row">
-            <td><strong>TOTAL</strong></td>
+            <td><strong>CELKEM</strong></td>
             <td>{{ brand_turnovers|sum_attr:"invoice_turnover"|floatformat:2 }}</td>
             <td>{{ brand_turnovers|sum_attr:"credit_turnover"|floatformat:2 }}</td>
             <td>{{ brand_turnovers|sum_attr:"net_turnover"|floatformat:2 }}</td>
-            <td class="value"><strong>{{ brand_turnovers|sum_attr:"points" }} pts</strong></td>
+            <td class="value"><strong>{{ brand_turnovers|sum_attr:"points" }} bodů</strong></td>
             <td></td>
           </tr>
           {% endif %}
@@ -150,16 +187,16 @@
 
   <!-- Recent Transactions -->
   <div class="dashboard-section">
-    <h3>Recent Point Transactions</h3>
+    <h3>Poslední bodové transakce</h3>
     <div class="table-container">
       <table class="transactions-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Brand</th>
-            <th>Description</th>
-            <th>Points</th>
-            <th>Status</th>
+            <th>Datum</th>
+            <th>Značka</th>
+            <th>Popis</th>
+            <th>Body</th>
+            <th>Stav</th>
           </tr>
         </thead>
         <tbody>
@@ -169,7 +206,7 @@
             <td>{{ transaction.brand.name|default:"—" }}</td>
             <td>{{ transaction.description }}</td>
             <td class="value {% if transaction.value < 0 %}negative{% else %}positive{% endif %}">
-              {{ transaction.value }} pts
+              {{ transaction.value }} bodů
             </td>
             <td>
               <span class="status-badge {{ transaction.status|lower }}">{{ transaction.get_status_display }}</span>
@@ -177,7 +214,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="5">No transactions found.</td>
+            <td colspan="5">Žádné transakce nenalezeny.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -187,22 +224,22 @@
 
   <!-- Reward Requests -->
   <div class="dashboard-section">
-    <h3>Reward Requests</h3>
+    <h3>Žádosti o odměny</h3>
     <div class="table-container">
       <table class="transactions-table">
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Points</th>
-            <th>Status</th>
-            <th>Note</th>
+            <th>Datum</th>
+            <th>Body</th>
+            <th>Stav</th>
+            <th>Poznámka</th>
           </tr>
         </thead>
         <tbody>
           {% for req in reward_requests %}
           <tr>
             <td>{{ req.requested_at|date:"d.m.Y" }}</td>
-            <td class="value negative">{{ req.total_points }} pts</td>
+            <td class="value negative">{{ req.total_points }} bodů</td>
             <td>
               <span class="status-badge {{ req.status|lower }}">{{ req.get_status_display }}</span>
             </td>
@@ -214,7 +251,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="4">No reward requests found.</td>
+            <td colspan="4">Žádné žádosti o odměny nenalezeny.</td>
           </tr>
           {% endfor %}
         </tbody>
