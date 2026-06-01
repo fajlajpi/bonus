@@ -8,9 +8,9 @@ from import_export.widgets import DateWidget
 from import_export.admin import ExportMixin, ImportExportMixin
 from django.forms.models import BaseInlineFormSet
 from pa_bonus.models import (
-    User, Brand, UserContract, UserContractGoal, PointsTransaction, BrandBonus, 
+    User, Brand, UserContract, UserContractGoal, PointsTransaction, PointAllocation, BrandBonus,
     FileUpload, Reward, RewardRequest, RewardRequestItem, EmailNotification, Invoice, InvoiceBrandTurnover,
-    Region, RegionRep, UserActivity, GoalEvaluation, 
+    Region, RegionRep, UserActivity, GoalEvaluation,
 )
 from .resources import UserResource, UserContractResource, UserContractGoalResource, RewardResource, OptimizedUserResource
 
@@ -157,7 +157,7 @@ class UserActivityAdmin(admin.ModelAdmin):
 
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ('name', 'prefix')
+    list_display = ('name', 'prefix', 'points_validity_months')
     search_fields = ('name', 'prefix')
 
 @admin.register(UserContract)
@@ -181,13 +181,50 @@ class GoalEvaluationAdmin(admin.ModelAdmin):
     list_filter = ('evaluation_date', 'is_achieved', 'evaluation_type')
     search_fields = ('goal__user_contract__user_id__username', 'goal__user_contract__user_id__email')
 
+class PointAllocationOutInline(admin.TabularInline):
+    """Allocations drawing points OUT of this credit."""
+    model = PointAllocation
+    fk_name = 'credit'
+    extra = 0
+    readonly_fields = ('debit', 'amount', 'created_at')
+    can_delete = False
+    verbose_name_plural = "Allocations drawn from this credit"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class PointAllocationInInline(admin.TabularInline):
+    """Allocations feeding points INTO this debit."""
+    model = PointAllocation
+    fk_name = 'debit'
+    extra = 0
+    readonly_fields = ('credit', 'amount', 'created_at')
+    can_delete = False
+    verbose_name_plural = "Credits this debit drew from"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(PointsTransaction)
 class PointsTransactionAdmin(ExportMixin, admin.ModelAdmin):
-    list_display = ('user', 'type', 'value', 'status', 'date', 'description')
+    list_display = ('user', 'type', 'value', 'status', 'date', 'expires_at', 'description')
     search_fields = ('user__username', 'user__email', 'user__user_number')
     list_filter = ('type', 'status', 'date')
     readonly_fields = ('created_at',)
     actions = [confirm_transactions, pending_transactions, cancel_transactions]
+    inlines = [PointAllocationOutInline, PointAllocationInInline]
+
+
+@admin.register(PointAllocation)
+class PointAllocationAdmin(admin.ModelAdmin):
+    list_display = ('amount', 'credit', 'debit', 'created_at')
+    search_fields = (
+        'credit__user__user_number', 'credit__user__email',
+        'debit__user__user_number', 'debit__user__email',
+    )
+    readonly_fields = ('credit', 'debit', 'amount', 'created_at')
 
 @admin.register(BrandBonus)
 class BrandBonusAdmin(ExportMixin, admin.ModelAdmin):

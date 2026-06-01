@@ -12,10 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 from .models import (
-    FileUpload, PointsTransaction, User, Brand, 
+    FileUpload, PointsTransaction, User, Brand,
     UserContract, BrandBonus, Invoice, InvoiceBrandTurnover,
-    EmailNotification, Reward, 
+    EmailNotification, Reward,
 )
+from .services.points import allocate_debit
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -393,7 +394,14 @@ def process_brand_points(user, invoice, turnover, brand_bonuses, filetype):
         brand=brand,
         file_upload=invoice.file_upload
     )
-    
+
+    # A credit note is a debit: draw the deducted points from the oldest-to-expire
+    # credits, just like a reward claim. If it exceeds the available balance the
+    # debit stays partially allocated and the balance goes negative, flagging the
+    # discrepancy for review.
+    if filetype == FT_CREDIT_NOTE:
+        allocate_debit(transaction)
+
     logger.debug(f"Created new transaction: {transaction}")
     return 1
 

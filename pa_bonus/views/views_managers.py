@@ -15,6 +15,7 @@ from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestIte
                              EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand,
                              UserActivity, UserContractGoal, GoalEvaluation)
 from pa_bonus.utilities import ManagerGroupRequiredMixin, calculate_turnover_for_goal
+from pa_bonus.services.points import allocate_debit, void_debit
 
 from pa_bonus.exports import generate_telemarketing_export
 
@@ -303,25 +304,34 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         return redirect('manager_reward_requests')
     
     def _update_point_transaction(self, reward_request, old_status, new_status):
-        """Update the point transaction to match the current state of the request."""
-        transaction = self._get_reward_transaction(reward_request)
-        if not transaction:
+        """
+        Keep the reward claim debit and its point allocations in sync with the
+        request's status.
+
+        Cancelling/rejecting voids the debit, returning the drawn points to their
+        credits. Reactivating (or changing the total) restores the debit and
+        re-allocates it against whatever credits are currently available, so an
+        old claim reactivated later correctly draws from non-expired points.
+        """
+        cancel_states = ['REJECTED', 'CANCELLED']
+        debit = self._get_reward_transaction(reward_request)
+        if not debit:
             return
-        
-        # If request is rejected/cancelled, cancel the transaction
-        if new_status in ['REJECTED', 'CANCELLED']:
-            transaction.status = 'CANCELLED'
-            transaction.save()
-        
-        # If request was rejected/cancelled but is now active, reactivate transaction
-        elif old_status in ['REJECTED', 'CANCELLED'] and new_status not in ['REJECTED', 'CANCELLED']:
-            transaction.status = 'CONFIRMED'
-            transaction.save()
-        
-        # In all cases, ensure the transaction amount matches the request total
-        if transaction.status == 'CONFIRMED':
-            transaction.value = -reward_request.total_points
-            transaction.save()
+
+        if new_status in cancel_states:
+            # Return the points; void_debit is a no-op if already cancelled.
+            void_debit(debit)
+            return
+
+        # Active request: make sure the debit is confirmed, matches the current
+        # total, and is freshly allocated. allocate_debit clears stale allocations
+        # first, so this is safe whether reactivating or just editing the total.
+        target_value = -reward_request.total_points
+        if debit.status != 'CONFIRMED' or debit.value != target_value:
+            debit.status = 'CONFIRMED'
+            debit.value = target_value
+            debit.save(update_fields=['status', 'value'])
+            allocate_debit(debit)
     
     def _get_reward_transaction(self, reward_request):
         """Get the associated reward claim transaction."""

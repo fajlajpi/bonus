@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 from pa_bonus.models import (PointsTransaction, UserContract, Reward, RewardRequest, RewardRequestItem,
                              UserContractGoal, InvoiceBrandTurnover)
+from pa_bonus.services.points import allocate_debit
 from pa_bonus.utilities import calculate_turnover_for_goal
 import datetime
 
@@ -272,7 +273,9 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
             reward_request.status = "PENDING"
             reward_request.save()
 
-            # Create a claim transaction so that the points are already blocked off
+            # Create a claim transaction so that the points are already blocked off,
+            # then allocate it against the user's credits (soonest-to-expire first)
+            # so we have a precise record of which points this claim consumed.
             points_transaction = PointsTransaction.objects.create(
                 value = -reward_request.total_points,
                 date=reward_request.requested_at,
@@ -282,6 +285,7 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
                 status="CONFIRMED",
                 reward_request=reward_request,
             )
+            allocate_debit(points_transaction)
 
             messages.success(request, f"Request {reward_request.id} confirmed successfully.")
             return redirect('reward_requests')

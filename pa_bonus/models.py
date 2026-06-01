@@ -196,12 +196,39 @@ class Brand(models.Model):
     """
     name = models.CharField(max_length=50)
     prefix = models.CharField(max_length=10)
+    points_validity_months = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text=(
+            "How many months points awarded for this brand stay valid before "
+            "they expire. Leave empty for points that never expire. Points "
+            "expire at the end of the month, this many months after the grant date."
+        ),
+    )
 
     class Meta:
         ordering = ['name']
 
     def __str__(self):
         return self.name
+
+    def expiry_for(self, grant_date):
+        """
+        Returns the expiration date for points granted for this brand on grant_date.
+
+        Points expire at the end of the calendar month, points_validity_months after
+        the grant date. Returns None if this brand's points never expire.
+
+        Args:
+            grant_date (date): The date the points were granted (e.g. invoice date).
+
+        Returns:
+            date | None: The last day points stay valid, or None if they never expire.
+        """
+        if not self.points_validity_months:
+            return None
+        target = grant_date + relativedelta(months=self.points_validity_months)
+        # relativedelta(day=31) clamps to the last valid day of that month.
+        return target + relativedelta(day=31)
 
 
 class UserContract(models.Model):
@@ -377,6 +404,7 @@ class PointsTransaction(models.Model):
         ('CREDIT_NOTE_ADJUST', 'Credit Note (dobropis) adjustment'),
         ('EXTRA_POINTS', 'Extra Points added'),
         ('ADJUSTMENT', 'Manual Adjustment'),
+        ('EXPIRATION', 'Points expired'),
     )
     TRANSACTION_STATUS = (
         ('NO-CONTRACT', 'No-Contract'),
@@ -394,13 +422,108 @@ class PointsTransaction(models.Model):
     invoice = models.ForeignKey('Invoice', null=True, blank=True, on_delete=models.SET_NULL)
     reward_request = models.ForeignKey('RewardRequest', null=True, blank=True, on_delete=models.CASCADE)
     file_upload = models.ForeignKey('FileUpload', null=True, blank=True, on_delete=models.CASCADE, related_name='Transactions')
+    expires_at = models.DateField(
+        null=True, blank=True,
+        help_text=(
+            "When the points in this credit expire. Set only on positive (credit) "
+            "transactions, materialised from the brand's policy at grant time. "
+            "Null means the points never expire."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-date', '-created_at']
-    
+
     def __str__(self):
         return f'{self.user} | {self.date} | {self.type} | {self.value}'
+
+    @property
+    def is_credit(self):
+        """True for positive transactions that points can be drawn from."""
+        return self.value > 0
+
+    @property
+    def is_debit(self):
+        """True for negative transactions that draw points from credits."""
+        return self.value < 0
+
+    @property
+    def allocated(self):
+        """
+        Points already drawn from this credit by debits (reward claims, credit
+        notes, expirations). Derived from PointAllocation rows, never stored, so
+        it is always an accurate, auditable reflection of where points went.
+
+        Returns:
+            int: Total points allocated away from this credit (0 for debits).
+        """
+        return self.allocations_out.aggregate(total=Sum('amount'))['total'] or 0
+
+    @property
+    def remaining(self):
+        """
+        Unspent points still available in this credit.
+
+        Returns:
+            int: value minus everything allocated away (0 for debits).
+        """
+        if not self.is_credit:
+            return 0
+        return self.value - self.allocated
+
+    def save(self, *args, **kwargs):
+        """
+        Materialise expires_at for credits at creation time.
+
+        The expiry is computed once, from the brand's policy in force at grant
+        time, and never recomputed; changing a brand's window later does not move
+        the goalposts on points already granted. Debits and brand-less credits get
+        no expiry.
+        """
+        if (self.expires_at is None and self.value > 0
+                and self.brand_id and self.date):
+            self.expires_at = self.brand.expiry_for(self.date)
+        super().save(*args, **kwargs)
+
+class PointAllocation(models.Model):
+    """
+    Records that a debit drew a specific number of points from a specific credit.
+
+    This is the traceability core of the points ledger. Every reward claim, credit
+    note and expiration draws points from one or more credit transactions (oldest
+    to expire first), and each such draw is one PointAllocation row. Because of
+    this, a credit's "remaining" balance is always derived (value minus the sum of
+    allocations out), never an overwritten counter, so we can always say exactly
+    where each point came from and where it went.
+
+    Attributes:
+        credit (PointsTransaction): The positive transaction points are drawn from.
+        debit (PointsTransaction): The negative transaction drawing the points.
+        amount (int): Positive number of points moved from credit to debit.
+        created_at (DateTime): When this allocation was recorded.
+    """
+    credit = models.ForeignKey(
+        PointsTransaction, on_delete=models.CASCADE, related_name='allocations_out'
+    )
+    debit = models.ForeignKey(
+        PointsTransaction, on_delete=models.CASCADE, related_name='allocations_in'
+    )
+    amount = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0),
+                name='pointallocation_amount_positive',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.amount} pts: credit #{self.credit_id} -> debit #{self.debit_id}'
+
 
 class PointsBalance(models.Model):
     """
