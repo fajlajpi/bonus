@@ -1,8 +1,9 @@
 # development.py
 from .base import *
+from decouple import config
 
 
-DEBUG = True
+DEBUG = config('DEBUG')
 
 if DEBUG:
     import bonus.private as private
