@@ -2,9 +2,10 @@
 import json
 import os
 from .base import *
+from decouple import config
 
 DEBUG = False
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY')
 
 ALLOWED_HOSTS = ['bonus.primavera-and.cz', 'www.bonus.primavera-and.cz', 
                  'iepgvjxg.a2hosted.com', 'www.iepgvjxg.a2hosted.com', 
