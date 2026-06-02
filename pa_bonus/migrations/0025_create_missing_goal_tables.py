@@ -2,6 +2,10 @@
 Recovery migration: creates pa_bonus_usercontractgoal and pa_bonus_goalevaluation
 which were never physically created in the database despite migrations 0011 and 0023
 being recorded as applied. Run after faking 0011-0024.
+
+ON A NEW HOSTING, THIS MIGRATION CAUSES AN ERROR AND SHOULD BE FAKED
+python manage.py migrate pa_bonus 0025 --fake
+
 """
 import django.db.models.deletion
 from django.conf import settings
