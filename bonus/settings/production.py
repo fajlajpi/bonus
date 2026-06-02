@@ -4,22 +4,20 @@ import os
 from .base import *
 from decouple import config
 
-DEBUG = False
+DEBUG = config('DEBUG', default=False, cast=bool)
 SECRET_KEY = config('SECRET_KEY')
 
-ALLOWED_HOSTS = ['bonus.primavera-and.cz', 'www.bonus.primavera-and.cz', 
-                 'iepgvjxg.a2hosted.com', 'www.iepgvjxg.a2hosted.com', 
-                 'bonus.ffhh.cz', 'www.bonus.ffhh.cz', 'bonus.iepgvjxg.a2hosted.com']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
 # Database
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USERNAME'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
@@ -122,10 +120,19 @@ LOGGING = {
 
 # Static files
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/iepgvjxg/public_html/static/'
+STATIC_ROOT = '/var/www/myproject/static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/home/iepgvjxg/public_html/media/'
+MEDIA_ROOT = '/var/www/myproject/media/'
 
 # CREDENTIALS FOR ABRA INTEGRATION
-ABRA_USERNAME    = os.environ.get('ABRA_USERNAME', '')
-ABRA_TOKEN       = os.environ.get('ABRA_TOKEN', '')
+ABRA_USERNAME    = config('ABRA_USERNAME')
+ABRA_TOKEN       = config('ABRA_TOKEN')
+
+# PENTAHO credentials
+PENTAHO_BASE_URL = config("PENTAHO_BASE_URL", default="https://report.primavera-and.cz:8080")
+PENTAHO_USERNAME = config("PENTAHO_USERNAME")
+PENTAHO_PASSWORD = config("PENTAHO_PASSWORD")
+
+# These rarely change, but can be overridden if needed:
+PENTAHO_CDA_PATH = "/public/PAA/karta-klienta/karta klienta.cda"
+PENTAHO_DATA_ACCESS_ID = "sqlFaktury"
