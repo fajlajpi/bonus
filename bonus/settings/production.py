@@ -80,13 +80,13 @@ LOGGING = {
         'file': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': '/home/iepgvjxg/public_html/logs/django_error.log',
+            'filename': '/var/www/bonus/logs/django_error.log',
             'formatter': 'verbose',
         },
         'debug_file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/home/iepgvjxg/public_html/logs/django_debug.log',
+            'filename': '/var/www/bonus/logs/django_debug.log',
             'formatter': 'verbose',
         },
         'console': {
@@ -120,9 +120,9 @@ LOGGING = {
 
 # Static files
 STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/myproject/static/'
+STATIC_ROOT = '/var/www/bonus/static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/myproject/media/'
+MEDIA_ROOT = '/var/www/bonus/media/'
 
 # CREDENTIALS FOR ABRA INTEGRATION
 ABRA_USERNAME    = config('ABRA_USERNAME')
