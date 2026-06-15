@@ -402,15 +402,14 @@
                                                                   title="ABRA id: {{ request.abra_order_id }} — submitted {{ request.abra_submitted_at|date:'d.m.Y H:i' }}">
                                                                 ✓ ABRA: {{ request.abra_displayname }}
                                                             </span>
-                                                        {% elif request.status == 'ACCEPTED' %}
-                                                            <button type="button"
-                                                                    class="btn-abra"
-                                                                    data-request-id="{{ request.id }}"
-                                                                    onclick="submitToAbra(this)">
-                                                                Submit to ABRA
-                                                            </button>
-                                                            <div class="abra-result hidden" id="abra-result-{{ request.id }}"></div>
                                                         {% endif %}
+                                                        <button type="button"
+                                                                class="btn-abra"
+                                                                data-request-id="{{ request.id }}"
+                                                                onclick="submitToAbra(this)">
+                                                            Submit to ABRA
+                                                        </button>
+                                                        <div class="abra-result hidden" id="abra-result-{{ request.id }}"></div>
 
                                                         {% if request.status == 'OVERDUE_INVOICE' %}
                                                         <button type="button" class="btn-clipboard"
