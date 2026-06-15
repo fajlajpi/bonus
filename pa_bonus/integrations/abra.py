@@ -373,7 +373,9 @@ def submit_reward_request(reward_request, items=None) -> SubmissionResult:
     if missing:
         raise AbraNotFoundError(
             f"Storecard(s) not found in ABRA: {', '.join(missing)}. "
-            "Submission aborted; no order was created."
+            "Submission aborted; no order was created. "
+            "If these rewards are not real ABRA storecards, uncheck "
+            "'Is in ABRA storecards' on each affected Reward in the admin."
         )
 
     # 5. Build payload and post
