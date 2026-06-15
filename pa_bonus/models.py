@@ -731,27 +731,48 @@ class RewardRequestItem(models.Model):
     """
     Represents an element of a RewardRequest - a Reward, its quantity and point cost at the time of request.
 
-    Attributes:
-        reward_request (RewardRequest): The RewardRequest this item belongs to.
-        reward (Reward): The item requested.
-        quantity (int): The quantity of items requested.
-        point_cost (int): The point cost at the time of request.
+    Custom items (no linked Reward) are supported via custom_name / custom_abra_code.
     """
     reward_request = models.ForeignKey(RewardRequest, on_delete=models.CASCADE)
-    reward = models.ForeignKey(Reward, on_delete=models.CASCADE)
+    reward = models.ForeignKey(Reward, on_delete=models.SET_NULL, null=True, blank=True)
+    custom_name = models.CharField(max_length=200, blank=True, default='')
+    custom_abra_code = models.CharField(max_length=50, blank=True, default='')
     quantity = models.IntegerField()
-    point_cost = models.IntegerField()  # Storing point cost at the time of request, in case it changes over time
+    point_cost = models.IntegerField()
+    shipped = models.BooleanField(default=False)
+
+    @property
+    def display_name(self):
+        return self.reward.name if self.reward_id else self.custom_name
+
+    @property
+    def display_code(self):
+        return self.reward.abra_code if self.reward_id else self.custom_abra_code
 
     def __str__(self):
-        return f"{self.quantity} x {self.reward.name} | {self.reward_request}"
-    
+        return f"{self.quantity} x {self.display_name} | {self.reward_request}"
+
     def save(self, *args, **kwargs):
-        """
-        Save with the current point cost in case it changes in the meantime.
-        """
-        #Set point cost from Reward before saving.
-        self.point_cost = self.reward.point_cost
+        if self.reward_id:
+            self.point_cost = self.reward.point_cost
         super().save(*args, **kwargs)
+
+
+class AbraSubmission(models.Model):
+    """
+    Records each individual ABRA submission for a RewardRequest.
+    Allows multiple partial submissions per request.
+    """
+    reward_request = models.ForeignKey(RewardRequest, on_delete=models.CASCADE, related_name='abra_submissions')
+    abra_order_id = models.CharField(max_length=20)
+    abra_displayname = models.CharField(max_length=50)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f"{self.abra_displayname} ({self.abra_order_id})"
 
 class EmailNotification(models.Model):
     NOTIFICATION_STATUS = (

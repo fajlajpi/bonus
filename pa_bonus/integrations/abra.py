@@ -237,7 +237,7 @@ def _round_excl_vat(point_cost: int) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _build_rows_for_request(reward_request, storecards: dict[str, dict]) -> list[dict]:
+def _build_rows_for_request(storecards: dict[str, dict], items) -> list[dict]:
     """
     Translate a RewardRequest's items into ABRA order rows.
 
@@ -246,38 +246,33 @@ def _build_rows_for_request(reward_request, storecards: dict[str, dict]) -> list
     * Real ABRA storecards (Reward.is_in_abra_storecards = True)
       -> emit ONE rowtype-3 row, unitprice = 1, quantity = item.quantity.
 
-    * Non-ABRA rewards (Reward.is_in_abra_storecards = False)
+    * Non-ABRA rewards (Reward.is_in_abra_storecards = False) and custom items
       -> emit TWO rows that cancel each other on the order total:
-         (a) rowtype-2: text = reward.name, qty, unitprice = point_cost / 1.21
+         (a) rowtype-2: text = reward name/code, qty, unitprice = point_cost / 1.21
          (b) rowtype-1: text = "Bonusový program - sleva", totalprice = -(a)
          The pair leaves the order net at 0 while still showing both the
          reward and the discount on the document.
 
     * BONBOD line (always appended once at the end)
-      -> rowtype-3 with quantity = reward_request.total_points (one unit
-         per redeemed point), unitprice = 0, giving totalprice = 0. The
-         BONBOD line functions as a counter of points consumed, not as a
-         monetary entry on the order.
+      -> rowtype-3 with quantity = sum of submitted items' points (one unit
+         per redeemed point). For partial submissions this reflects only the
+         points being submitted, not the request total.
 
-    Storecards needed for resolution must already be in the `storecards`
-    dict (caller-validated). Looking them up here would defeat the point
-    of batching.
+    Pass `items` to restrict to a specific subset (partial submission).
+    Storecards needed for resolution must already be in `storecards`.
     """
     store_id = settings.ABRA_STORE_ID
     division_id = settings.ABRA_DIVISION_ID
     vatrate_id = settings.ABRA_VATRATE_ID
 
     rows: list[dict] = []
-
-    items = reward_request.rewardrequestitem_set.select_related("reward").filter(
-        quantity__gt=0
-    )
+    submitted_points = 0
 
     for item in items:
-        reward = item.reward
+        submitted_points += item.point_cost * item.quantity
 
-        if reward.is_in_abra_storecards:
-            storecard = storecards[reward.abra_code]
+        if item.reward_id and item.reward.is_in_abra_storecards:
+            storecard = storecards[item.reward.abra_code]
             rows.append({
                 "rowtype": ROWTYPE_STORECARD,
                 "storecard_id": storecard["id"],
@@ -289,20 +284,21 @@ def _build_rows_for_request(reward_request, storecards: dict[str, dict]) -> list
                 "unitprice": 1,
             })
         else:
-            unit_excl_vat = _round_excl_vat(reward.point_cost)
+            # Non-storecard catalog reward or custom item: rowtype-2 + rowtype-1 pair
+            code = item.display_code
+            name = item.display_name
+            unit_excl_vat = _round_excl_vat(item.point_cost)
             line_total = unit_excl_vat * item.quantity
 
-            # Row (a): the named line at the VAT-excluded unit price
             rows.append({
                 "rowtype": ROWTYPE_TEXT_PRICE_QTY,
-                "text": ROWTYPE_TEXT_PRICE_PREFIX + reward.abra_code + " " + reward.name,
+                "text": ROWTYPE_TEXT_PRICE_PREFIX + code + " " + name,
                 "quantity": item.quantity,
                 "qunit": "ks",
                 "unitprice": float(unit_excl_vat),
                 "division_id": division_id,
                 "vatrate_id": vatrate_id,
             })
-            # Row (b): the discount line that zeroes (a)'s contribution
             rows.append({
                 "rowtype": ROWTYPE_TEXT_PRICE,
                 "text": "Bonusový program - sleva",
@@ -311,10 +307,6 @@ def _build_rows_for_request(reward_request, storecards: dict[str, dict]) -> list
                 "vatrate_id": vatrate_id,
             })
 
-    # The BONBOD point-redemption line.
-    # quantity is the request's total points so the line reads as a counter
-    # of points consumed. unitprice is 0 so the line contributes nothing to
-    # the order total - the goal is to record the point count, not a price.
     bonbod = storecards[BONBOD_CODE]
     rows.append({
         "rowtype": ROWTYPE_STORECARD,
@@ -322,7 +314,7 @@ def _build_rows_for_request(reward_request, storecards: dict[str, dict]) -> list
         "store_id": store_id,
         "division_id": division_id,
         "vatrate_id": vatrate_id,
-        "quantity": int(reward_request.total_points),
+        "quantity": submitted_points,
         "qunit": "ks",
         "totalprice": 1,
     })
@@ -330,23 +322,21 @@ def _build_rows_for_request(reward_request, storecards: dict[str, dict]) -> list
     return rows
 
 
-def submit_reward_request(reward_request) -> SubmissionResult:
+def submit_reward_request(reward_request, items=None) -> SubmissionResult:
     """
     Submit a RewardRequest to ABRA as a new Received Order.
 
+    Pass `items` to restrict to a subset for partial submissions. When omitted,
+    all items with positive quantity are submitted.
+
     The full flow:
-
     1. Look up the firm by the user's `user_number`.
-    2. Collect every ABRA code we need (storecards + BONBOD) and resolve
-       them all in one batched call.
-    3. If any code is missing from ABRA's response, abort. A partial order
-       is much worse than no order - we never want to half-submit.
+    2. Collect every ABRA storecard code we need (+ BONBOD) and resolve in one call.
+    3. If any code is missing from ABRA's response, abort.
     4. Build the row list and POST the order.
-    5. Return id + displayname for the caller to persist on the request.
+    5. Return id + displayname for the caller to persist.
 
-    Raises AbraError (or subclass) on any failure. The caller is responsible
-    for translating that into a user-facing message and for persisting the
-    SubmissionResult on success.
+    Raises AbraError (or subclass) on any failure.
     """
     client = AbraClient()
 
@@ -358,21 +348,26 @@ def submit_reward_request(reward_request) -> SubmissionResult:
             f"Customer code '{user.user_number}' not found in ABRA address book."
         )
 
-    # 2. Determine the storecards we need
-    items = reward_request.rewardrequestitem_set.select_related("reward").filter(
-        quantity__gt=0
-    )
-    if not items.exists():
-        raise AbraError("Reward request has no items with positive quantity.")
+    # 2. Materialise items (caller may pass a queryset or a list)
+    if items is None:
+        items = list(
+            reward_request.rewardrequestitem_set.select_related("reward").filter(quantity__gt=0)
+        )
+    else:
+        items = list(items)
 
+    if not items:
+        raise AbraError("No items to submit.")
+
+    # 3. Determine which storecards we need (only storecard-type catalog rewards)
     required_codes: set[str] = {
         item.reward.abra_code
         for item in items
-        if item.reward.is_in_abra_storecards
+        if item.reward_id and item.reward.is_in_abra_storecards
     }
     required_codes.add(BONBOD_CODE)
 
-    # 3. Batched lookup + completeness check
+    # 4. Batched lookup + completeness check
     storecards = client.get_storecards_by_codes(required_codes)
     missing = sorted(required_codes - storecards.keys())
     if missing:
@@ -381,8 +376,8 @@ def submit_reward_request(reward_request) -> SubmissionResult:
             "Submission aborted; no order was created."
         )
 
-    # 4. Build payload and post
-    rows = _build_rows_for_request(reward_request, storecards)
+    # 5. Build payload and post
+    rows = _build_rows_for_request(storecards, items)
     payload = {
         "firm_id": firm["id"],
         "description": f"Bonusový program č. {reward_request.id}",
@@ -395,12 +390,10 @@ def submit_reward_request(reward_request) -> SubmissionResult:
     )
     response = client.create_received_order(payload)
 
-    # 5. Extract id + displayname
+    # 6. Extract id + displayname
     abra_id = response.get("id")
     displayname = response.get("displayname", "")
     if not abra_id:
-        # Defensive: ABRA returned 2xx but no id. Treat as failure so we
-        # don't mark the request as submitted with bogus tracking data.
         raise AbraRequestError(
             f"ABRA accepted the order but returned no id. Response: {response}"
         )

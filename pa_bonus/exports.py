@@ -6,15 +6,16 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from pa_bonus.models import RewardRequest
 
-def generate_telemarketing_export(request_id):
+def generate_telemarketing_export(request_id, item_ids=None):
     """
     Generate an Excel file for telemarketing from a specific reward request.
-    
+
     Args:
-        request_id (int): ID of the RewardRequest to export
-        
+        request_id (int): ID of the RewardRequest to export.
+        item_ids (list[int] | None): If provided, only include items with these IDs.
+
     Returns:
-        bytes: Excel file content or None if the request is not found or not in ACCEPTED status
+        bytes: Excel file content, or None on error.
     """
 
     def apply_item_styling(row_num):
@@ -46,11 +47,7 @@ def generate_telemarketing_export(request_id):
     try:
         # Get the reward request
         request = get_object_or_404(RewardRequest, pk=request_id)
-        
-        # Check if it's in ACCEPTED status
-        if request.status != 'ACCEPTED':
-            return None
-            
+
         # Create a new workbook
         wb = Workbook()
         ws = wb.active
@@ -103,20 +100,22 @@ def generate_telemarketing_export(request_id):
             ws[f'{col}3'].fill = header_fill
             ws[f'{col}3'].alignment = header_alignment
         
-        # Get items from the request
-        items = request.rewardrequestitem_set.select_related('reward').all()
-        
+        # Get items from the request, optionally filtered to a specific subset
+        items = request.rewardrequestitem_set.select_related('reward').filter(quantity__gt=0)
+        if item_ids is not None:
+            items = items.filter(id__in=item_ids)
+
         # Row 4 and onwards: Data rows
         row_num = 4
         for item in items:
-            ws[f'B{row_num}'] = item.reward.abra_code
-            ws[f'C{row_num}'] = item.reward.name
-            ws[f'D{row_num}'] = item.reward.point_cost
+            ws[f'B{row_num}'] = item.display_code
+            ws[f'C{row_num}'] = item.display_name
+            ws[f'D{row_num}'] = item.point_cost
             ws[f'E{row_num}'] = 1.0
             ws[f'F{row_num}'] = item.quantity
 
             # Add point cost to tally
-            total_points += item.reward.point_cost * item.quantity
+            total_points += item.point_cost * item.quantity
             
             # Apply styles to data cells
             apply_item_styling(row_num)

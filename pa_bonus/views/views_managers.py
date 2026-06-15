@@ -11,9 +11,9 @@ from django.urls import reverse
 import logging
 from pa_bonus.forms import FileUploadForm, ClientCreationForm
 from pa_bonus.tasks import process_uploaded_file, process_stock_file
-from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, PointsTransaction,
-                             EmailNotification, User, Region, UserContract, InvoiceBrandTurnover, Brand,
-                             UserActivity, UserContractGoal, GoalEvaluation)
+from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, AbraSubmission,
+                             PointsTransaction, EmailNotification, User, Region, UserContract,
+                             InvoiceBrandTurnover, Brand, UserActivity, UserContractGoal, GoalEvaluation)
 from pa_bonus.utilities import ManagerGroupRequiredMixin, calculate_turnover_for_goal
 from pa_bonus.services.points import allocate_debit, void_debit
 
@@ -277,33 +277,98 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         items = reward_request.rewardrequestitem_set.select_related('reward').filter(quantity__gt=0)
         user_balance = reward_request.user.get_balance()
-        
+        all_rewards = Reward.objects.order_by('abra_code')
+
         return render(request, self.template_name, {
             'request_obj': reward_request,
             'items': items,
             'user_balance': user_balance,
+            'all_rewards': all_rewards,
+            'abra_submissions': reward_request.abra_submissions.all(),
         })
 
     @transaction.atomic
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
         old_status = reward_request.status
-        
+
         # Update the customer note
-        customer_note = request.POST.get('customer_note', '')
-        reward_request.note = customer_note
-        
+        reward_request.note = request.POST.get('customer_note', '')
+
         # Update the request status and description
         new_status = request.POST.get('status')
         reward_request.description = request.POST.get('manager_message', '')
         reward_request.status = new_status
+
+        # --- Item editing ---
+
+        # Update quantities and delete flagged items
+        for item in list(reward_request.rewardrequestitem_set.all()):
+            if request.POST.get(f'item_{item.id}_delete'):
+                item.delete()
+                continue
+            raw_qty = request.POST.get(f'item_{item.id}_quantity')
+            if raw_qty is not None:
+                try:
+                    qty = int(raw_qty)
+                    if qty <= 0:
+                        item.delete()
+                    else:
+                        item.quantity = qty
+                        item.save()
+                except (ValueError, TypeError):
+                    pass
+
+        # Add a catalog reward item
+        new_reward_id = request.POST.get('new_reward_id', '').strip()
+        new_reward_qty = request.POST.get('new_reward_quantity', '').strip()
+        if new_reward_id and new_reward_qty:
+            try:
+                reward_obj = Reward.objects.get(pk=int(new_reward_id))
+                qty = int(new_reward_qty)
+                if qty > 0:
+                    existing = reward_request.rewardrequestitem_set.filter(reward=reward_obj).first()
+                    if existing:
+                        existing.quantity += qty
+                        existing.save()
+                    else:
+                        RewardRequestItem.objects.create(
+                            reward_request=reward_request,
+                            reward=reward_obj,
+                            quantity=qty,
+                            point_cost=reward_obj.point_cost,
+                        )
+            except (Reward.DoesNotExist, ValueError, TypeError):
+                messages.warning(request, "Could not add catalog item — invalid reward or quantity.")
+
+        # Add a custom (free-form) item
+        custom_name = request.POST.get('new_custom_name', '').strip()
+        custom_cost_str = request.POST.get('new_custom_point_cost', '').strip()
+        custom_qty_str = request.POST.get('new_custom_quantity', '').strip()
+        if custom_name and custom_cost_str and custom_qty_str:
+            try:
+                cost = int(custom_cost_str)
+                qty = int(custom_qty_str)
+                if qty > 0 and cost >= 0:
+                    RewardRequestItem.objects.create(
+                        reward_request=reward_request,
+                        reward=None,
+                        custom_name=custom_name,
+                        custom_abra_code=request.POST.get('new_custom_abra_code', '').strip(),
+                        quantity=qty,
+                        point_cost=cost,
+                    )
+            except (ValueError, TypeError):
+                messages.warning(request, "Could not add custom item — invalid cost or quantity.")
+
+        # Recalculate total and persist
         reward_request.save()
-        
-        # Update the point transaction to match the current state
+
+        # Keep the point transaction in sync with the updated total and status
         self._update_point_transaction(reward_request, old_status, new_status)
-        
+
         messages.success(request, f"Request {reward_request.pk} updated.")
-        return redirect('manager_reward_requests')
+        return redirect('manager_reward_request_detail', pk=pk)
     
     def _update_point_transaction(self, reward_request, old_status, new_status):
         """
@@ -354,14 +419,13 @@ class ManagerRewardRequestDetailView(ManagerGroupRequiredMixin, View):
 class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
     """
     Export a telemarketing file for a specific reward request.
+
+    POST (from detail page): reads ship_<id> checkboxes to export a subset of
+    items and marks those items as shipped.
+    GET (fallback / list page): exports all items without updating shipped flags.
     """
-    def get(self, request, pk):
-        output = generate_telemarketing_export(pk)
 
-        if output is None:
-            messages.error(request, "Reward request not found or not in ACCEPTED status.")
-            return redirect('manager_reward_requests')
-
+    def _build_response(self, pk, output):
         response = HttpResponse(
             output,
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -370,16 +434,45 @@ class ExportTelemarketingFileView(ManagerGroupRequiredMixin, View):
             f'attachment; filename=reward_request_{pk}_'
             f'{timezone.now().strftime("%Y%m%d")}.xlsx'
         )
-        messages.success(request, f"Reward request {pk} has been exported for telemarketing.")
         return response
+
+    def get(self, request, pk):
+        output = generate_telemarketing_export(pk)
+        if output is None:
+            messages.error(request, "Reward request not found or export failed.")
+            return redirect('manager_reward_requests')
+        messages.success(request, f"Reward request {pk} exported for telemarketing.")
+        return self._build_response(pk, output)
+
+    def post(self, request, pk):
+        reward_request = get_object_or_404(RewardRequest, pk=pk)
+
+        item_ids = [
+            int(key[5:])
+            for key in request.POST
+            if key.startswith('ship_') and key[5:].isdigit()
+        ]
+
+        if not item_ids:
+            messages.error(request, "No items selected for export.")
+            return redirect('manager_reward_request_detail', pk=pk)
+
+        output = generate_telemarketing_export(pk, item_ids=item_ids)
+        if output is None:
+            messages.error(request, "Export failed.")
+            return redirect('manager_reward_request_detail', pk=pk)
+
+        reward_request.rewardrequestitem_set.filter(id__in=item_ids).update(shipped=True)
+        messages.success(request, f"Reward request {pk} exported for telemarketing.")
+        return self._build_response(pk, output)
 
 class SubmitToAbraView(ManagerGroupRequiredMixin, View):
     """
     POST a RewardRequest into ABRA and return JSON.
 
-    Designed to be called from the enhanced list page via fetch(); the
-    caller updates the row in place without a navigation. GET is kept as
-    a redirect so a stray address-bar visit doesn't 405.
+    Called via fetch() from both the enhanced list page (all items) and the
+    detail page (partial — driven by ship_<id> checkboxes). GET redirects to
+    avoid a confusing 405 on stray address-bar visits.
     """
 
     def get(self, request, pk):
@@ -388,23 +481,32 @@ class SubmitToAbraView(ManagerGroupRequiredMixin, View):
     def post(self, request, pk):
         reward_request = get_object_or_404(RewardRequest, pk=pk)
 
-        if reward_request.status != 'ACCEPTED':
-            return JsonResponse({
-                'success': False,
-                'error': 'Only requests in ACCEPTED status can be submitted to ABRA.',
-            }, status=400)
+        # Determine which items to submit. If ship_<id> keys are present we
+        # are in partial (detail-page) mode; otherwise submit everything.
+        ship_ids = [
+            int(key[5:])
+            for key in request.POST
+            if key.startswith('ship_') and key[5:].isdigit()
+        ]
 
-        if reward_request.abra_submitted_at:
-            return JsonResponse({
-                'success': False,
-                'error': (
-                    f'Already submitted as {reward_request.abra_displayname} on '
-                    f'{reward_request.abra_submitted_at.strftime("%d.%m.%Y %H:%M")}.'
-                ),
-            }, status=409)
+        if ship_ids:
+            items = list(
+                reward_request.rewardrequestitem_set.select_related('reward').filter(
+                    id__in=ship_ids, quantity__gt=0
+                )
+            )
+        else:
+            items = list(
+                reward_request.rewardrequestitem_set.select_related('reward').filter(
+                    quantity__gt=0
+                )
+            )
+
+        if not items:
+            return JsonResponse({'success': False, 'error': 'No items to submit.'}, status=400)
 
         try:
-            result = submit_reward_request(reward_request)
+            result = submit_reward_request(reward_request, items=items)
         except AbraConfigurationError as exc:
             logger.error("ABRA configuration error: %s", exc)
             return JsonResponse({
@@ -421,12 +523,24 @@ class SubmitToAbraView(ManagerGroupRequiredMixin, View):
                 'error': f'ABRA submission failed: {exc}',
             }, status=502)
 
-        reward_request.abra_submitted_at = timezone.now()
+        now = timezone.now()
+
+        # Keep the convenience fields on RewardRequest updated to the latest submission
+        reward_request.abra_submitted_at = now
         reward_request.abra_order_id = result.abra_order_id
         reward_request.abra_displayname = result.displayname
-        reward_request.save(update_fields=[
-            'abra_submitted_at', 'abra_order_id', 'abra_displayname',
-        ])
+        reward_request.save(update_fields=['abra_submitted_at', 'abra_order_id', 'abra_displayname'])
+
+        # Record this submission in the history table
+        AbraSubmission.objects.create(
+            reward_request=reward_request,
+            abra_order_id=result.abra_order_id,
+            abra_displayname=result.displayname,
+        )
+
+        # Mark submitted items as shipped
+        submitted_ids = [item.id for item in items]
+        reward_request.rewardrequestitem_set.filter(id__in=submitted_ids).update(shipped=True)
 
         return JsonResponse({
             'success': True,
