@@ -30,7 +30,7 @@
   <ul>
     {% for item in items %}
       <li>
-        {{ item.quantity }} x {{ item.reward.name }} ({{ item.point_cost }} bodů / ks) = {{ item.quantity|multiply:item.point_cost }} bodů celkem
+        {{ item.quantity }} x {{ item.display_name }} ({{ item.point_cost }} bodů / ks) = {{ item.quantity|multiply:item.point_cost }} bodů celkem
       </li>
     {% endfor %}
   </ul>

@@ -737,6 +737,16 @@ small {
   font-size: 0.85rem;
   text-transform: uppercase;
   }
+  .custom-item-badge {
+  display: inline-block;
+  font-size: 0.75em;
+  background: #ffc107;
+  color: #333;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 4px;
+  vertical-align: middle;
+  }
   .availability-badge.available, .availability-badge.available_last_units {
   background-color: var(--success-color);
   color: white;

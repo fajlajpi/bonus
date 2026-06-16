@@ -2156,7 +2156,7 @@ class EnhancedRewardRequestListView(ManagerGroupRequiredMixin, View):
         reward_counts = {}
         for request in requests:
             for item in request.rewardrequestitem_set.all():
-                reward_key = (item.reward.id, item.reward.name, item.reward.abra_code)
+                reward_key = (item.reward_id, item.display_name, item.display_code)
                 if reward_key not in reward_counts:
                     reward_counts[reward_key] = {'quantity': 0, 'points': 0, 'requests': 0}
                 reward_counts[reward_key]['quantity'] += item.quantity
@@ -2275,7 +2275,7 @@ class EnhancedRewardRequestListView(ManagerGroupRequiredMixin, View):
         requests = RewardRequest.objects.filter(id__in=request_ids).select_related('user')
         for row, request in enumerate(requests, 2):
             items_str = ', '.join([
-                f"{item.quantity}x {item.reward.name}"
+                f"{item.quantity}x {item.display_name}"
                 for item in request.rewardrequestitem_set.all()
             ])
             

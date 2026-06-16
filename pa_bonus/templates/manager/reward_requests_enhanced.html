@@ -324,15 +324,22 @@
                                                     <tbody>
                                                         {% for item in request.rewardrequestitem_set.all %}
                                                         <tr>
-                                                            <td>{{ item.reward.abra_code }}</td>
-                                                            <td>{{ item.reward.name }}</td>
+                                                            <td>{{ item.display_code }}</td>
+                                                            <td>
+                                                                {{ item.display_name }}
+                                                                {% if not item.reward_id %}<span class="custom-item-badge">custom</span>{% endif %}
+                                                            </td>
                                                             <td>{{ item.quantity }}</td>
                                                             <td>{{ item.point_cost }}</td>
                                                             <td>{{ item.quantity|multiply:item.point_cost }}</td>
                                                             <td>
+                                                                {% if item.reward_id %}
                                                                 <span class="availability-badge availability-{{ item.reward.availability|lower }}">
                                                                     {{ item.reward.get_availability_display }}
                                                                 </span>
+                                                                {% else %}
+                                                                <span class="availability-badge">—</span>
+                                                                {% endif %}
                                                             </td>
                                                         </tr>
                                                         {% endfor %}

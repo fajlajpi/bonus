@@ -686,7 +686,6 @@ class ItemisedRewardsReport(BaseReport):
         for item in items:
             req = item.reward_request
             user = req.user
-            reward = item.reward
             sales_rep = user.get_sales_rep()
 
             rows.append([
@@ -697,12 +696,12 @@ class ItemisedRewardsReport(BaseReport):
                 user.last_name,
                 user.first_name,
                 sales_rep.get_full_name() if sales_rep else "",
-                reward.abra_code,
-                reward.name,
+                item.display_code,
+                item.display_name,
                 item.quantity,
                 item.point_cost,
                 item.quantity * item.point_cost,
-                reward.get_availability_display(),
+                item.reward.get_availability_display() if item.reward_id else "Custom item",
             ])
 
         return rows
