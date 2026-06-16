@@ -1,0 +1,27 @@
+{% load pa_bonus_extras %}
+<div class="form-section highlight-section">
+  <h3 class="section-title">
+    <div class="form-check">
+      {{ recalc_form.recalculate_points }}
+      <label for="{{ recalc_form.recalculate_points.id_for_label }}" class="form-check-label">
+        {{ recalc_form.recalculate_points.label }}
+      </label>
+    </div>
+  </h3>
+  <p class="section-description">{{ recalc_form.recalculate_points.help_text }}</p>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label for="{{ recalc_form.recalc_date_from.id_for_label }}">{{ recalc_form.recalc_date_from.label }}</label>
+      {{ recalc_form.recalc_date_from }}
+      <small class="form-text">{{ recalc_form.recalc_date_from.help_text }}</small>
+      {% if recalc_form.recalc_date_from.errors %}<div class="field-error">{{ recalc_form.recalc_date_from.errors }}</div>{% endif %}
+    </div>
+    <div class="form-group">
+      <label for="{{ recalc_form.recalc_date_to.id_for_label }}">{{ recalc_form.recalc_date_to.label }}</label>
+      {{ recalc_form.recalc_date_to }}
+      <small class="form-text">{{ recalc_form.recalc_date_to.help_text }}</small>
+      {% if recalc_form.recalc_date_to.errors %}<div class="field-error">{{ recalc_form.recalc_date_to.errors }}</div>{% endif %}
+    </div>
+  </div>
+</div>

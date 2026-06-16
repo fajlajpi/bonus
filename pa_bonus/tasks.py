@@ -324,6 +324,46 @@ def process_points_from_invoices(upload, filetype):
     return points_created
 
 
+@transaction.atomic
+def recalculate_points_for_user(user, date_from=None, date_to=None):
+    """
+    Fill in missing points transactions for a client's existing invoices.
+
+    Used when a manager retroactively adds a contract or a brand bonus for an
+    existing client. For each invoice in range, resolves whichever contract was
+    active on that invoice's date and reuses process_brand_points, so this is
+    idempotent: it only fills gaps and never duplicates or alters transactions
+    that already exist.
+
+    Args:
+        user (User): The client to recalculate points for.
+        date_from (date | None): Only consider invoices on or after this date.
+        date_to (date | None): Only consider invoices on or before this date.
+
+    Returns:
+        dict: invoices_scanned, transactions_created, no_contract counts.
+    """
+    invoices = Invoice.objects.filter(client_number=user.user_number)
+    if date_from:
+        invoices = invoices.filter(invoice_date__gte=date_from)
+    if date_to:
+        invoices = invoices.filter(invoice_date__lte=date_to)
+
+    stats = {'invoices_scanned': 0, 'transactions_created': 0, 'no_contract': 0}
+    for invoice in invoices.prefetch_related('brand_turnovers__brand'):
+        stats['invoices_scanned'] += 1
+        contract = get_active_contract(user, invoice.invoice_date)
+        if not contract:
+            stats['no_contract'] += 1
+            continue
+        brand_bonuses = contract.brandbonuses.all()
+        for turnover in invoice.brand_turnovers.all():
+            stats['transactions_created'] += process_brand_points(
+                user, invoice, turnover, brand_bonuses, invoice.invoice_type
+            )
+    return stats
+
+
 def get_active_contract(user, date):
     """Retrieve user's active contract for the specific date."""
     try:

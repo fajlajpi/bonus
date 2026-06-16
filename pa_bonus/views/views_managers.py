@@ -9,7 +9,8 @@ from django.db.models import Sum, Count, Q, F, Case, When, IntegerField
 from django.db import transaction
 from django.urls import reverse
 import logging
-from pa_bonus.forms import FileUploadForm, ClientCreationForm
+from pa_bonus.forms import (FileUploadForm, ClientCreationForm, ClientProfileEditForm,
+                            ContractAddForm, ContractBrandsEditForm)
 from pa_bonus.tasks import process_uploaded_file, process_stock_file
 from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, AbraSubmission,
                              PointsTransaction, EmailNotification, User, Region, UserContract,
@@ -900,16 +901,19 @@ class ClientListView(ManagerGroupRequiredMixin, View):
         # For each client, get their contract brands turnover
         client_data = []
         for client in clients:
-            # Get active contract for further reference
-            try:
-                active_contract = UserContract.objects.get(
-                    user_id=client,
-                    is_active=True
-                )
-                
+            # Get active contract for further reference. filter().first() rather than
+            # get(), since managers can now add a second contract to an existing
+            # client - this degrades gracefully instead of raising MultipleObjectsReturned
+            # if a client ever ends up with more than one active contract.
+            active_contract = UserContract.objects.filter(
+                user_id=client,
+                is_active=True
+            ).order_by('-contract_date_from').first()
+
+            if active_contract:
                 # Get all brands in this contract
                 contract_brands = [bb.brand_id for bb in active_contract.brandbonuses.all()]
-                
+
                 # Calculate total turnover for the period across contract brands
                 total_turnover = InvoiceBrandTurnover.objects.filter(
                     invoice__client_number=client.user_number,
@@ -920,7 +924,7 @@ class ClientListView(ManagerGroupRequiredMixin, View):
                 ).aggregate(
                     total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
                 )['total']
-                
+
                 # Append to results with the contract and turnover info
                 client_data.append({
                     'user': client,
@@ -928,7 +932,7 @@ class ClientListView(ManagerGroupRequiredMixin, View):
                     'turnover': total_turnover,
                     'brand_count': len(contract_brands)
                 })
-            except UserContract.DoesNotExist:
+            else:
                 # Client has no active contract
                 client_data.append({
                     'user': client,
@@ -967,31 +971,31 @@ class ClientListView(ManagerGroupRequiredMixin, View):
     
 class ClientDetailView(ManagerGroupRequiredMixin, View):
     """
-    Detailed view of a client for managers.
-    
+    Detailed view of a client for managers, with editing capability.
+
     Shows complete client information including:
-    - Contact details
-    - Contract information
+    - Contact details (editable)
+    - Contract information (editable: add contracts, edit brand bonuses, end contracts)
     - Turnover by brand
     - Points transactions
     - Reward requests
+
+    POST requests are dispatched by the hidden 'form_action' field to one of the
+    _handle_* methods below, each backed by its own form in pa_bonus.forms.
     """
     template_name = 'manager/client_detail.html'
-    
-    def get(self, request, pk):
+
+    def _build_context(self, request, client, profile_form=None, contract_form=None,
+                        contract_brand_forms=None):
         from django.db.models import Sum, Count, F, Q, Value, DecimalField
         from django.db.models.functions import Coalesce
-        import datetime
-        
-        # Get the client
-        client = get_object_or_404(User, pk=pk)
-        
+
         # Get filter parameters for date range
         year_from = request.GET.get('year_from', timezone.now().year)
         month_from = request.GET.get('month_from', 1)
         year_to = request.GET.get('year_to', timezone.now().year)
         month_to = request.GET.get('month_to', 12)
-        
+
         try:
             year_from = int(year_from)
             month_from = int(month_from)
@@ -1003,34 +1007,33 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             month_from = 1
             year_to = timezone.now().year
             month_to = 12
-        
+
         # Calculate date range for filtering
         date_from = date(year_from, month_from, 1)
         if month_to == 12:
             date_to = date(year_to + 1, 1, 1) - timedelta(days=1)
         else:
             date_to = date(year_to, month_to + 1, 1) - timedelta(days=1)
-        
-        # Get client's active contract
-        try:
-            active_contract = UserContract.objects.get(
-                user_id=client, 
-                is_active=True
-            )
-            contract_brands = [bb.brand_id for bb in active_contract.brandbonuses.all()]
-        except UserContract.DoesNotExist:
-            active_contract = None
-            contract_brands = []
-        
+
+        # Get client's active contract. filter().first() rather than get(), since
+        # managers can now add a second contract to an existing client - this
+        # degrades gracefully instead of raising MultipleObjectsReturned if a
+        # client ever ends up with more than one active contract.
+        active_contract = UserContract.objects.filter(
+            user_id=client,
+            is_active=True
+        ).order_by('-contract_date_from').first()
+        contract_brands = [bb.brand_id for bb in active_contract.brandbonuses.all()] if active_contract else []
+
         # Get all client's contracts for history
         all_contracts = UserContract.objects.filter(
             user_id=client
         ).order_by('-contract_date_from')
-        
+
         # Get all brands turnover for the selected period
         all_brands = Brand.objects.all()
         brand_turnovers = []
-        
+
         for brand in all_brands:
             # Get invoice turnover for this brand
             invoice_turnover = InvoiceBrandTurnover.objects.filter(
@@ -1042,7 +1045,7 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             ).aggregate(
                 total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
             )['total']
-            
+
             # Get credit note turnover for this brand (negative)
             credit_turnover = InvoiceBrandTurnover.objects.filter(
                 invoice__client_number=client.user_number,
@@ -1053,7 +1056,7 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             ).aggregate(
                 total=Coalesce(Sum('amount'), Value(0, output_field=DecimalField()))
             )['total']
-            
+
             # Calculate points for this brand in the period
             points = PointsTransaction.objects.filter(
                 user=client,
@@ -1064,12 +1067,12 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             ).aggregate(
                 total=Coalesce(Sum('value'), Value(0))
             )['total']
-            
+
             # Only include brands with some activity
             if invoice_turnover > 0 or credit_turnover > 0 or points != 0:
                 # Check if this brand is in the client's contract
                 in_contract = brand in contract_brands
-                
+
                 brand_turnovers.append({
                     'brand': brand,
                     'invoice_turnover': invoice_turnover,
@@ -1078,10 +1081,10 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
                     'points': points,
                     'in_contract': in_contract
                 })
-        
+
         # Sort by net turnover
         brand_turnovers.sort(key=lambda x: x['net_turnover'], reverse=True)
-        
+
         # Get point totals
         point_totals = {
             'available': client.get_balance(),
@@ -1102,17 +1105,38 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
                 total=Coalesce(Sum('value'), Value(0))
             )['total']
         }
-        
+
         # Get recent transactions
         recent_transactions = PointsTransaction.objects.filter(
             user=client
         ).order_by('-date', '-created_at')[:10]
-        
+
         # Get reward requests
         reward_requests = RewardRequest.objects.filter(
             user=client
         ).order_by('-requested_at')[:10]
-        
+
+        if profile_form is None:
+            profile_form = ClientProfileEditForm(user=client, initial={
+                'first_name': client.first_name,
+                'last_name': client.last_name,
+                'email': client.email,
+                'username': client.username,
+                'user_number': client.user_number,
+                'user_phone': client.user_phone,
+                'region': client.region,
+                'is_active': client.is_active,
+            })
+
+        if contract_form is None:
+            contract_form = ContractAddForm(user=client)
+
+        if contract_brand_forms is None:
+            contract_brand_forms = {
+                contract.id: ContractBrandsEditForm(initial={'brand_bonuses': contract.brandbonuses.all()})
+                for contract in all_contracts
+            }
+
         # Prepare context
         context = {
             'client': client,
@@ -1128,10 +1152,124 @@ class ClientDetailView(ManagerGroupRequiredMixin, View):
             'month_from': month_from,
             'year_to': year_to,
             'month_to': month_to,
-            'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)]
+            'months': [(i, date(2000, i, 1).strftime('%B')) for i in range(1, 13)],
+            'profile_form': profile_form,
+            'contract_form': contract_form,
+            'contract_brand_forms': contract_brand_forms,
         }
-        
+
+        return context
+
+    def get(self, request, pk):
+        client = get_object_or_404(User, pk=pk)
+        context = self._build_context(request, client)
         return render(request, self.template_name, context)
+
+    def post(self, request, pk):
+        client = get_object_or_404(User, pk=pk)
+        form_action = request.POST.get('form_action')
+
+        handlers = {
+            'profile': self._handle_profile,
+            'add_contract': self._handle_add_contract,
+            'edit_contract_brands': self._handle_edit_contract_brands,
+            'end_contract': self._handle_end_contract,
+        }
+        handler = handlers.get(form_action)
+        if handler is None:
+            messages.error(request, 'Unknown action.')
+            return self._redirect_to_detail(request, client)
+
+        return handler(request, client)
+
+    def _redirect_to_detail(self, request, client):
+        """Redirect-after-POST back to this client, preserving the period filter."""
+        querystring = request.GET.urlencode()
+        url = reverse('manager_client_detail', kwargs={'pk': client.pk})
+        if querystring:
+            url = f'{url}?{querystring}'
+        return HttpResponseRedirect(url)
+
+    def _format_recalc_stats(self, stats):
+        if stats is None:
+            return ''
+        return (
+            f' Recalculation: scanned {stats["invoices_scanned"]} invoice(s), '
+            f'created {stats["transactions_created"]} new transaction(s).'
+        )
+
+    def _handle_profile(self, request, client):
+        form = ClientProfileEditForm(request.POST, user=client)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Client profile updated.')
+            return self._redirect_to_detail(request, client)
+
+        messages.error(request, 'Please correct the errors in the profile form below.')
+        context = self._build_context(request, client, profile_form=form)
+        return render(request, self.template_name, context)
+
+    def _handle_add_contract(self, request, client):
+        form = ContractAddForm(request.POST, user=client)
+        if form.is_valid():
+            contract, stats = form.save(client)
+            message = f'New contract added ({contract.contract_date_from} to {contract.contract_date_to}).'
+            message += self._format_recalc_stats(stats)
+            messages.success(request, message)
+            return self._redirect_to_detail(request, client)
+
+        messages.error(request, 'Please correct the errors in the new contract form below.')
+        context = self._build_context(request, client, contract_form=form)
+        return render(request, self.template_name, context)
+
+    def _get_contract_or_none(self, request, client):
+        try:
+            return UserContract.objects.get(pk=int(request.POST.get('contract_id')), user_id=client)
+        except (TypeError, ValueError, UserContract.DoesNotExist):
+            return None
+
+    def _handle_edit_contract_brands(self, request, client):
+        contract = self._get_contract_or_none(request, client)
+        if contract is None:
+            messages.error(request, 'Contract not found.')
+            return self._redirect_to_detail(request, client)
+
+        form = ContractBrandsEditForm(request.POST)
+        if form.is_valid():
+            _, stats = form.save(client, contract)
+            message = (
+                f'Brand bonuses updated for contract '
+                f'({contract.contract_date_from} to {contract.contract_date_to}).'
+            )
+            message += self._format_recalc_stats(stats)
+            messages.success(request, message)
+            return self._redirect_to_detail(request, client)
+
+        messages.error(request, 'Please correct the errors in the contract brand form below.')
+        context = self._build_context(request, client)
+        context['contract_brand_forms'][contract.id] = form
+        return render(request, self.template_name, context)
+
+    def _handle_end_contract(self, request, client):
+        contract = self._get_contract_or_none(request, client)
+        if contract is None:
+            messages.error(request, 'Contract not found.')
+            return self._redirect_to_detail(request, client)
+
+        contract.is_active = False
+        new_end_date = request.POST.get('new_end_date', '').strip()
+        if new_end_date:
+            try:
+                contract.contract_date_to = datetime.strptime(new_end_date, '%Y-%m-%d').date()
+            except ValueError:
+                messages.warning(request, 'Could not parse the new end date; contract was still deactivated.')
+        contract.save()
+
+        messages.success(
+            request,
+            f'Contract ({contract.contract_date_from} to {contract.contract_date_to}) deactivated.'
+        )
+        return self._redirect_to_detail(request, client)
 
 class UserActivityDashboardView(ManagerGroupRequiredMixin, View):
     """

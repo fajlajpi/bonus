@@ -10,6 +10,7 @@ from pa_bonus.models import (
     User, UserContract, UserContractGoal, Brand, BrandBonus, Region,
     Invoice, InvoiceBrandTurnover, PointsTransaction
 )
+from pa_bonus.tasks import recalculate_points_for_user
 import datetime
 from decimal import Decimal
 
@@ -485,5 +486,185 @@ class ClientCreationForm(forms.Form):
             transaction_stats = None
             if self.cleaned_data.get('process_historical_transactions'):
                 transaction_stats = self._process_retroactive_transactions(user, contract)
-        
+
         return user, transaction_stats
+
+
+class ClientProfileEditForm(forms.Form):
+    """
+    Edits the profile fields of an existing client (User).
+
+    Uniqueness checks exclude the client's own row, since ClientCreationForm's
+    equivalent checks assume a brand new user.
+    """
+
+    first_name = forms.CharField(max_length=150, label='First Name', required=False,
+                                  widget=forms.TextInput(attrs={'class': 'form-control'}))
+    last_name = forms.CharField(max_length=150, label='Last Name', required=False,
+                                 widget=forms.TextInput(attrs={'class': 'form-control'}))
+    email = forms.EmailField(label='Email',
+                              widget=forms.EmailInput(attrs={'class': 'form-control'}))
+    username = forms.CharField(max_length=150, label='Username',
+                                widget=forms.TextInput(attrs={'class': 'form-control'}))
+    user_number = forms.CharField(max_length=20, label='Customer Number (Zákaznické číslo)',
+                                   widget=forms.TextInput(attrs={'class': 'form-control'}))
+    user_phone = forms.CharField(max_length=10, label='Phone Number', required=False,
+                                  widget=forms.TextInput(attrs={'class': 'form-control'}))
+    region = forms.ModelChoiceField(queryset=Region.objects.filter(is_active=True), label='Region',
+                                     required=False, empty_label='Select Region',
+                                     widget=forms.Select(attrs={'class': 'form-control'}))
+    is_active = forms.BooleanField(required=False, label='Active User',
+                                    help_text='User can log in and use the system',
+                                    widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    new_password = forms.CharField(required=False, label='New Password', strip=False,
+                                    help_text='Leave blank to keep the current password.',
+                                    widget=forms.PasswordInput(attrs={'class': 'form-control'}))
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exclude(pk=self.user.pk).exists():
+            raise ValidationError('A user with this username already exists.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exclude(pk=self.user.pk).exists():
+            raise ValidationError('A user with this email already exists.')
+        return email
+
+    def clean_user_number(self):
+        user_number = self.cleaned_data.get('user_number')
+        if User.objects.filter(user_number=user_number).exclude(pk=self.user.pk).exists():
+            raise ValidationError('A user with this customer number already exists.')
+        return user_number
+
+    def save(self):
+        """Updates the User instance in place. Returns the updated User."""
+        user = self.user
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.email = self.cleaned_data['email']
+        user.username = self.cleaned_data['username']
+        user.user_number = self.cleaned_data['user_number']
+        user.user_phone = self.cleaned_data.get('user_phone', '')
+        user.region = self.cleaned_data.get('region')
+        user.is_active = self.cleaned_data.get('is_active', False)
+
+        new_password = self.cleaned_data.get('new_password')
+        if new_password:
+            user.set_password(new_password)
+
+        user.save()
+        return user
+
+
+class _RetroactiveRecalcFieldsMixin(forms.Form):
+    """
+    Shared "recalculate points retroactively" fields for contract/brand edit forms.
+
+    Kept as a mixin since both ContractAddForm and ContractBrandsEditForm need the
+    exact same optional checkbox + override date range.
+    """
+    recalculate_points = forms.BooleanField(
+        initial=False, required=False, label='Recalculate Points',
+        help_text='Backfill points for this client’s existing invoices using the contract/brand setup above.',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    recalc_date_from = forms.DateField(
+        label='Recalculate From', required=False,
+        help_text='Defaults to the contract start date.',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    recalc_date_to = forms.DateField(
+        label='Recalculate To', required=False,
+        help_text='Defaults to the contract end date.',
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+
+
+class ContractAddForm(_RetroactiveRecalcFieldsMixin):
+    """Adds a new UserContract to an existing client, with optional retroactive recalculation."""
+
+    contract_date_from = forms.DateField(
+        label='Contract Start Date', initial=datetime.date.today,
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    contract_date_to = forms.DateField(
+        label='Contract End Date', initial=lambda: datetime.date.today() + datetime.timedelta(days=365),
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+    )
+    contract_is_active = forms.BooleanField(
+        initial=True, required=False, label='Active Contract',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    brand_bonuses = forms.ModelMultipleChoiceField(
+        queryset=BrandBonus.objects.all(), label='Brand Bonuses', required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'})
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        contract_from = cleaned_data.get('contract_date_from')
+        contract_to = cleaned_data.get('contract_date_to')
+        if contract_from and contract_to and contract_to <= contract_from:
+            raise ValidationError('Contract end date must be after start date.')
+
+        if cleaned_data.get('contract_is_active') and self.user is not None:
+            if UserContract.objects.filter(user_id=self.user, is_active=True).exists():
+                self.add_error(
+                    'contract_is_active',
+                    'This client already has an active contract. End/deactivate it first.'
+                )
+
+        return cleaned_data
+
+    def save(self, user):
+        """Creates the UserContract, sets brand bonuses, optionally recalculates points."""
+        with transaction.atomic():
+            contract = UserContract.objects.create(
+                user_id=user,
+                contract_date_from=self.cleaned_data['contract_date_from'],
+                contract_date_to=self.cleaned_data['contract_date_to'],
+                is_active=self.cleaned_data.get('contract_is_active', True),
+            )
+            if self.cleaned_data.get('brand_bonuses'):
+                contract.brandbonuses.set(self.cleaned_data['brand_bonuses'])
+
+            stats = None
+            if self.cleaned_data.get('recalculate_points'):
+                date_from = self.cleaned_data.get('recalc_date_from') or contract.contract_date_from
+                date_to = self.cleaned_data.get('recalc_date_to') or contract.contract_date_to
+                stats = recalculate_points_for_user(user, date_from=date_from, date_to=date_to)
+
+        return contract, stats
+
+
+class ContractBrandsEditForm(_RetroactiveRecalcFieldsMixin):
+    """Replaces the brand bonus set on an existing contract, with optional retroactive recalculation."""
+
+    brand_bonuses = forms.ModelMultipleChoiceField(
+        queryset=BrandBonus.objects.all(), label='Brand Bonuses', required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-control', 'size': '5'})
+    )
+
+    def save(self, user, contract):
+        """Replaces the contract's brand bonuses, optionally recalculates points."""
+        with transaction.atomic():
+            contract.brandbonuses.set(self.cleaned_data.get('brand_bonuses') or [])
+
+            stats = None
+            if self.cleaned_data.get('recalculate_points'):
+                date_from = self.cleaned_data.get('recalc_date_from') or contract.contract_date_from
+                date_to = self.cleaned_data.get('recalc_date_to') or contract.contract_date_to
+                stats = recalculate_points_for_user(user, date_from=date_from, date_to=date_to)
+
+        return contract, stats

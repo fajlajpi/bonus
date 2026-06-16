@@ -54,8 +54,89 @@
         </dl>
       </div>
     </div>
+
+    <div class="collapsible-section">
+      <h4 class="collapsible-header">Edit Profile <span class="toggle-indicator">+</span></h4>
+      <div class="collapsible-content hidden">
+        <form method="post" class="client-form">
+          {% csrf_token %}
+          <input type="hidden" name="form_action" value="profile">
+
+          {% if profile_form.non_field_errors %}
+          <div class="alert alert-error">{{ profile_form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ profile_form.first_name.id_for_label }}">{{ profile_form.first_name.label }}</label>
+              {{ profile_form.first_name }}
+              {% if profile_form.first_name.errors %}<div class="field-error">{{ profile_form.first_name.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label for="{{ profile_form.last_name.id_for_label }}">{{ profile_form.last_name.label }}</label>
+              {{ profile_form.last_name }}
+              {% if profile_form.last_name.errors %}<div class="field-error">{{ profile_form.last_name.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ profile_form.email.id_for_label }}">{{ profile_form.email.label }} *</label>
+              {{ profile_form.email }}
+              {% if profile_form.email.errors %}<div class="field-error">{{ profile_form.email.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label for="{{ profile_form.username.id_for_label }}">{{ profile_form.username.label }} *</label>
+              {{ profile_form.username }}
+              {% if profile_form.username.errors %}<div class="field-error">{{ profile_form.username.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ profile_form.user_number.id_for_label }}">{{ profile_form.user_number.label }} *</label>
+              {{ profile_form.user_number }}
+              <small class="form-text">Used to match incoming ERP invoices to this client - changing it does not affect existing point history.</small>
+              {% if profile_form.user_number.errors %}<div class="field-error">{{ profile_form.user_number.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label for="{{ profile_form.user_phone.id_for_label }}">{{ profile_form.user_phone.label }}</label>
+              {{ profile_form.user_phone }}
+              {% if profile_form.user_phone.errors %}<div class="field-error">{{ profile_form.user_phone.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ profile_form.region.id_for_label }}">{{ profile_form.region.label }}</label>
+              {{ profile_form.region }}
+              {% if profile_form.region.errors %}<div class="field-error">{{ profile_form.region.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <div class="form-check">
+                {{ profile_form.is_active }}
+                <label for="{{ profile_form.is_active.id_for_label }}" class="form-check-label">{{ profile_form.is_active.label }}</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ profile_form.new_password.id_for_label }}">{{ profile_form.new_password.label }}</label>
+              {{ profile_form.new_password }}
+              <small class="form-text">{{ profile_form.new_password.help_text }}</small>
+              {% if profile_form.new_password.errors %}<div class="field-error">{{ profile_form.new_password.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-button">Save Profile</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
-  
+
   <!-- Filter Form -->
   <div class="dashboard-section">
     <h3>Filter Period</h3>
@@ -122,13 +203,13 @@
         <dl class="info-list">
           <dt>Date Range:</dt>
           <dd>{{ active_contract.contract_date_from|date:"d.m.Y" }} - {{ active_contract.contract_date_to|date:"d.m.Y" }}</dd>
-          
+
           <dt>Brand Bonuses:</dt>
           <dd>
             <ul class="brand-list">
               {% for brand_bonus in active_contract.brandbonuses.all %}
                 <li>
-                  <strong>{{ brand_bonus.brand_id.name }}</strong>: 
+                  <strong>{{ brand_bonus.brand_id.name }}</strong>:
                   {{ brand_bonus.points_ratio }} points per CZK
                 </li>
               {% empty %}
@@ -137,15 +218,46 @@
             </ul>
           </dd>
         </dl>
+
+        {% with brands_form=contract_brand_forms|dict_get:active_contract.id %}
+        <div class="collapsible-section">
+          <h4 class="collapsible-header">Edit Brand Bonuses <span class="toggle-indicator">+</span></h4>
+          <div class="collapsible-content hidden">
+            <form method="post" class="client-form">
+              {% csrf_token %}
+              <input type="hidden" name="form_action" value="edit_contract_brands">
+              <input type="hidden" name="contract_id" value="{{ active_contract.id }}">
+
+              {% if brands_form.non_field_errors %}
+              <div class="alert alert-error">{{ brands_form.non_field_errors }}</div>
+              {% endif %}
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="{{ brands_form.brand_bonuses.id_for_label }}">{{ brands_form.brand_bonuses.label }}</label>
+                  {{ brands_form.brand_bonuses }}
+                  {% if brands_form.brand_bonuses.errors %}<div class="field-error">{{ brands_form.brand_bonuses.errors }}</div>{% endif %}
+                </div>
+              </div>
+
+              {% include "manager/_recalc_fields.html" with recalc_form=brands_form %}
+
+              <div class="form-actions">
+                <button type="submit" class="submit-button">Save Brand Bonuses</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% endwith %}
       </div>
-      
+
       {% if active_contract.extra_goals.all %}
         <div class="info-card">
           <h4>Extra Goals</h4>
           <ul class="goal-list">
             {% for goal in active_contract.extra_goals.all %}
               <li>
-                <strong>{{ goal.goal_period_from|date:"m.Y" }} - {{ goal.goal_period_to|date:"m.Y" }}</strong>: 
+                <strong>{{ goal.goal_period_from|date:"m.Y" }} - {{ goal.goal_period_to|date:"m.Y" }}</strong>:
                 Goal: {{ goal.goal_value }} CZK, Base: {{ goal.goal_base }} CZK
               </li>
             {% endfor %}
@@ -155,7 +267,56 @@
     {% else %}
       <p>No active contract found for this client.</p>
     {% endif %}
-    
+
+    <div class="collapsible-section">
+      <h4 class="collapsible-header">Add New Contract <span class="toggle-indicator">+</span></h4>
+      <div class="collapsible-content hidden">
+        <form method="post" class="client-form">
+          {% csrf_token %}
+          <input type="hidden" name="form_action" value="add_contract">
+
+          {% if contract_form.non_field_errors %}
+          <div class="alert alert-error">{{ contract_form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ contract_form.contract_date_from.id_for_label }}">{{ contract_form.contract_date_from.label }}</label>
+              {{ contract_form.contract_date_from }}
+              {% if contract_form.contract_date_from.errors %}<div class="field-error">{{ contract_form.contract_date_from.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label for="{{ contract_form.contract_date_to.id_for_label }}">{{ contract_form.contract_date_to.label }}</label>
+              {{ contract_form.contract_date_to }}
+              {% if contract_form.contract_date_to.errors %}<div class="field-error">{{ contract_form.contract_date_to.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ contract_form.brand_bonuses.id_for_label }}">{{ contract_form.brand_bonuses.label }}</label>
+              {{ contract_form.brand_bonuses }}
+              {% if contract_form.brand_bonuses.errors %}<div class="field-error">{{ contract_form.brand_bonuses.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <div class="form-check">
+                {{ contract_form.contract_is_active }}
+                <label for="{{ contract_form.contract_is_active.id_for_label }}" class="form-check-label">{{ contract_form.contract_is_active.label }}</label>
+              </div>
+              {% if contract_form.contract_is_active.errors %}<div class="field-error">{{ contract_form.contract_is_active.errors }}</div>{% endif %}
+              <small class="form-text">Only one contract can be active at a time - end the current one below first if needed.</small>
+            </div>
+          </div>
+
+          {% include "manager/_recalc_fields.html" with recalc_form=contract_form %}
+
+          <div class="form-actions">
+            <button type="submit" class="submit-button">Add Contract</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     {% if all_contracts.count > 1 %}
       <div class="collapsible-section">
         <h4 class="collapsible-header">Contract History <span class="toggle-indicator">+</span></h4>
@@ -166,6 +327,7 @@
                 <th>Period</th>
                 <th>Status</th>
                 <th>Brands</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -182,6 +344,16 @@
                           <li>None</li>
                         {% endfor %}
                       </ul>
+                    </td>
+                    <td>
+                      {% if contract.is_active %}
+                        <form method="post" onsubmit="return confirm('End this contract? It will no longer be used for new points or active-contract checks.');">
+                          {% csrf_token %}
+                          <input type="hidden" name="form_action" value="end_contract">
+                          <input type="hidden" name="contract_id" value="{{ contract.id }}">
+                          <button type="submit" class="btn-secondary">End Contract</button>
+                        </form>
+                      {% endif %}
                     </td>
                   </tr>
                 {% endif %}
