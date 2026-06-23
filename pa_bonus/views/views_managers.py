@@ -119,7 +119,7 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
 
         granted_by_month = (
             PointsTransaction.objects
-            .filter(status='CONFIRMED', value__gt=0, date__gte=twelve_months_ago)
+            .filter(type='STANDARD_POINTS', value__gt=0, date__gte=twelve_months_ago)
             .annotate(month=TruncMonth('date'))
             .values('month')
             .annotate(total=Sum('value'))
