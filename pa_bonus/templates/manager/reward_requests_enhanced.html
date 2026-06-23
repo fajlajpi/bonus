@@ -290,10 +290,11 @@
                                                     <dd>{{ request.user.get_balance }} points</dd>
                                                     <dt>Client Link:</dt>
                                                     <dd>
-                                                        <button type="button" 
-                                                                class="btn-check-invoices" 
+                                                        <button type="button"
+                                                                class="btn-check-invoices"
                                                                 data-user-id="{{ request.user.pk }}"
                                                                 data-user-number="{{ request.user.user_number }}"
+                                                                data-user-name="{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}"
                                                                 onclick="checkInvoices(this)">
                                                             Check Invoices
                                                         </button>
@@ -418,12 +419,6 @@
                                                         </button>
                                                         <div class="abra-result hidden" id="abra-result-{{ request.id }}"></div>
 
-                                                        {% if request.status == 'OVERDUE_INVOICE' %}
-                                                        <button type="button" class="btn-clipboard"
-                                                            onclick="copyOverdueMessage('{{ request.user.user_number|escapejs }}', '{{ request.user.first_name|escapejs }} {{ request.user.last_name|escapejs }}')">
-                                                            Kopírovat zprávu
-                                                        </button>
-                                                        {% endif %}
                                                     </div>
                                                 </form>
                                             </div>
@@ -582,20 +577,16 @@ function saveAllChanges() {
 }
 
 // ── Clipboard: Overdue Invoice message ───────────────────────────────────────
-function copyOverdueMessage(userNumber, userName) {
-    const text = 'Váš klient ZČ ' + userNumber + ' ' + userName +
-        ' má žádost o bonus, ale má fakturu po splatnosti.' +
-        ' Prosím kontaktujte ho pro vyřešení a dejte vědět, až bude vyřešeno.';
+const invoiceDataStore = {};
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => {
-            alert('Zpráva zkopírována do schránky.');
-        }).catch(() => {
-            fallbackCopy(text);
-        });
-    } else {
-        fallbackCopy(text);
-    }
+function copyOverdueInvoiceMessage(userId) {
+    const stored = invoiceDataStore[userId];
+    if (!stored) return;
+    const invoiceList = stored.invoices
+        .map(inv => `${inv.date_issued} ... ${formatNumber(inv.amount_excl_vat)} CZK`)
+        .join(', ');
+    const text = `Klient/ka ${stored.userName} (ZČ: ${stored.userNumber}) má žádost o bonus, kterou blokují faktury po splatnosti: ${invoiceList}. Prosím o kontrolu a uhrazení, abychom mohli bonus odeslat.`;
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
 }
 
 function fallbackCopy(text) {
@@ -606,24 +597,20 @@ function fallbackCopy(text) {
     document.body.appendChild(el);
     el.focus();
     el.select();
-    try {
-        document.execCommand('copy');
-        alert('Zpráva zkopírována do schránky.');
-    } catch (e) {
-        alert('Kopírování se nezdařilo. Text: ' + text);
-    }
+    try { document.execCommand('copy'); } catch (e) { }
     document.body.removeChild(el);
 }
+
 /**
  * Check unpaid invoices for a single client.
  * Called when clicking the "Check Invoices" button in an expanded row.
  */
- function checkInvoices(button) {
+function checkInvoices(button) {
     const userId = button.dataset.userId;
     const userNumber = button.dataset.userNumber;
+    const userName = button.dataset.userName;
     const resultsDiv = document.getElementById('invoice-results-' + userId);
 
-    // Prevent double-clicks
     if (button.disabled) return;
     button.disabled = true;
     button.textContent = 'Checking…';
@@ -634,8 +621,10 @@ function fallbackCopy(text) {
     fetch(`/manager/check-invoices/?user_id=${userId}`)
         .then(response => response.json())
         .then(data => {
-            resultsDiv.innerHTML = renderInvoiceResult(data, userNumber);
-            // Update button to show status
+            if (data.success && data.total_rows > 0) {
+                invoiceDataStore[userId] = { invoices: data.invoices, userName, userNumber };
+            }
+            resultsDiv.innerHTML = renderInvoiceResult(data, userNumber, userId);
             if (data.success) {
                 if (data.total_rows === 0) {
                     button.textContent = '✓ No Invoices';
@@ -651,7 +640,6 @@ function fallbackCopy(text) {
                 button.classList.remove('loading');
                 button.classList.add('invoice-error');
             }
-            // Allow re-check
             button.disabled = false;
         })
         .catch(error => {
@@ -664,11 +652,10 @@ function fallbackCopy(text) {
         });
 }
 
-
 /**
  * Render the invoice check result as HTML.
  */
-function renderInvoiceResult(data, userNumber) {
+function renderInvoiceResult(data, userNumber, userId) {
     if (!data.success) {
         return `<div class="invoice-result-error">
                     <strong>Error:</strong> ${escapeHtml(data.error)}
@@ -681,7 +668,6 @@ function renderInvoiceResult(data, userNumber) {
                 </div>`;
     }
 
-    // Build invoice table
     let rows = data.invoices.map(inv =>
         `<tr>
             <td><strong>${escapeHtml(inv.invoice_number)}</strong></td>
@@ -696,6 +682,7 @@ function renderInvoiceResult(data, userNumber) {
                 <div class="invoice-result-header">
                     ⚠ <strong>${data.total_rows} unpaid invoice${data.total_rows > 1 ? 's' : ''}</strong>
                     — Total: <span style="color:red; font-weight:bold;">${formatNumber(data.total_amount)} CZK</span>
+                    &nbsp;<button type="button" class="btn-clipboard" onclick="copyOverdueInvoiceMessage('${escapeHtml(userId)}')">Kopírovat zprávu</button>
                 </div>
                 <table class="invoice-mini-table">
                     <thead>
