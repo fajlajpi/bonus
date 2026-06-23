@@ -16,28 +16,46 @@
     <!-- Points Overview Section -->
     <div class="dashboard-section">
       <h3>System Overview</h3>
-      <div class="stats-summary">
-        <div class="stat-item">
+      <div class="stats-summary" style="flex-wrap: wrap; gap: 1rem;">
+
+        <a href="{% url 'manager_clients' %}" class="stat-item overview-tile overview-tile--green" style="text-decoration: none;">
           <span class="stat-value">{{ points_data.CONFIRMED }}</span>
-          <span class="stat-label">Available Points</span>
-        </div>
-        <div class="stat-item">
+          <span class="stat-label">Dostupné body</span>
+          <span class="stat-subvalue overview-tile__link">Všichni klienti &rarr;</span>
+        </a>
+
+        <a href="{% url 'transaction_approval' %}" class="stat-item overview-tile overview-tile--yellow" style="text-decoration: none;">
           <span class="stat-value">{{ points_data.PENDING }}</span>
-          <span class="stat-label">Pending Points</span>
+          <span class="stat-label">Body ke schválení</span>
+          <span class="stat-subvalue overview-tile__link">Schválit transakce &rarr;</span>
+        </a>
+
+        <div class="stat-item overview-tile overview-tile--orange">
+          <span class="stat-value">{{ expiring_this_month }}</span>
+          <span class="stat-label">Body expirující tento měsíc</span>
         </div>
-        <div class="stat-item">
+
+        <a href="{% url 'enhanced_reward_requests' %}?status=PENDING" class="stat-item overview-tile overview-tile--red" style="text-decoration: none;">
           <span class="stat-value">{{ request_data.PENDING.count }}</span>
-          <span class="stat-label">Pending Requests</span>
-          <span class="stat-subvalue">{{ request_data.PENDING.total_points }} pts</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-value">{{ request_data.ACCEPTED.count }}</span>
-          <span class="stat-label">Accepted Requests</span>
-          <span class="stat-subvalue">{{ request_data.ACCEPTED.total_points }} pts</span>
-        </div>
+          <span class="stat-label">Požadavky čekající na akci</span>
+          <span class="stat-subvalue overview-tile__link">Zobrazit &rarr;</span>
+        </a>
+
+        <a href="{% url 'enhanced_reward_requests' %}" class="stat-item overview-tile overview-tile--blue" style="text-decoration: none;">
+          <span class="stat-value">{{ delivery_pending_count }}</span>
+          <span class="stat-label">Požadavky čekající na dodání</span>
+          <span class="stat-subvalue overview-tile__link">Zobrazit &rarr;</span>
+        </a>
+
+        <a href="{% url 'enhanced_reward_requests' %}?status=OVERDUE_INVOICE" class="stat-item overview-tile overview-tile--purple" style="text-decoration: none;">
+          <span class="stat-value">{{ request_data.OVERDUE_INVOICE.count }}</span>
+          <span class="stat-label">Faktura po splatnosti</span>
+          <span class="stat-subvalue overview-tile__link">Zobrazit &rarr;</span>
+        </a>
+
       </div>
     </div>
-    
+
     <!-- Points Distribution Chart -->
     <div class="dashboard-section">
       <h3>Points Distribution Visualization</h3>
@@ -175,33 +193,41 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Get data from template
-    const confirmedPoints = {{ points_data.CONFIRMED }};
-    const pendingPoints = {{ points_data.PENDING }};
-    const pendingRequests = {{ request_data.PENDING.total_points }};
-    const acceptedRequests = {{ request_data.ACCEPTED.total_points }};
-    
-    // Create data for chart
     const data = {
-      labels: ['Available Points', 'Pending Points', 'Pending Requests', 'Accepted Requests'],
+      labels: [
+        'Dostupné body',
+        'Body ke schválení',
+        'Body expirující tento měsíc',
+        'Požadavky - čekající na akci (body)',
+        'Požadavky - čekající na dodání (body)',
+        'Faktura po splatnosti (body)',
+      ],
       datasets: [{
-        label: 'Points',
-        data: [confirmedPoints, pendingPoints, pendingRequests, acceptedRequests],
+        label: 'Body',
+        data: [
+          {{ points_data.CONFIRMED }},
+          {{ points_data.PENDING }},
+          {{ expiring_this_month }},
+          {{ request_data.PENDING.total_points }},
+          {{ request_data.ACCEPTED.total_points }} + {{ request_data.PARTIALLY_SHIPPED.total_points }} + {{ request_data.ORDERED_FROM_SUPPLIER.total_points }},
+          {{ request_data.OVERDUE_INVOICE.total_points }},
+        ],
         backgroundColor: [
-          '#48BB78', // Available Points - green
-          '#FFD700', // Pending Points - yellow
-          '#E53E3E', // Pending Requests - red
-          '#4A7CAB'  // Accepted Requests - blue
+          '#48BB78',
+          '#FFD700',
+          '#ED8936',
+          '#E53E3E',
+          '#4A7CAB',
+          '#805AD5',
         ],
         borderWidth: 1
       }]
     };
-    
-    // Create chart
+
     const ctx = document.createElement('canvas');
     ctx.id = 'pointsChart';
     document.getElementById('points-chart-container').appendChild(ctx);
-    
+
     new Chart(ctx, {
       type: 'bar',
       data: data,
@@ -211,20 +237,15 @@
         scales: {
           y: {
             beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Points'
-            }
+            title: { display: true, text: 'Body' }
           }
         },
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             callbacks: {
               label: function(context) {
-                return context.parsed.y.toLocaleString() + ' points';
+                return context.parsed.y.toLocaleString() + ' bodů';
               }
             }
           }

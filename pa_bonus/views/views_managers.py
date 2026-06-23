@@ -68,24 +68,46 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
             points_data[entry['status']] = entry['total']
             
         # 2. Reward requests statistics
+        import calendar
+        today_date = timezone.now().date()
+        end_of_month = today_date.replace(
+            day=calendar.monthrange(today_date.year, today_date.month)[1]
+        )
+
+        expiring_this_month = PointsTransaction.objects.filter(
+            status='CONFIRMED',
+            value__gt=0,
+            expires_at__gte=today_date,
+            expires_at__lte=end_of_month,
+        ).aggregate(total=Coalesce(Sum('value'), Value(0)))['total']
+
         request_stats = RewardRequest.objects.filter(
-            status__in=['PENDING', 'ACCEPTED']
+            status__in=['PENDING', 'ACCEPTED', 'PARTIALLY_SHIPPED', 'ORDERED_FROM_SUPPLIER', 'OVERDUE_INVOICE']
         ).values('status').annotate(
             count=Count('id'),
             total_points=Coalesce(Sum('total_points'), Value(0))
         ).order_by('status')
-        
+
         # Convert to dictionary
         request_data = {
             'PENDING': {'count': 0, 'total_points': 0},
             'ACCEPTED': {'count': 0, 'total_points': 0},
+            'PARTIALLY_SHIPPED': {'count': 0, 'total_points': 0},
+            'ORDERED_FROM_SUPPLIER': {'count': 0, 'total_points': 0},
+            'OVERDUE_INVOICE': {'count': 0, 'total_points': 0},
         }
         for entry in request_stats:
             request_data[entry['status']] = {
                 'count': entry['count'],
                 'total_points': entry['total_points']
             }
-            
+
+        delivery_pending_count = (
+            request_data['ACCEPTED']['count'] +
+            request_data['PARTIALLY_SHIPPED']['count'] +
+            request_data['ORDERED_FROM_SUPPLIER']['count']
+        )
+
         # 3. Top 10 clients by available points
         top_clients = User.objects.annotate(
             available_points=Coalesce(
@@ -136,6 +158,8 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
         context = {
             'points_data': points_data,
             'request_data': request_data,
+            'expiring_this_month': expiring_this_month,
+            'delivery_pending_count': delivery_pending_count,
             'top_clients': top_clients,
             'goal_stats': {
                 'pending_evaluations': pending_evaluations,

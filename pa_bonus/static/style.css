@@ -199,6 +199,42 @@ a:hover {
   margin-top: 0.25rem;
 }
 
+/* Overview tiles (dashboard) */
+.overview-tile {
+  flex: 1 1 160px;
+  min-width: 160px;
+  cursor: default;
+  transition: box-shadow 0.15s, transform 0.15s;
+  border-top: 4px solid transparent;
+  color: inherit;
+}
+
+a.overview-tile:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  cursor: pointer;
+}
+
+.overview-tile--green  { border-top-color: #48BB78; }
+.overview-tile--yellow { border-top-color: #D69E2E; }
+.overview-tile--orange { border-top-color: #ED8936; }
+.overview-tile--red    { border-top-color: #E53E3E; }
+.overview-tile--blue   { border-top-color: #4A7CAB; }
+.overview-tile--purple { border-top-color: #805AD5; }
+
+.overview-tile--green  .stat-value { color: #276749; }
+.overview-tile--yellow .stat-value { color: #B7791F; }
+.overview-tile--orange .stat-value { color: #C05621; }
+.overview-tile--red    .stat-value { color: #C53030; }
+.overview-tile--blue   .stat-value { color: #2C5282; }
+.overview-tile--purple .stat-value { color: #553C9A; }
+
+.overview-tile__link {
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  color: #4A7CAB;
+}
+
 /* Tables */
 .table-container {
   overflow-x: auto;
