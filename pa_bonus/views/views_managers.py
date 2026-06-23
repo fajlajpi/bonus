@@ -108,7 +108,57 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
             request_data['ORDERED_FROM_SUPPLIER']['count']
         )
 
-        # 3. Top 10 clients by available points
+        # 3. Monthly trend: points granted vs. requests placed (last 12 months)
+        from django.db.models.functions import TruncMonth
+        _m = today_date.month - 11
+        _y = today_date.year
+        if _m <= 0:
+            _m += 12
+            _y -= 1
+        twelve_months_ago = today_date.replace(year=_y, month=_m, day=1)
+
+        granted_by_month = (
+            PointsTransaction.objects
+            .filter(status='CONFIRMED', value__gt=0, date__gte=twelve_months_ago)
+            .annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(total=Sum('value'))
+            .order_by('month')
+        )
+
+        requested_by_month = (
+            RewardRequest.objects
+            .filter(requested_at__date__gte=twelve_months_ago)
+            .annotate(month=TruncMonth('requested_at'))
+            .values('month')
+            .annotate(total=Coalesce(Sum('total_points'), Value(0)))
+            .order_by('month')
+        )
+
+        # Build aligned month labels and series covering all 12 months
+        all_months = {}
+        for i in range(12):
+            year = today_date.year
+            month = today_date.month - i
+            while month <= 0:
+                month += 12
+                year -= 1
+            all_months[f'{year:04d}-{month:02d}'] = {'granted': 0, 'requested': 0}
+        for row in granted_by_month:
+            key = row['month'].strftime('%Y-%m')
+            if key in all_months:
+                all_months[key]['granted'] = row['total']
+        for row in requested_by_month:
+            key = row['month'].strftime('%Y-%m')
+            if key in all_months:
+                all_months[key]['requested'] = row['total']
+
+        sorted_months = sorted(all_months.keys())
+        trend_labels = [m for m in sorted_months]
+        trend_granted = [all_months[m]['granted'] for m in sorted_months]
+        trend_requested = [all_months[m]['requested'] for m in sorted_months]
+
+        # 4. Top 10 clients by available points
         top_clients = User.objects.annotate(
             available_points=Coalesce(
                 Sum('pointstransaction__value', 
@@ -160,6 +210,9 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
             'request_data': request_data,
             'expiring_this_month': expiring_this_month,
             'delivery_pending_count': delivery_pending_count,
+            'trend_labels': trend_labels,
+            'trend_granted': trend_granted,
+            'trend_requested': trend_requested,
             'top_clients': top_clients,
             'goal_stats': {
                 'pending_evaluations': pending_evaluations,

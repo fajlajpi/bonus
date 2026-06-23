@@ -56,11 +56,10 @@
       </div>
     </div>
 
-    <!-- Points Distribution Chart -->
+    <!-- Monthly Trend Chart -->
     <div class="dashboard-section">
-      <h3>Points Distribution Visualization</h3>
-      <div id="points-chart-container" style="height: 300px; width: 100%; margin: 20px 0;">
-        <!-- Chart will be rendered here -->
+      <h3>Trend za posledních 12 měsíců</h3>
+      <div id="points-chart-container" style="height: 320px; width: 100%; margin: 20px 0;">
       </div>
     </div>
     
@@ -193,47 +192,45 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const data = {
-      labels: [
-        'Dostupné body',
-        'Body ke schválení',
-        'Body expirující tento měsíc',
-        'Požadavky - čekající na akci (body)',
-        'Požadavky - čekající na dodání (body)',
-        'Faktura po splatnosti (body)',
-      ],
-      datasets: [{
-        label: 'Body',
-        data: [
-          {{ points_data.CONFIRMED }},
-          {{ points_data.PENDING }},
-          {{ expiring_this_month }},
-          {{ request_data.PENDING.total_points }},
-          {{ request_data.ACCEPTED.total_points }} + {{ request_data.PARTIALLY_SHIPPED.total_points }} + {{ request_data.ORDERED_FROM_SUPPLIER.total_points }},
-          {{ request_data.OVERDUE_INVOICE.total_points }},
-        ],
-        backgroundColor: [
-          '#48BB78',
-          '#FFD700',
-          '#ED8936',
-          '#E53E3E',
-          '#4A7CAB',
-          '#805AD5',
-        ],
-        borderWidth: 1
-      }]
-    };
+    const labels = {{ trend_labels|safe }};
+    const granted = {{ trend_granted|safe }};
+    const requested = {{ trend_requested|safe }};
 
-    const ctx = document.createElement('canvas');
-    ctx.id = 'pointsChart';
-    document.getElementById('points-chart-container').appendChild(ctx);
+    const canvas = document.createElement('canvas');
+    canvas.id = 'trendChart';
+    document.getElementById('points-chart-container').appendChild(canvas);
 
-    new Chart(ctx, {
-      type: 'bar',
-      data: data,
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Body udělené (obrat)',
+            data: granted,
+            borderColor: '#48BB78',
+            backgroundColor: 'rgba(72, 187, 120, 0.1)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          },
+          {
+            label: 'Body požadavků',
+            data: requested,
+            borderColor: '#4A7CAB',
+            backgroundColor: 'rgba(74, 124, 171, 0.1)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          }
+        ]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         scales: {
           y: {
             beginAtZero: true,
@@ -241,11 +238,11 @@
           }
         },
         plugins: {
-          legend: { display: false },
+          legend: { display: true, position: 'top' },
           tooltip: {
             callbacks: {
               label: function(context) {
-                return context.parsed.y.toLocaleString() + ' bodů';
+                return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + ' bodů';
               }
             }
           }
