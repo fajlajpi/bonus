@@ -21,9 +21,9 @@ DATABASES = {
     }
 }
 
-# I18N and TZ
-LANGUAGE_CODE = 'cs'
-TIME_ZONE = 'Europe/Prague'
+# I18N and TZ — set per deployment in .env
+LANGUAGE_CODE = config('LANGUAGE_CODE', default='cs')
+TIME_ZONE = config('TIME_ZONE', default='Europe/Prague')
 
 
 # Email settings for production
@@ -33,7 +33,8 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '465'))
 EMAIL_USE_SSL = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_USER', 'user@example.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASSWORD', 'password')
-DEFAULT_FROM_EMAIL = f'Bonusový Program <{EMAIL_HOST_USER}>'
+BONUS_PROGRAMME_NAME = config('BONUS_PROGRAMME_NAME', default='Bonusový Program')
+DEFAULT_FROM_EMAIL = f'{BONUS_PROGRAMME_NAME} <{EMAIL_HOST_USER}>'
 
 # Security settings
 SECURE_SSL_REDIRECT = False  # FOR TESTING ONLY

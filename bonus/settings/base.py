@@ -96,6 +96,16 @@ AUTH_USER_MODEL = 'pa_bonus.User'
 
 LANGUAGE_CODE = 'cs'
 
+LANGUAGES = [
+    ('cs', 'Czech'),
+    ('pl', 'Polish'),
+    ('sk', 'Slovak'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'pa_bonus' / 'locale',
+]
+
 TIME_ZONE = 'UTC'
 
 USE_I18N = True

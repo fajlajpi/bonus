@@ -4,6 +4,7 @@ from decouple import config
 
 
 DEBUG = config('DEBUG')
+LANGUAGE_CODE = config('LANGUAGE_CODE', default='cs')
 
 if DEBUG:
     import bonus.private as private
