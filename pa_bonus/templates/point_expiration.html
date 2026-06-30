@@ -1,24 +1,21 @@
 {% extends "base.html" %}
-{% load pa_bonus_extras %}
+{% load pa_bonus_extras i18n %}
 
-{% block title %} Konec platnosti bodů {% endblock title %}
+{% block title %}{% trans "Points expiration" %}{% endblock title %}
 
 {% block content %}
 <div class="history-container">
-    <h2>Konec platnosti bodů</h2>
+    <h2>{% trans "Points expiration" %}</h2>
 
     <div class="intro-text">
-        <p>Body připsané za fakturaci mají omezenou platnost. Níže vidíte, kdy a kolika
-            Vašim dosud nevyčerpaným bodům platnost končí. Při čerpání odměn se vždy
-            přednostně použijí body, kterým platnost končí nejdříve, abyste o body
-            zbytečně nepřišli.</p>
+        <p>{% trans "Points credited for invoicing have a limited validity period. Below you can see when your unused points will expire. When redeeming rewards, points expiring soonest are always used first, so you do not unnecessarily lose points." %}</p>
     </div>
 
     {% if schedule %}
     {% if expiring_points > 0 %}
     <div class="points-summary">
         <p class="expiring-points-warning">
-            V následujících 3 měsících skončí platnost <strong>{{ expiring_points }} bodů</strong>.
+            {% blocktrans with points=expiring_points %}<strong>{{ points }} points</strong> will expire in the next 3 months.{% endblocktrans %}
         </p>
     </div>
     {% endif %}
@@ -26,10 +23,10 @@
     <table class="transactions-table">
         <thead>
             <tr>
-                <th>Konec platnosti</th>
-                <th>Značka</th>
-                <th>Připsáno</th>
-                <th>Body</th>
+                <th>{% trans "Expiry date" %}</th>
+                <th>{% trans "Brand" %}</th>
+                <th>{% trans "Credited" %}</th>
+                <th>{% trans "Points" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -38,17 +35,17 @@
                 <td>{{ credit.expires_at|czech_date }}</td>
                 <td>{{ credit.brand.name|default:"—" }}</td>
                 <td>{{ credit.date|czech_date }}</td>
-                <td class="value">{{ credit.remaining_points }} bodů</td>
+                <td class="value">{% blocktrans with points=credit.remaining_points %}{{ points }} points{% endblocktrans %}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p>Žádné body s omezenou platností. Vašim bodům aktuálně platnost nekončí.</p>
+    <p>{% trans "No points with a limited validity period. None of your points are currently expiring." %}</p>
     {% endif %}
 
     <p class="expiring-points-link">
-        <a href="{% url 'dashboard' %}">Zpět na přehled</a>
+        <a href="{% url 'dashboard' %}">{% trans "Back to overview" %}</a>
     </p>
 </div>
 {% endblock %}

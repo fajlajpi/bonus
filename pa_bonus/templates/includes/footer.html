@@ -1,19 +1,19 @@
-{% load static %}
+{% load static i18n %}
 <footer class="site-footer">
     <div class="footer-content">
         <div class="footer-info">
-            <p>&copy; {{ current_year }} Primavera Andorrana. All rights reserved.</p>
+            <p>&copy; {{ current_year }} Primavera Andorrana. {% trans "All rights reserved." %}</p>
         </div>
         <div class="footer-links">
-            <a href="{% url 'home_redirect' %}">Hlavní stránka</a>
-            <a href="{% url 'public_catalogue' %}">Katalog odměn</a>
-            <a href="{% url 'privacy_policy' %}">Zásady ochrany osobních údajů</a>
-            <a href="{% url 'contact' %}">Kontaktní informace</a>
+            <a href="{% url 'home_redirect' %}">{% trans "Home" %}</a>
+            <a href="{% url 'public_catalogue' %}">{% trans "Reward catalogue" %}</a>
+            <a href="{% url 'privacy_policy' %}">{% trans "Privacy policy" %}</a>
+            <a href="{% url 'contact' %}">{% trans "Contact" %}</a>
             {% if user.is_staff %}
-                <a href="{% url 'admin:index' %}">Administrace</a>
+                <a href="{% url 'admin:index' %}">{% trans "Administration" %}</a>
             {% endif %}
             {% if user.groups.all.0.name == 'Managers' %}
-                <a href="{% url 'manager_dashboard' %}">Manažerská sekce</a>
+                <a href="{% url 'manager_dashboard' %}">{% trans "Manager section" %}</a>
             {% endif %}
         </div>
     </div>

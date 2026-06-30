@@ -1,6 +1,6 @@
-<!-- Site Announcement Banner -->
+{% load i18n %}
 <div class="site-announcement">
-    <h2>Důležité oznámení: Změny v bonusovém programu od 1. 7. a 1. 8. 2026</h2>
-    <p>Zjistěte podrobnosti o změnách v bonusovém programu. 
-    <a href="{% url 'announcement_detail' %}">Přečtěte si více zde</a>.</p>
+    <h2>{% trans "Important announcement: Changes to the Bonus Programme from 1 July and 1 August 2026" %}</h2>
+    <p>{% trans "Find out the details of the changes to the Bonus Programme." %}
+    <a href="{% url 'announcement_detail' %}">{% trans "Read more here" %}</a>.</p>
 </div>

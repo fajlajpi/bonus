@@ -1,78 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Přehled obchodního zástupce{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Sales representative overview" %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-  <h2>Přehled obchodního zástupce</h2>
-  <p>Vítejte, {{ user.first_name }} {{ user.last_name }}.</p>
+  <h2>{% trans "Sales representative overview" %}</h2>
+  <p>{% blocktrans with first_name=user.first_name last_name=user.last_name %}Welcome, {{ first_name }} {{ last_name }}.{% endblocktrans %}</p>
 
-  <!-- Regions -->
   <div class="dashboard-section">
-    <h3>Vaše regiony</h3>
+    <h3>{% trans "Your regions" %}</h3>
     <ul>
       {% for region in regions %}
         <li><strong>{{ region.name }}</strong> ({{ region.code }})</li>
       {% empty %}
-        <li>Nemáte přiřazené žádné regiony.</li>
+        <li>{% trans "You have no regions assigned." %}</li>
       {% endfor %}
     </ul>
   </div>
 
-  <!-- Summary Stats -->
   <div class="dashboard-section">
-    <h3>Souhrn</h3>
+    <h3>{% trans "Summary" %}</h3>
     <div class="summary-stats">
       <div class="stat-card">
         <span class="stat-value">{{ total_clients }}</span>
-        <span class="stat-label">Celkem klientů</span>
+        <span class="stat-label">{% trans "Total clients" %}</span>
       </div>
       <div class="stat-card">
         <span class="stat-value">{{ clients_with_contracts }}</span>
-        <span class="stat-label">S aktivní smlouvou</span>
+        <span class="stat-label">{% trans "With active contract" %}</span>
       </div>
       <div class="stat-card">
         <span class="stat-value">{{ total_confirmed_points }}</span>
-        <span class="stat-label">Celkem potvrzených bodů</span>
+        <span class="stat-label">{% trans "Total confirmed points" %}</span>
       </div>
       <div class="stat-card">
         <span class="stat-value">{{ pending_requests }}</span>
-        <span class="stat-label">Čekající žádosti o odměny</span>
+        <span class="stat-label">{% trans "Pending reward requests" %}</span>
       </div>
     </div>
   </div>
 
-  <!-- Quick Links -->
   <div class="dashboard-section">
-    <h3>Rychlé odkazy</h3>
+    <h3>{% trans "Quick links" %}</h3>
     <div class="dashboard-actions">
       <a href="{% url 'salesrep_clients' %}" class="dashboard-button">
         <span class="button-icon">👥</span>
-        <span class="button-text">Moji klienti</span>
+        <span class="button-text">{% trans "My clients" %}</span>
       </a>
       <a href="{% url 'salesrep_point_expirations' %}" class="dashboard-button">
         <span class="button-icon">⏳</span>
-        <span class="button-text">Konec platnosti bodů</span>
+        <span class="button-text">{% trans "Points expiration" %}</span>
       </a>
       <a href="{% url 'salesrep_reward_requests' %}" class="dashboard-button">
         <span class="button-icon">🎁</span>
-        <span class="button-text">Žádosti o odměny</span>
+        <span class="button-text">{% trans "Reward requests" %}</span>
       </a>
     </div>
   </div>
 
-  <!-- Top Clients by Points -->
   {% if top_clients %}
   <div class="dashboard-section">
-    <h3>Klienti s nejvyšším počtem dostupných bodů</h3>
+    <h3>{% trans "Clients with the highest available points balance" %}</h3>
     <div class="table-container">
       <table class="transactions-table">
         <thead>
           <tr>
-            <th>Klient</th>
-            <th>Zákaznické číslo</th>
-            <th>Region</th>
-            <th>Dostupné body</th>
-            <th>Akce</th>
+            <th>{% trans "Client" %}</th>
+            <th>{% trans "Customer number" %}</th>
+            <th>{% trans "Region" %}</th>
+            <th>{% trans "Available points" %}</th>
+            <th>{% trans "Action" %}</th>
           </tr>
         </thead>
         <tbody>
@@ -83,7 +80,7 @@
             <td>{{ client.region.name|default:"—" }}</td>
             <td class="value positive">{{ client.available_points }}</td>
             <td>
-              <a href="{% url 'salesrep_client_detail' client.pk %}" class="details-link">Zobrazit</a>
+              <a href="{% url 'salesrep_client_detail' client.pk %}" class="details-link">{% trans "View" %}</a>
             </td>
           </tr>
           {% endfor %}

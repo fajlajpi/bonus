@@ -1,15 +1,17 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %} Upload History {% endblock title %}
+{% block title %}{% trans "Upload history" %}{% endblock title %}
 
-<h2>UPLOAD HISTORY</h2>
+{% block content %}
+<h2>{% trans "Upload history" %}</h2>
 <div class="upload-history-container">
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>File Name</th>
-                <th>Uploaded By</th>
-                <th>Uploaded At</th>
+                <th>{% trans "File name" %}</th>
+                <th>{% trans "Uploaded by" %}</th>
+                <th>{% trans "Uploaded at" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -22,3 +24,5 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+{% endblock %}

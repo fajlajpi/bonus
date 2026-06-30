@@ -1,0 +1,1442 @@
+# Czech translation for Bonus Programme
+# Copyright (C) 2026 Primavera AND
+# This file is distributed under the same license as the Bonus Programme package.
+# Filip Huta <filip.huta@primavera-and.cz>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Bonus Programme 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-29 15:47+0200\n"
+"PO-Revision-Date: 2026-06-29 17:00+0200\n"
+"Last-Translator: Filip Huta <filip.huta@primavera-and.cz>\n"
+"Language-Team: Czech\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n "
+"<= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;\n"
+
+#: .\pa_bonus\forms.py:33
+msgid "Unsupported file type"
+msgstr "Nepodporovaný typ souboru"
+
+#: .\pa_bonus\forms.py:37
+msgid "File too large (>15 MB)"
+msgstr "Soubor je příliš velký (>15 MB)"
+
+#: .\pa_bonus\forms.py:43
+msgid "Email or username"
+msgstr "E-mail nebo uživatelské jméno"
+
+#: .\pa_bonus\forms.py:47
+msgid "Password"
+msgstr "Heslo"
+
+#: .\pa_bonus\forms.py:53
+msgid "Please enter a correct username (or email address) and password."
+msgstr ""
+"Zadejte prosím správné uživatelské jméno (nebo e-mailovou adresu) a heslo."
+
+#: .\pa_bonus\forms.py:54
+msgid "This account is inactive."
+msgstr "Tento účet je neaktivní."
+
+#: .\pa_bonus\models.py:426
+msgid "Standard points added"
+msgstr "Standardní připsání bodů"
+
+#: .\pa_bonus\models.py:427
+msgid "Reward claim"
+msgstr "Čerpání odměny"
+
+#: .\pa_bonus\models.py:428 .\pa_bonus\templates\history.html:46
+#: .\pa_bonus\templates\history_detail.html:29
+msgid "Credit note adjustment"
+msgstr "Vyrovnání dobropisu"
+
+#: .\pa_bonus\models.py:429
+msgid "Extra points added"
+msgstr "Připsání extra bodů"
+
+#: .\pa_bonus\models.py:430 .\pa_bonus\templates\history.html:50
+#: .\pa_bonus\templates\history_detail.html:33
+msgid "Manual adjustment"
+msgstr "Manuální korekce"
+
+#: .\pa_bonus\models.py:431
+msgid "Points expired"
+msgstr "Platnost bodů vypršela"
+
+#: .\pa_bonus\models.py:434 .\pa_bonus\templates\history.html:64
+#: .\pa_bonus\templates\history_detail.html:56
+msgid "No contract"
+msgstr "Bez smlouvy"
+
+#: .\pa_bonus\models.py:435 .\pa_bonus\models.py:599 .\pa_bonus\models.py:683
+msgid "Pending"
+msgstr "Čeká na zpracování"
+
+#: .\pa_bonus\models.py:436 .\pa_bonus\templates\history.html:60
+#: .\pa_bonus\templates\history_detail.html:40
+#: .\pa_bonus\templates\history_detail.html:52
+msgid "Confirmed"
+msgstr "Potvrzeno"
+
+#: .\pa_bonus\models.py:437 .\pa_bonus\models.py:690
+#: .\pa_bonus\templates\history.html:62
+#: .\pa_bonus\templates\history_detail.html:54
+#: .\pa_bonus\templates\reward_requests.html:45
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:24
+msgid "Cancelled"
+msgstr "Zrušeno"
+
+#: .\pa_bonus\models.py:600
+msgid "Processing"
+msgstr "Zpracovává se"
+
+#: .\pa_bonus\models.py:601
+msgid "Completed"
+msgstr "Dokončeno"
+
+#: .\pa_bonus\models.py:602
+msgid "Failed"
+msgstr "Selhalo"
+
+#: .\pa_bonus\models.py:638
+msgid "Available"
+msgstr "Dostupné"
+
+#: .\pa_bonus\models.py:639
+msgid "Available (last units)"
+msgstr "Dostupné (poslední kusy)"
+
+#: .\pa_bonus\models.py:640
+msgid "On demand"
+msgstr "Na objednání"
+
+#: .\pa_bonus\models.py:641 .\pa_bonus\templates\rewards.html:66
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:52
+msgid "Unavailable"
+msgstr "Nedostupné"
+
+#: .\pa_bonus\models.py:682 .\pa_bonus\templates\reward_requests.html:29
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:16
+msgid "Draft"
+msgstr "Koncept"
+
+#: .\pa_bonus\models.py:684 .\pa_bonus\templates\reward_requests.html:33
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:18
+msgid "Accepted"
+msgstr "Přijato"
+
+#: .\pa_bonus\models.py:685 .\pa_bonus\templates\reward_requests.html:35
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:19
+msgid "Shipped"
+msgstr "Odesláno"
+
+#: .\pa_bonus\models.py:686 .\pa_bonus\templates\reward_requests.html:37
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:20
+msgid "Partially shipped"
+msgstr "Částečně odesláno"
+
+#: .\pa_bonus\models.py:687 .\pa_bonus\templates\reward_requests.html:39
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:21
+msgid "Ordered from supplier"
+msgstr "Objednáno u dodavatele"
+
+#: .\pa_bonus\models.py:688 .\pa_bonus\templates\reward_requests.html:41
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:22
+msgid "Rejected"
+msgstr "Zamítnuto"
+
+#: .\pa_bonus\models.py:689 .\pa_bonus\templates\reward_requests.html:43
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:23
+msgid "Finished"
+msgstr "Dokončeno"
+
+#: .\pa_bonus\models.py:691 .\pa_bonus\templates\reward_requests.html:47
+msgid "Overdue invoice"
+msgstr "Faktura po splatnosti"
+
+#: .\pa_bonus\models.py:844
+msgid "Standard invoice"
+msgstr "Standardní faktura"
+
+#: .\pa_bonus\models.py:845
+msgid "Credit note"
+msgstr "Dobropis"
+
+#: .\pa_bonus\templates\base.html:8 .\pa_bonus\templates\base.html:14
+msgid "Bonus Programme"
+msgstr "Bonusový program"
+
+#: .\pa_bonus\templates\base.html:8
+msgid "Welcome"
+msgstr "Vítejte"
+
+#: .\pa_bonus\templates\base.html:17
+#, python-format
+msgid "Logged in as <em>%(username)s</em>"
+msgstr "Přihlášen jako <em>%(username)s</em>"
+
+#: .\pa_bonus\templates\base.html:18 .\pa_bonus\templates\dashboard.html:4
+msgid "Overview"
+msgstr "Přehled"
+
+#: .\pa_bonus\templates\base.html:21
+msgid "Log out"
+msgstr "Odhlásit se"
+
+#: .\pa_bonus\templates\base.html:24 .\pa_bonus\templates\login.html:12
+msgid "Log in"
+msgstr "Přihlásit se"
+
+#: .\pa_bonus\templates\dashboard.html:8
+#, python-format
+msgid "Bonus Programme overview for: %(first_name)s %(last_name)s"
+msgstr "Přehled Bonusového programu pro: %(first_name)s %(last_name)s"
+
+#: .\pa_bonus\templates\dashboard.html:11 .\pa_bonus\templates\rewards.html:7
+msgid "Current points balance"
+msgstr "Aktuální stav bodového konta"
+
+#: .\pa_bonus\templates\dashboard.html:12
+#: .\pa_bonus\templates\extra_goals_detail.html:113
+#: .\pa_bonus\templates\history.html:38
+#: .\pa_bonus\templates\history_detail.html:19
+#: .\pa_bonus\templates\point_expiration.html:38
+#: .\pa_bonus\templates\reward_requests.html:25
+#: .\pa_bonus\templates\rewards.html:8
+#: .\pa_bonus\templates\rewards_request_detail.html:27
+#: .\pa_bonus\templates\sales_rep\client_detail.html:140
+#: .\pa_bonus\templates\sales_rep\client_detail.html:173
+#: .\pa_bonus\templates\sales_rep\client_detail.html:194
+#: .\pa_bonus\templates\sales_rep\client_detail.html:223
+#: .\pa_bonus\templates\sales_rep\client_detail.html:255
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:12
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:42
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:43
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:60
+#, python-format
+msgid "%(points)s points"
+msgstr "%(points)s bodů"
+
+#: .\pa_bonus\templates\dashboard.html:15
+#: .\pa_bonus\templates\point_expiration.html:18
+#, python-format
+msgid "<strong>%(points)s points</strong> will expire in the next 3 months."
+msgstr ""
+"V následujících 3 měsících skončí platnost <strong>%(points)s bodů</strong>."
+
+#: .\pa_bonus\templates\dashboard.html:19
+#: .\pa_bonus\templates\dashboard.html:86 .\pa_bonus\templates\history.html:52
+#: .\pa_bonus\templates\point_expiration.html:4
+#: .\pa_bonus\templates\point_expiration.html:8
+#: .\pa_bonus\templates\sales_rep\client_detail.html:96
+#: .\pa_bonus\templates\sales_rep\dashboard.html:52
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:3
+msgid "Points expiration"
+msgstr "Body s končící platností"
+
+#: .\pa_bonus\templates\dashboard.html:25
+msgid "Brand bonuses"
+msgstr "Bonusy za značky"
+
+#: .\pa_bonus\templates\dashboard.html:31
+#, python-format
+msgid "%(ratio)s CZK excl. VAT per 1 point"
+msgstr "%(ratio)s Kč bez DPH za 1 bod"
+
+#: .\pa_bonus\templates\dashboard.html:38
+msgid "No active memberships."
+msgstr "Bez aktivních bonusů."
+
+#: .\pa_bonus\templates\dashboard.html:43
+msgid "Current target bonus"
+msgstr "Aktuální cílový bonus"
+
+#: .\pa_bonus\templates\dashboard.html:45
+#, python-format
+msgid "Period: %(start)s - %(end)s"
+msgstr "Období: %(start)s – %(end)s"
+
+#: .\pa_bonus\templates\dashboard.html:51
+#: .\pa_bonus\templates\extra_goals_detail.html:89
+msgid "Period target:"
+msgstr "Cíl období:"
+
+#: .\pa_bonus\templates\dashboard.html:52
+#: .\pa_bonus\templates\dashboard.html:56
+#: .\pa_bonus\templates\dashboard.html:60
+#: .\pa_bonus\templates\extra_goals_detail.html:43
+#: .\pa_bonus\templates\extra_goals_detail.html:47
+#: .\pa_bonus\templates\extra_goals_detail.html:90
+#: .\pa_bonus\templates\extra_goals_detail.html:94
+msgid "CZK"
+msgstr "Kč"
+
+#: .\pa_bonus\templates\dashboard.html:55
+#: .\pa_bonus\templates\extra_goals_detail.html:46
+#: .\pa_bonus\templates\extra_goals_detail.html:93
+msgid "Current turnover:"
+msgstr "Aktuální obrat:"
+
+#: .\pa_bonus\templates\dashboard.html:59
+msgid "Remaining to target:"
+msgstr "Zbývá do cíle:"
+
+#: .\pa_bonus\templates\dashboard.html:75
+msgid "View all goals"
+msgstr "Zobrazit všechny cíle"
+
+#: .\pa_bonus\templates\dashboard.html:83
+#: .\pa_bonus\templates\sales_rep\dashboard.html:44
+msgid "Quick links"
+msgstr "Rychlé odkazy"
+
+#: .\pa_bonus\templates\dashboard.html:85 .\pa_bonus\templates\history.html:8
+msgid "Points transaction history"
+msgstr "Historie transakcí"
+
+#: .\pa_bonus\templates\dashboard.html:87 .\pa_bonus\templates\rewards.html:3
+msgid "Rewards catalogue"
+msgstr "Katalog odměn"
+
+#: .\pa_bonus\templates\dashboard.html:88 .\pa_bonus\templates\history.html:19
+#: .\pa_bonus\templates\reward_requests.html:4
+#: .\pa_bonus\templates\reward_requests.html:8
+#: .\pa_bonus\templates\sales_rep\client_detail.html:240
+#: .\pa_bonus\templates\sales_rep\dashboard.html:56
+msgid "Reward requests"
+msgstr "Žádosti o odměny"
+
+#: .\pa_bonus\templates\dashboard.html:89
+msgid "Extra goals"
+msgstr "Extra cíle"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:4
+#: .\pa_bonus\templates\extra_goals_detail.html:8
+msgid "Target bonuses"
+msgstr "Cílové bonusy"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:16
+msgid "No target bonuses are currently set for your contract."
+msgstr "Pro Vaši smlouvu nejsou aktuálně nastaveny žádné cílové bonusy."
+
+#: .\pa_bonus\templates\extra_goals_detail.html:17
+#: .\pa_bonus\templates\rewards_request_detail.html:81
+msgid "For any queries, contact your sales representative."
+msgstr "V případě dotazů se obraťte na svého obchodního zástupce."
+
+#: .\pa_bonus\templates\extra_goals_detail.html:21
+msgid ""
+"Here you can track your progress towards your target bonuses. You earn "
+"additional bonus points for exceeding the set targets."
+msgstr ""
+"Zde můžete sledovat plnění svých cílových bonusů. Za překročení stanovených "
+"cílů získáváte bonusové body navíc."
+
+#: .\pa_bonus\templates\extra_goals_detail.html:27
+#, python-format
+msgid "Target bonus no. %(num)s"
+msgstr "Cílový bonus č. %(num)s"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:34
+msgid "Brands:"
+msgstr "Značky:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:42
+msgid "Total target:"
+msgstr "Celkový cíl:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:50
+msgid "Total achieved:"
+msgstr "Celkem dosaženo:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:60
+msgid "Evaluation periods"
+msgstr "Hodnocená období"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:69
+msgid "Current"
+msgstr "Aktuální"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:75
+msgid "Achieved"
+msgstr "Splněno"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:77
+msgid "Not achieved"
+msgstr "Nesplněno"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:79
+msgid "Awaiting evaluation"
+msgstr "Čeká na vyhodnocení"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:81
+msgid "In progress"
+msgstr "Probíhá"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:83
+msgid "Future"
+msgstr "Budoucí"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:98
+msgid "Achieved:"
+msgstr "Splněno:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:107
+msgid "Bonus points:"
+msgstr "Bonusové body:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:108
+#, python-format
+msgid "+%(points)s points"
+msgstr "+%(points)s bodů"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:112
+msgid "If achieved, you will earn:"
+msgstr "Při splnění získáte:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:124
+msgid "Note:"
+msgstr "Poznámka:"
+
+#: .\pa_bonus\templates\extra_goals_detail.html:124
+msgid ""
+"If you do not achieve the partial targets but do achieve the overall target "
+"for the entire period, you will retrospectively receive bonus points for the "
+"entire period."
+msgstr ""
+"Pokud nesplníte dílčí cíle, ale splníte celkový cíl za celé období, obdržíte "
+"zpětně bonusové body za celé období."
+
+#: .\pa_bonus\templates\history.html:4
+msgid "Transaction history"
+msgstr "Historie transakcí"
+
+#: .\pa_bonus\templates\history.html:12
+msgid ""
+"Below you will find a list of your points transactions within the Bonus "
+"Programme. Points are credited with a 3-month delay (invoicing in January = "
+"credited in April), to allow time for processing of any complaints and "
+"credit notes. Transactions are uploaded to the system at the beginning of "
+"each month and do not appear immediately."
+msgstr ""
+"Níže naleznete seznam Vašich bodových transakcí v rámci Bonusového programu. "
+"Body přičítáme se zpožděním 3 měsíců (fakturace v lednu = připsání v dubnu), "
+"abychom umožnili zpracování případných reklamací a dobropisů. Transakce "
+"nahráváme do systému vždy na začátku měsíce, proto se neobjevují okamžitě."
+
+#: .\pa_bonus\templates\history.html:13
+msgid ""
+"Transactions already uploaded but waiting for the 3-month period to elapse "
+"are marked"
+msgstr ""
+"Transakce nahrané do systému, ale čekající na uplynutí 3 měsíců, jsou "
+"označeny jako"
+
+#: .\pa_bonus\templates\history.html:14
+msgid "awaiting confirmation"
+msgstr "čeká na potvrzení"
+
+#: .\pa_bonus\templates\history.html:15
+#: .\pa_bonus\templates\history_detail.html:40
+msgid "A status of"
+msgstr "Stav"
+
+#: .\pa_bonus\templates\history.html:16
+msgid "confirmed"
+msgstr "potvrzeno"
+
+#: .\pa_bonus\templates\history.html:17
+msgid ""
+"means the points have been credited / debited, but the reward request itself "
+"may still be awaiting processing."
+msgstr ""
+"znamená, že body byly připsány / strženy, ale samotná žádost o odměny může "
+"stále čekat na zpracování."
+
+#: .\pa_bonus\templates\history.html:19
+msgid "Check the status of a specific request in the"
+msgstr "Stav konkrétní žádosti zkontrolujte v sekci"
+
+#: .\pa_bonus\templates\history.html:19
+msgid "section."
+msgstr "."
+
+#: .\pa_bonus\templates\history.html:24
+#: .\pa_bonus\templates\reward_requests.html:14
+#: .\pa_bonus\templates\sales_rep\client_detail.html:209
+#: .\pa_bonus\templates\sales_rep\client_detail.html:245
+msgid "Date"
+msgstr "Datum"
+
+#: .\pa_bonus\templates\history.html:25
+#: .\pa_bonus\templates\point_expiration.html:27
+#: .\pa_bonus\templates\sales_rep\client_detail.html:129
+#: .\pa_bonus\templates\sales_rep\client_detail.html:157
+#: .\pa_bonus\templates\sales_rep\client_detail.html:210
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:31
+msgid "Brand"
+msgstr "Značka"
+
+#: .\pa_bonus\templates\history.html:26
+#: .\pa_bonus\templates\reward_requests.html:15
+msgid "Value"
+msgstr "Hodnota"
+
+#: .\pa_bonus\templates\history.html:27
+msgid "Type"
+msgstr "Typ"
+
+#: .\pa_bonus\templates\history.html:28
+#: .\pa_bonus\templates\reward_requests.html:16
+#: .\pa_bonus\templates\sales_rep\client_detail.html:213
+#: .\pa_bonus\templates\sales_rep\client_detail.html:247
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:43
+msgid "Status"
+msgstr "Stav"
+
+#: .\pa_bonus\templates\history.html:29 .\pa_bonus\templates\history.html:69
+#: .\pa_bonus\templates\reward_requests.html:18
+#: .\pa_bonus\templates\reward_requests.html:57
+#: .\pa_bonus\templates\sales_rep\client_list.html:105
+msgid "Detail"
+msgstr "Detail"
+
+#: .\pa_bonus\templates\history.html:42
+#: .\pa_bonus\templates\history_detail.html:25
+msgid "Standard points credit"
+msgstr "Standardní připsání bodů"
+
+#: .\pa_bonus\templates\history.html:44
+#: .\pa_bonus\templates\history_detail.html:27
+msgid "Reward request"
+msgstr "Žádost o odměnu"
+
+#: .\pa_bonus\templates\history.html:48
+#: .\pa_bonus\templates\history_detail.html:31
+msgid "Extra points"
+msgstr "Extra body"
+
+#: .\pa_bonus\templates\history.html:58
+#: .\pa_bonus\templates\history_detail.html:50
+#: .\pa_bonus\templates\reward_requests.html:31
+msgid "Awaiting confirmation"
+msgstr "Čeká na potvrzení"
+
+#: .\pa_bonus\templates\history.html:76
+#: .\pa_bonus\templates\sales_rep\client_detail.html:231
+msgid "No transactions found."
+msgstr "Žádné transakce nenalezeny."
+
+#: .\pa_bonus\templates\history_detail.html:4
+msgid "Transaction detail"
+msgstr "Detail transakce"
+
+#: .\pa_bonus\templates\history_detail.html:8
+msgid "Points transaction detail"
+msgstr "Podrobnosti bodové transakce"
+
+#: .\pa_bonus\templates\history_detail.html:11
+msgid "Date:"
+msgstr "Datum:"
+
+#: .\pa_bonus\templates\history_detail.html:14
+msgid "Brand:"
+msgstr "Značka:"
+
+#: .\pa_bonus\templates\history_detail.html:17
+msgid "Points:"
+msgstr "Bodů:"
+
+#: .\pa_bonus\templates\history_detail.html:23
+msgid "Type:"
+msgstr "Typ:"
+
+#: .\pa_bonus\templates\history_detail.html:41
+msgid ""
+"means the points have been blocked, but the reward request itself may still "
+"be awaiting processing."
+msgstr ""
+"znamená, že body jsou zablokovány, ale samotná žádost o odměny může stále "
+"čekat na zpracování."
+
+#: .\pa_bonus\templates\history_detail.html:42
+msgid "Details can be found in the"
+msgstr "Podrobnosti naleznete v"
+
+#: .\pa_bonus\templates\history_detail.html:42
+msgid "reward request detail"
+msgstr "detailu žádosti o odměny"
+
+#: .\pa_bonus\templates\history_detail.html:47
+msgid "Status:"
+msgstr "Stav:"
+
+#: .\pa_bonus\templates\history_detail.html:63
+msgid "Description:"
+msgstr "Popis:"
+
+#: .\pa_bonus\templates\history_detail.html:66
+msgid "Invoice:"
+msgstr "Faktura:"
+
+#: .\pa_bonus\templates\history_detail.html:70
+msgid "Back to transaction list"
+msgstr "Zpět na seznam transakcí"
+
+#: .\pa_bonus\templates\includes\footer.html:5
+msgid "All rights reserved."
+msgstr "Všechna práva vyhrazena."
+
+#: .\pa_bonus\templates\includes\footer.html:8
+msgid "Home"
+msgstr "Úvodní stránka"
+
+#: .\pa_bonus\templates\includes\footer.html:9
+msgid "Reward catalogue"
+msgstr "Katalog odměn"
+
+#: .\pa_bonus\templates\includes\footer.html:10
+msgid "Privacy policy"
+msgstr "Zásady ochrany osobních údajů"
+
+#: .\pa_bonus\templates\includes\footer.html:11
+msgid "Contact"
+msgstr "Kontakt"
+
+#: .\pa_bonus\templates\includes\footer.html:13
+msgid "Administration"
+msgstr "Administrace"
+
+#: .\pa_bonus\templates\includes\footer.html:16
+msgid "Manager section"
+msgstr "Manažerská sekce"
+
+#: .\pa_bonus\templates\includes\test_environment_warning.html:3
+msgid ""
+"Important announcement: Changes to the Bonus Programme from 1 July and 1 "
+"August 2026"
+msgstr "Důležité oznámení: Změny Bonusového programu od 1. 7. a 1. 8. 2026"
+
+#: .\pa_bonus\templates\includes\test_environment_warning.html:4
+msgid "Find out the details of the changes to the Bonus Programme."
+msgstr "Zjistěte podrobnosti o změnách Bonusového programu."
+
+#: .\pa_bonus\templates\includes\test_environment_warning.html:5
+msgid "Read more here"
+msgstr "Přečtěte si více"
+
+#: .\pa_bonus\templates\login.html:4 .\pa_bonus\templates\login.html:8
+msgid "Login"
+msgstr "Přihlášení"
+
+#: .\pa_bonus\templates\point_expiration.html:11
+msgid ""
+"Points credited for invoicing have a limited validity period. Below you can "
+"see when your unused points will expire. When redeeming rewards, points "
+"expiring soonest are always used first, so you do not unnecessarily lose "
+"points."
+msgstr ""
+"Body připsané za fakturaci mají omezenou dobu platnosti. Níže vidíte, kdy "
+"Vašim dosud nevyčerpaným bodům platnost končí. Při čerpání odměn se vždy "
+"přednostně použijí body s nejdříve končící platností, abyste o body zbytečně "
+"nepřišli."
+
+#: .\pa_bonus\templates\point_expiration.html:26
+#: .\pa_bonus\templates\sales_rep\client_detail.html:128
+msgid "Expiry date"
+msgstr "Konec platnosti"
+
+#: .\pa_bonus\templates\point_expiration.html:28
+#: .\pa_bonus\templates\sales_rep\client_detail.html:130
+msgid "Credited"
+msgstr "Připsáno"
+
+#: .\pa_bonus\templates\point_expiration.html:29
+#: .\pa_bonus\templates\rewards.html:31
+#: .\pa_bonus\templates\sales_rep\client_detail.html:131
+#: .\pa_bonus\templates\sales_rep\client_detail.html:161
+#: .\pa_bonus\templates\sales_rep\client_detail.html:212
+#: .\pa_bonus\templates\sales_rep\client_detail.html:246
+msgid "Points"
+msgstr "Body"
+
+#: .\pa_bonus\templates\point_expiration.html:44
+msgid ""
+"No points with a limited validity period. None of your points are currently "
+"expiring."
+msgstr ""
+"Žádné body s omezenou dobou platnosti. Vašim bodům aktuálně platnost nekončí."
+
+#: .\pa_bonus\templates\point_expiration.html:48
+msgid "Back to overview"
+msgstr "Zpět na přehled"
+
+#: .\pa_bonus\templates\reward_requests.html:17
+#: .\pa_bonus\templates\sales_rep\client_detail.html:248
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:46
+msgid "Note"
+msgstr "Poznámka"
+
+#: .\pa_bonus\templates\reward_requests.html:64
+msgid "No requests found."
+msgstr "Žádné žádosti nenalezeny."
+
+#: .\pa_bonus\templates\rewards.html:5
+msgid "Available rewards:"
+msgstr "Dostupné odměny:"
+
+#: .\pa_bonus\templates\rewards.html:11
+msgid ""
+"The Bonus Programme offer may change depending on the availability of "
+"rewards from us and our suppliers."
+msgstr ""
+"Nabídka Bonusového programu se může měnit v závislosti na dostupnosti odměn "
+"u nás i u dodavatelů."
+
+#: .\pa_bonus\templates\rewards.html:12
+msgid "in stock"
+msgstr "skladem"
+
+#: .\pa_bonus\templates\rewards.html:13
+msgid "means we usually have the item in stock."
+msgstr "znamená, že danou odměnu máme obvykle na skladě."
+
+#: .\pa_bonus\templates\rewards.html:14
+msgid "on order"
+msgstr "na objednání"
+
+#: .\pa_bonus\templates\rewards.html:15
+msgid "means we order it only once your request is received."
+msgstr "znamená, že odměnu objednáváme až po obdržení Vaší žádosti."
+
+#: .\pa_bonus\templates\rewards.html:17
+msgid "For any queries, contact us at"
+msgstr "V případě dotazů nás kontaktujte na"
+
+#: .\pa_bonus\templates\rewards.html:18
+msgid "or speak to your sales representative."
+msgstr "nebo se obraťte na svého obchodního zástupce."
+
+#: .\pa_bonus\templates\rewards.html:20
+msgid ""
+"We are currently completing the upload of our full catalogue — some rewards "
+"may still be missing."
+msgstr ""
+"Právě dokončujeme nahrávání kompletního katalogu — některé odměny mohou "
+"stále chybět."
+
+#: .\pa_bonus\templates\rewards.html:29
+msgid "Product"
+msgstr "Produkt"
+
+#: .\pa_bonus\templates\rewards.html:30
+msgid "Information"
+msgstr "Informace"
+
+#: .\pa_bonus\templates\rewards.html:32
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:33
+msgid "Availability"
+msgstr "Dostupnost"
+
+#: .\pa_bonus\templates\rewards.html:33
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:34
+msgid "Quantity"
+msgstr "Množství"
+
+#: .\pa_bonus\templates\rewards.html:43
+msgid "Default image"
+msgstr "Výchozí obrázek"
+
+#: .\pa_bonus\templates\rewards.html:50
+msgid "Code:"
+msgstr "Kód:"
+
+#: .\pa_bonus\templates\rewards.html:55 .\pa_bonus\templates\rewards.html:90
+#: .\pa_bonus\templates\rewards.html:119
+msgid "points"
+msgstr "bodů"
+
+#: .\pa_bonus\templates\rewards.html:60
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:46
+msgid "In stock"
+msgstr "Skladem"
+
+#: .\pa_bonus\templates\rewards.html:62
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:48
+msgid "In stock — last units"
+msgstr "Skladem — poslední kusy"
+
+#: .\pa_bonus\templates\rewards.html:64
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:50
+msgid "On order"
+msgstr "Na objednání"
+
+#: .\pa_bonus\templates\rewards.html:89
+msgid "Total value of request"
+msgstr "Celková hodnota žádosti"
+
+#: .\pa_bonus\templates\rewards.html:90
+msgid "available"
+msgstr "k dispozici"
+
+#: .\pa_bonus\templates\rewards.html:91
+msgid "You have exceeded your points balance!"
+msgstr "Překročili jste stav bodového konta!"
+
+#: .\pa_bonus\templates\rewards.html:94
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:84
+msgid "Submit reward request"
+msgstr "Odeslat žádost o odměny"
+
+#: .\pa_bonus\templates\rewards.html:96
+msgid "No rewards are currently available."
+msgstr "Aktuálně nejsou dostupné žádné odměny."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:6
+#: .\pa_bonus\templates\rewards_request_detail.html:14
+#: .\pa_bonus\templates\rewards_request_detail.html:52
+msgid "Confirm reward request"
+msgstr "Potvrzení žádosti o odměny"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:8
+#: .\pa_bonus\templates\rewards_request_detail.html:19
+msgid "Reward request detail"
+msgstr "Detail žádosti o odměny"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:16
+msgid ""
+"Please check the information below and, if correct, confirm the request "
+"using the button at the bottom of the page."
+msgstr ""
+"Zkontrolujte prosím níže uvedené informace a pokud jsou správné, potvrďte "
+"žádost tlačítkem ve spodní části stránky."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:21
+msgid "Below you will find information about your submitted reward request."
+msgstr "Níže naleznete informace o odeslané žádosti o odměny."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:25
+msgid "User:"
+msgstr "Uživatel:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:26
+msgid "Request date:"
+msgstr "Datum žádosti:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:27
+msgid "Total value:"
+msgstr "Celková hodnota:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:29
+msgid "Items:"
+msgstr "Položky:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:34
+#, python-format
+msgid "%(qty)s x %(name)s (%(cost)s points / unit) = %(total)s points total"
+msgstr "%(qty)s x %(name)s (%(cost)s bodů / ks) = %(total)s bodů celkem"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:41
+msgid "Your available points:"
+msgstr "Vaše dostupné body:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:47
+#: .\pa_bonus\templates\rewards_request_detail.html:59
+msgid "Note to request:"
+msgstr "Poznámka k žádosti:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:49
+msgid ""
+"You may enter a delivery address (if different from your registered "
+"address), preferred delivery date, or any other requirements regarding your "
+"order."
+msgstr ""
+"Zde můžete uvést doručovací adresu (liší-li se od Vaší registrované adresy), "
+"preferovaný termín dodání nebo jakékoli jiné požadavky k Vaší objednávce."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:55
+msgid "You do not have enough points to submit this request."
+msgstr "Pro odeslání žádosti nemáte k dispozici dostatek bodů."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:66
+msgid "Notes from manager:"
+msgstr "Poznámky od manažera:"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:74
+msgid "Request status: Awaiting confirmation"
+msgstr "Stav žádosti: Čeká na potvrzení"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:75
+msgid ""
+"Your request has been submitted and is awaiting approval by a manager. Usual "
+"processing time is 1–3 working days."
+msgstr ""
+"Vaše žádost byla odeslána a čeká na schválení manažerem. Obvyklá doba "
+"zpracování je 1–3 pracovní dny."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:79
+msgid "Request status: Accepted"
+msgstr "Stav žádosti: Přijato"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:80
+msgid ""
+"Your request has been approved and is ready for dispatch. Rewards are sent "
+"based on stock availability."
+msgstr ""
+"Vaše žádost byla schválena a je připravena k odeslání. Odměny zasíláme na "
+"základě dostupnosti skladových zásob."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:85
+msgid "Request status: Rejected"
+msgstr "Stav žádosti: Zamítnuto"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:86
+msgid ""
+"Unfortunately your request was rejected. The reason can be found in the "
+"manager notes above."
+msgstr ""
+"Vaše žádost byla bohužel zamítnuta. Důvod naleznete v poznámkách od manažera "
+"výše."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:87
+msgid ""
+"For further information, contact your sales representative or submit a new "
+"request."
+msgstr ""
+"Pro více informací se obraťte na svého obchodního zástupce nebo podejte "
+"novou žádost."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:91
+msgid "Request status: Finished"
+msgstr "Stav žádosti: Dokončeno"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:92
+msgid ""
+"Your request has been successfully completed and the rewards have been "
+"dispatched. Thank you for using our Bonus Programme."
+msgstr ""
+"Vaše žádost byla úspěšně dokončena a odměny byly odeslány. Děkujeme za "
+"využití Bonusového programu."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:96
+msgid "Request status: Cancelled"
+msgstr "Stav žádosti: Zrušeno"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:97
+msgid ""
+"This request has been cancelled. Your points have been returned to your "
+"points account."
+msgstr "Tato žádost byla zrušena. Vaše body byly vráceny na Vaše bodové konto."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:98
+msgid "To create a new request, return to the"
+msgstr "Pro vytvoření nové žádosti přejděte do sekce"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:98
+msgid "rewards section"
+msgstr "odměn"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:102
+msgid "Request status: Overdue invoice"
+msgstr "Stav žádosti: Faktura po splatnosti"
+
+#: .\pa_bonus\templates\rewards_request_detail.html:103
+msgid ""
+"Processing of your request has been suspended due to an unpaid overdue "
+"invoice."
+msgstr ""
+"Zpracování Vaší žádosti bylo pozastaveno z důvodu neuhrazené faktury po "
+"splatnosti."
+
+#: .\pa_bonus\templates\rewards_request_detail.html:104
+msgid ""
+"To resolve this, or if you have already paid the invoice, please contact "
+"your sales representative or write to"
+msgstr ""
+"Chcete-li situaci vyřešit, nebo jste-li fakturu již uhradili, kontaktujte "
+"prosím svého obchodního zástupce nebo napište na"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:3
+#, python-format
+msgid "Client detail — %(first_name)s %(last_name)s"
+msgstr "Detail klienta — %(first_name)s %(last_name)s"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:10
+#: .\pa_bonus\templates\sales_rep\client_list.html:79
+#: .\pa_bonus\templates\sales_rep\dashboard.html:69
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:31
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:41
+msgid "Customer number"
+msgstr "Číslo zákazníka"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:11
+msgid "Region:"
+msgstr "Region:"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:16
+msgid "Back to client list"
+msgstr "Zpět na seznam klientů"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:20
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:8
+msgid "Create reward request"
+msgstr "Vytvořit žádost o odměny"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:26
+msgid "Points summary"
+msgstr "Přehled bodů"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:30
+#: .\pa_bonus\templates\sales_rep\client_list.html:84
+msgid "Available balance"
+msgstr "Dostupný zůstatek"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:34
+msgid "Confirmed (period)"
+msgstr "Potvrzeno (období)"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:44
+#: .\pa_bonus\templates\sales_rep\client_list.html:29
+msgid "From"
+msgstr "Od"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:52
+#: .\pa_bonus\templates\sales_rep\client_detail.html:70
+#: .\pa_bonus\templates\sales_rep\client_list.html:37
+#: .\pa_bonus\templates\sales_rep\client_list.html:55
+msgid "Year"
+msgstr "Rok"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:62
+#: .\pa_bonus\templates\sales_rep\client_list.html:47
+msgid "To"
+msgstr "Do"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:80
+#: .\pa_bonus\templates\sales_rep\client_list.html:65
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:28
+msgid "Filter"
+msgstr "Filtrovat"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:87
+#: .\pa_bonus\templates\sales_rep\client_list.html:81
+msgid "Contract"
+msgstr "Smlouva"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:89
+#, python-format
+msgid "Active contract: %(date_from)s – %(date_to)s"
+msgstr "Aktivní smlouva: %(date_from)s – %(date_to)s"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:91
+msgid "No active contract."
+msgstr "Žádná aktivní smlouva."
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:106
+msgid "Expiring within the next"
+msgstr "Platnost končí v následujících"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:110
+#, python-format
+msgid "%(months)s months"
+msgstr "%(months)s měsících"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:116
+msgid "Show"
+msgstr "Zobrazit"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:123
+#, python-format
+msgid ""
+"<strong>%(points)s points</strong> belonging to this client will expire in "
+"the next %(months)s months. When redeeming rewards, points expiring soonest "
+"are always used first."
+msgstr ""
+"Klientovi v následujících %(months)s měsících skončí platnost "
+"<strong>%(points)s bodů</strong>. Při čerpání odměn se vždy přednostně "
+"použijí body s nejdříve končící platností."
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:147
+#, python-format
+msgid "This client has no points expiring in the next %(months)s months."
+msgstr ""
+"Klientovi v následujících %(months)s měsících nekončí platnost žádných bodů."
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:152
+#, python-format
+msgid "Turnover by brand (%(date_from)s – %(date_to)s)"
+msgstr "Obrat podle značek (%(date_from)s – %(date_to)s)"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:158
+msgid "Turnover (invoices)"
+msgstr "Obrat (faktury)"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:159
+msgid "Credit notes"
+msgstr "Dobropisy"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:160
+msgid "Net turnover"
+msgstr "Čistý obrat"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:162
+msgid "In contract"
+msgstr "Ve smlouvě"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:177
+msgid "Yes"
+msgstr "Ano"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:179
+msgid "No"
+msgstr "Ne"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:185
+msgid "No turnover data for the selected period."
+msgstr "Pro zvolené období nejsou k dispozici žádná data o obratu."
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:190
+msgid "TOTAL"
+msgstr "CELKEM"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:204
+msgid "Recent points transactions"
+msgstr "Poslední bodové transakce"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:211
+msgid "Description"
+msgstr "Popis"
+
+#: .\pa_bonus\templates\sales_rep\client_detail.html:267
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:73
+msgid "No reward requests found."
+msgstr "Žádné žádosti o odměny nenalezeny."
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:3
+#: .\pa_bonus\templates\sales_rep\client_list.html:9
+#: .\pa_bonus\templates\sales_rep\dashboard.html:48
+msgid "My clients"
+msgstr "Moji klienti"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:16
+#: .\pa_bonus\templates\sales_rep\client_list.html:80
+#: .\pa_bonus\templates\sales_rep\dashboard.html:70
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:32
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:42
+msgid "Region"
+msgstr "Region"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:18
+msgid "All regions"
+msgstr "Všechny regiony"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:66
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:29
+msgid "Reset"
+msgstr "Resetovat"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:72
+#, python-format
+msgid "Showing %(count)s clients for the period %(date_from)s – %(date_to)s."
+msgstr "Zobrazeno %(count)s klientů za období %(date_from)s – %(date_to)s."
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:78
+#: .\pa_bonus\templates\sales_rep\dashboard.html:68
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:30
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:40
+msgid "Client"
+msgstr "Klient"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:82
+msgid "Turnover (period)"
+msgstr "Obrat (období)"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:83
+msgid "Points (period)"
+msgstr "Body (období)"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:85
+#: .\pa_bonus\templates\sales_rep\dashboard.html:72
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:34
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:47
+msgid "Action"
+msgstr "Akce"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:96
+msgid "Active"
+msgstr "Aktivní"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:98
+msgid "None"
+msgstr "Žádná"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:106
+msgid "Order"
+msgstr "Objednat"
+
+#: .\pa_bonus\templates\sales_rep\client_list.html:111
+msgid "No clients found."
+msgstr "Žádní klienti nenalezeni."
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:3
+#, python-format
+msgid "Create reward request for %(first_name)s %(last_name)s"
+msgstr "Vytvořit žádost o odměny pro %(first_name)s %(last_name)s"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:10
+msgid "For client:"
+msgstr "Pro klienta:"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:12
+msgid "Available balance:"
+msgstr "Dostupný zůstatek:"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:17
+msgid "Back to client detail"
+msgstr "Zpět na detail klienta"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:25
+msgid "Available rewards"
+msgstr "Dostupné odměny"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:30
+msgid "Reward"
+msgstr "Odměna"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:32
+msgid "Point cost"
+msgstr "Cena v bodech"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:75
+msgid "Note (optional)"
+msgstr "Poznámka (nepovinné)"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:80
+msgid "Add a note to the request (visible to managers)..."
+msgstr "Přidejte poznámku k žádosti (viditelná pro manažery)..."
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:85
+msgid "Cancel"
+msgstr "Zrušit"
+
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:90
+msgid "No rewards are available for the brands in this client's contract."
+msgstr "Pro značky ze smlouvy tohoto klienta nejsou dostupné žádné odměny."
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:3
+#: .\pa_bonus\templates\sales_rep\dashboard.html:7
+msgid "Sales representative overview"
+msgstr "Přehled obchodního zástupce"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:8
+#, python-format
+msgid "Welcome, %(first_name)s %(last_name)s."
+msgstr "Vítejte, %(first_name)s %(last_name)s."
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:11
+msgid "Your regions"
+msgstr "Vaše regiony"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:16
+msgid "You have no regions assigned."
+msgstr "Nemáte přiřazené žádné regiony."
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:22
+msgid "Summary"
+msgstr "Souhrn"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:26
+msgid "Total clients"
+msgstr "Celkem klientů"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:30
+msgid "With active contract"
+msgstr "S aktivní smlouvou"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:34
+msgid "Total confirmed points"
+msgstr "Celkem potvrzených bodů"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:38
+msgid "Pending reward requests"
+msgstr "Čekající žádosti o odměny"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:63
+msgid "Clients with the highest available points balance"
+msgstr "Klienti s nejvyšším dostupným zůstatkem bodů"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:71
+msgid "Available points"
+msgstr "Dostupné body"
+
+#: .\pa_bonus\templates\sales_rep\dashboard.html:83
+msgid "View"
+msgstr "Zobrazit"
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:7
+msgid "Points expiration (my regions)"
+msgstr "Konec platnosti bodů (moje regiony)"
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:10
+msgid ""
+"Below are clients whose unused points will expire within the next 3 months. "
+"Contact them in time so they can use their points. The client detail shows "
+"exactly when and how many points are expiring."
+msgstr ""
+"Níže jsou klienti, kterým v následujících 3 měsících skončí platnost dosud "
+"nevyčerpaných bodů. Kontaktujte je včas, aby mohli body využít. Detail "
+"klienta ukazuje přesně, kdy a kolik bodů jim platnost končí."
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:17
+msgid "Points nearing expiry"
+msgstr "Bodů s blížícím se koncem platnosti"
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:21
+msgid "Affected clients"
+msgstr "Dotčených klientů"
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:33
+msgid "Points expiring within 3 months"
+msgstr "Body s platností do 3 měsíců"
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:45
+msgid "Client detail"
+msgstr "Detail klienta"
+
+#: .\pa_bonus\templates\sales_rep\point_expirations.html:50
+msgid "No clients have points expiring in the near future."
+msgstr "Žádným klientům v nejbližší době platnost bodů nekončí."
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:3
+msgid "Reward requests — sales representative"
+msgstr "Žádosti o odměny — obchodní zástupce"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:7
+msgid "Reward requests (my regions)"
+msgstr "Žádosti o odměny (moje regiony)"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:13
+msgid "Filter by status"
+msgstr "Filtrovat podle stavu"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:15
+msgid "All"
+msgstr "Vše"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:17
+msgid "Awaiting processing"
+msgstr "Čeká na zpracování"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:39
+msgid "ID"
+msgstr "ID"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:44
+msgid "Total points"
+msgstr "Celkem bodů"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:45
+msgid "Created"
+msgstr "Vytvořeno"
+
+#: .\pa_bonus\templates\sales_rep\reward_requests.html:68
+msgid "View client"
+msgstr "Zobrazit klienta"
+
+#: .\pa_bonus\templates\upload.html:4
+msgid "Upload invoice data"
+msgstr "Nahrát data faktur"
+
+#: .\pa_bonus\templates\upload.html:8
+msgid "Upload transaction file"
+msgstr "Nahrát soubor transakcí"
+
+#: .\pa_bonus\templates\upload.html:15
+msgid "Please correct the errors below."
+msgstr "Opravte prosím chyby níže."
+
+#: .\pa_bonus\templates\upload.html:30
+msgid "Accepted formats: .xlsx, .xls, .csv"
+msgstr "Podporované formáty: .xlsx, .xls, .csv"
+
+#: .\pa_bonus\templates\upload.html:31
+msgid "Maximum file size: 15 MB"
+msgstr "Maximální velikost souboru: 15 MB"
+
+#: .\pa_bonus\templates\upload.html:34
+msgid "Upload"
+msgstr "Nahrát"
+
+#: .\pa_bonus\templates\upload_history.html:4
+#: .\pa_bonus\templates\upload_history.html:7
+msgid "Upload history"
+msgstr "Historie nahrávání"
+
+#: .\pa_bonus\templates\upload_history.html:12
+msgid "File name"
+msgstr "Název souboru"
+
+#: .\pa_bonus\templates\upload_history.html:13
+msgid "Uploaded by"
+msgstr "Nahrál uživatel"
+
+#: .\pa_bonus\templates\upload_history.html:14
+msgid "Uploaded at"
+msgstr "Nahráno dne"
+
+#: .\pa_bonus\views\views_salesreps.py:429
+msgid "No items selected."
+msgstr "Nebyly vybrány žádné položky."
+
+#: .\pa_bonus\views\views_salesreps.py:436
+#, python-format
+msgid ""
+"Client does not have enough points (%(balance)s) for this request "
+"(%(required)s required)."
+msgstr ""
+"Klient nemá dostatek bodů (%(balance)s) pro tuto žádost (požadováno "
+"%(required)s bodů)."
+
+#: .\pa_bonus\views\views_salesreps.py:478
+#, python-format
+msgid ""
+"Reward request created for %(first_name)s %(last_name)s (%(points)s points)."
+msgstr ""
+"Žádost o odměny vytvořena pro %(first_name)s %(last_name)s (%(points)s bodů)."
+
+#: .\pa_bonus\views\views_users.py:213
+#, python-format
+msgid ""
+"You do not have enough points (%(balance)s) to complete this request "
+"(%(required)s required)."
+msgstr ""
+"Nemáte dostatek bodů (%(balance)s) pro dokončení žádosti (požadováno "
+"%(required)s bodů)."
+
+#: .\pa_bonus\views\views_users.py:228
+msgid "Request saved successfully."
+msgstr "Žádost byla úspěšně uložena."
+
+#: .\pa_bonus\views\views_users.py:294
+#, python-format
+msgid ""
+"Insufficient points: You have %(balance)s points but the request requires "
+"%(required)s points."
+msgstr ""
+"Nedostatek bodů: Máte %(balance)s bodů, ale žádost vyžaduje %(required)s "
+"bodů."
+
+#: .\pa_bonus\views\views_users.py:315
+#, python-format
+msgid "Request %(id)s confirmed successfully."
+msgstr "Žádost č. %(id)s byla úspěšně potvrzena."
+
+#: .\pa_bonus\views\views_users.py:318
+msgid "Reward request was already submitted."
+msgstr "Žádost o odměny již byla odeslána."

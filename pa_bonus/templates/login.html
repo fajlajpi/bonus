@@ -1,14 +1,15 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %} Přihlášení {% endblock title %}
+{% block title %}{% trans "Login" %}{% endblock title %}
 
 {% block content %}
 <div class="login-container">
-    <h2>Přihlášení</h2>
+    <h2>{% trans "Login" %}</h2>
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
-        <button class="submit-button" type="submit">Přihlásit</button>
+        <button class="submit-button" type="submit">{% trans "Log in" %}</button>
     </form>
 </div>
 {% endblock %}

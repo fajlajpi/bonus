@@ -2,6 +2,7 @@ from django.db import models
 from django.db.models import Sum
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.contrib.contenttypes.models import ContentType
+from django.utils.translation import gettext_lazy as _
 from dateutil.relativedelta import relativedelta
 import os
 import logging
@@ -422,18 +423,18 @@ class PointsTransaction(models.Model):
 
     """
     TRANSACTION_TYPES = (
-        ('STANDARD_POINTS', 'Standard Points added'),
-        ('REWARD_CLAIM', 'Reward Claim'),
-        ('CREDIT_NOTE_ADJUST', 'Credit Note (dobropis) adjustment'),
-        ('EXTRA_POINTS', 'Extra Points added'),
-        ('ADJUSTMENT', 'Manual Adjustment'),
-        ('EXPIRATION', 'Points expired'),
+        ('STANDARD_POINTS', _('Standard points added')),
+        ('REWARD_CLAIM', _('Reward claim')),
+        ('CREDIT_NOTE_ADJUST', _('Credit note adjustment')),
+        ('EXTRA_POINTS', _('Extra points added')),
+        ('ADJUSTMENT', _('Manual adjustment')),
+        ('EXPIRATION', _('Points expired')),
     )
     TRANSACTION_STATUS = (
-        ('NO-CONTRACT', 'No-Contract'),
-        ('PENDING', 'Pending'),
-        ('CONFIRMED', 'Confirmed'),
-        ('CANCELLED', 'Cancelled')
+        ('NO-CONTRACT', _('No contract')),
+        ('PENDING', _('Pending')),
+        ('CONFIRMED', _('Confirmed')),
+        ('CANCELLED', _('Cancelled')),
     )
     value = models.IntegerField()
     date = models.DateField()
@@ -595,10 +596,10 @@ class FileUpload(models.Model):
         uploaded_by (User): The User object the file was uploaded by.
     """
     PROCESSING_STATUS = (
-        ('PENDING', 'Pending'),
-        ('PROCESSING', 'Processing'),
-        ('COMPLETED', 'Completed'),
-        ('FAILED', 'Failed'),
+        ('PENDING', _('Pending')),
+        ('PROCESSING', _('Processing')),
+        ('COMPLETED', _('Completed')),
+        ('FAILED', _('Failed')),
     )
     file = models.FileField(upload_to="uploads/%Y/%m/%d/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -634,10 +635,10 @@ class Reward(models.Model):
         created_at (DateTime): The datetime the item was created.
     """
     AVAILABILITY_TYPE = (
-        ('AVAILABLE', 'Available'),
-        ('AVAILABLE_LAST_UNITS', 'Available (Last units)'),
-        ('ON_DEMAND', 'On Demand'),
-        ('UNAVAILABLE', 'Unavailable'),
+        ('AVAILABLE', _('Available')),
+        ('AVAILABLE_LAST_UNITS', _('Available (last units)')),
+        ('ON_DEMAND', _('On demand')),
+        ('UNAVAILABLE', _('Unavailable')),
     )
     abra_code = models.CharField(max_length=30, unique=True)
     name = models.CharField(max_length=100)
@@ -678,16 +679,16 @@ class RewardRequest(models.Model):
         total_points (int): The total point value of the request.
     """
     REQUEST_STATUS = (
-        ('DRAFT', 'Draft'),
-        ('PENDING', 'Pending'),
-        ('ACCEPTED', 'Accepted'),
-        ('SHIPPED', 'Shipped'),
-        ('PARTIALLY_SHIPPED', 'Partially shipped'),
-        ('ORDERED_FROM_SUPPLIER', 'Ordered from supplier'),
-        ('REJECTED', 'Rejected'),
-        ('FINISHED', 'Finished'),
-        ('CANCELLED', 'Cancelled'),
-        ('OVERDUE_INVOICE', 'Faktura po splatnosti'),
+        ('DRAFT', _('Draft')),
+        ('PENDING', _('Pending')),
+        ('ACCEPTED', _('Accepted')),
+        ('SHIPPED', _('Shipped')),
+        ('PARTIALLY_SHIPPED', _('Partially shipped')),
+        ('ORDERED_FROM_SUPPLIER', _('Ordered from supplier')),
+        ('REJECTED', _('Rejected')),
+        ('FINISHED', _('Finished')),
+        ('CANCELLED', _('Cancelled')),
+        ('OVERDUE_INVOICE', _('Overdue invoice')),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     requested_at = models.DateTimeField(auto_now_add=True)
@@ -840,8 +841,8 @@ class Invoice(models.Model):
         created_at (DateTime): When this record was created.
     """
     INVOICE_TYPES = (
-        ('INVOICE', 'Standard Invoice'),
-        ('CREDIT_NOTE', 'Credit Note'),
+        ('INVOICE', _('Standard invoice')),
+        ('CREDIT_NOTE', _('Credit note')),
     )
     
     invoice_number = models.CharField(max_length=50, unique=True)

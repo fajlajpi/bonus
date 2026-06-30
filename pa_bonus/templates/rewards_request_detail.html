@@ -1,106 +1,107 @@
 {% extends 'base.html' %}
-{% load pa_bonus_extras %}
+{% load pa_bonus_extras i18n %}
 
 {% block title %}
   {% if request.status == 'DRAFT' %}
-    Potvrzení žádosti o čerpání
+    {% trans "Confirm reward request" %}
   {% else %}
-    Detail žádosti o čerpání
+    {% trans "Reward request detail" %}
   {% endif %}
 {% endblock title %}
 
 {% block content %}
   {% if request.status == 'DRAFT' %}
-    <h1>Potvrzení žádosti o čerpání</h1>
+    <h1>{% trans "Confirm reward request" %}</h1>
     <div class="intro-text">
-      <p>Zkontrolujte, prosím, níže uvedené informace a pokud jsou správné, žádost potvrďte tlačítkem ve spodní části stránky.</p>
+      <p>{% trans "Please check the information below and, if correct, confirm the request using the button at the bottom of the page." %}</p>
     </div>
   {% else %}
-    <h1>Detail žádosti o čerpání</h1>
+    <h1>{% trans "Reward request detail" %}</h1>
     <div class="intro-text">
-      <p>Níže najdete informace o odeslané žádosti o bonus v rámci programu.</p>
+      <p>{% trans "Below you will find information about your submitted reward request." %}</p>
     </div>
   {% endif %}
 
-  <p>Uživatel: {{ request.user.username }}</p>
-  <p>Datum žádosti: {{ request.requested_at|czech_date }}</p>
-  <p>Celková hodnota: {{ request.total_points }} bodů</p>
+  <p>{% trans "User:" %} {{ request.user.username }}</p>
+  <p>{% trans "Request date:" %} {{ request.requested_at|czech_date }}</p>
+  <p>{% trans "Total value:" %} {% blocktrans with points=request.total_points %}{{ points }} points{% endblocktrans %}</p>
 
-  <h2>Položky:</h2>
+  <h2>{% trans "Items:" %}</h2>
   <ul>
     {% for item in items %}
       <li>
-        {{ item.quantity }} x {{ item.display_name }} ({{ item.point_cost }} bodů / ks) = {{ item.quantity|multiply:item.point_cost }} bodů celkem
+        {% with total=item.quantity|multiply:item.point_cost %}
+        {% blocktrans with qty=item.quantity name=item.display_name cost=item.point_cost total=total %}{{ qty }} x {{ name }} ({{ cost }} points / unit) = {{ total }} points total{% endblocktrans %}
+        {% endwith %}
       </li>
     {% endfor %}
   </ul>
 
   {% if request.status == 'DRAFT' %}
-    <p>Vaše dostupné body: {{ user_balance }}</p>
+    <p>{% trans "Your available points:" %} {{ user_balance }}</p>
     {% if request.total_points <= user_balance %}
         <form method="post">
           {% csrf_token %}
-          
+
           <div class="form-group">
-            <label for="customer_note"><strong>Poznámka k žádosti:</strong></label>
+            <label for="customer_note"><strong>{% trans "Note to request:" %}</strong></label>
             <textarea name="customer_note" id="customer_note" rows="4" style="width: 100%;">{{ request.note }}</textarea>
-            <p class="help-text">Zde můžete uvést doručovací adresu (pokud se liší od vaší registrované adresy), 
-            preferovaný termín dodání nebo jakékoliv další požadavky týkající se vaší objednávky.</p>
+            <p class="help-text">{% trans "You may enter a delivery address (if different from your registered address), preferred delivery date, or any other requirements regarding your order." %}</p>
           </div>
-          
-          <button class="submit-button" type="submit">Potvrdit žádost o odměnu</button>
+
+          <button class="submit-button" type="submit">{% trans "Confirm reward request" %}</button>
         </form>
     {% else %}
-        <p>Pro odeslání žádosti nemáte k dispozici dostatek bodů.</p>
+        <p>{% trans "You do not have enough points to submit this request." %}</p>
     {% endif %}
 {% else %}
     {% if request.note %}
-    <h2>Poznámka k žádosti:</h2>
+    <h2>{% trans "Note to request:" %}</h2>
     <div class="note-container">
       {{ request.note }}
     </div>
     {% endif %}
-    
+
     {% if request.description %}
-    <h2>Poznámky od manažera:</h2>
+    <h2>{% trans "Notes from manager:" %}</h2>
     <div class="note-container">
       {{ request.description }}
     </div>
     {% endif %}
-    
+
     {% if request.status == 'PENDING' %}
         <div class="status-info pending">
-            <h3>Stav žádosti: Čeká na potvrzení</h3>
-            <p>Vaše žádost byla odeslána a čeká na schválení manažerem. Obvyklá doba zpracování je 1-3 pracovní dny.</p>
+            <h3>{% trans "Request status: Awaiting confirmation" %}</h3>
+            <p>{% trans "Your request has been submitted and is awaiting approval by a manager. Usual processing time is 1–3 working days." %}</p>
         </div>
     {% elif request.status == 'ACCEPTED' %}
         <div class="status-info accepted">
-            <h3>Stav žádosti: Schváleno</h3>
-            <p>Vaše žádost byla schválena a je připravena k distribuci. Odměny odesíláme na základě skladové dostupnosti.</p>
-            <p>V případě jakýchkoli dotazů kontaktujte svého obchodního zástupce.</p>
+            <h3>{% trans "Request status: Accepted" %}</h3>
+            <p>{% trans "Your request has been approved and is ready for dispatch. Rewards are sent based on stock availability." %}</p>
+            <p>{% trans "For any queries, contact your sales representative." %}</p>
         </div>
     {% elif request.status == 'REJECTED' %}
         <div class="status-info rejected">
-            <h3>Stav žádosti: Zamítnuto</h3>
-            <p>Vaše žádost byla bohužel zamítnuta. Důvod najdete v poznámkách od manažera výše.</p>
-            <p>Pro další informace kontaktujte svého obchodního zástupce nebo vytvořte novou žádost.</p>
+            <h3>{% trans "Request status: Rejected" %}</h3>
+            <p>{% trans "Unfortunately your request was rejected. The reason can be found in the manager notes above." %}</p>
+            <p>{% trans "For further information, contact your sales representative or submit a new request." %}</p>
         </div>
     {% elif request.status == 'FINISHED' %}
         <div class="status-info finished">
-            <h3>Stav žádosti: Dokončeno</h3>
-            <p>Vaše žádost byla úspěšně dokončena a odměny byly odeslány. Děkujeme za využití našeho bonusového programu.</p>
+            <h3>{% trans "Request status: Finished" %}</h3>
+            <p>{% trans "Your request has been successfully completed and the rewards have been dispatched. Thank you for using our Bonus Programme." %}</p>
         </div>
     {% elif request.status == 'CANCELLED' %}
         <div class="status-info cancelled">
-            <h3>Stav žádosti: Zrušeno</h3>
-            <p>Tato žádost byla zrušena. Vaše body byly vráceny na váš bodový účet.</p>
-            <p>Pro vytvoření nové žádosti se vraťte do <a href="{% url 'rewards' %}">sekce odměn</a>.</p>
+            <h3>{% trans "Request status: Cancelled" %}</h3>
+            <p>{% trans "This request has been cancelled. Your points have been returned to your points account." %}</p>
+            <p>{% trans "To create a new request, return to the" %} <a href="{% url 'rewards' %}">{% trans "rewards section" %}</a>.</p>
         </div>
     {% elif request.status == 'OVERDUE_INVOICE' %}
         <div class="status-info overdue-invoice">
-            <h3>Stav žádosti: Faktura po splatnosti</h3>
-            <p>Zpracování vaší žádosti je pozastaveno z důvodu nezaplacené faktury po splatnosti.</p>
-            <p>Pro vyřešení, nebo pokud jste již fakturu uhradili, prosím kontaktujte svého obchodního zástupce nebo napište na kontaktní email <a href="mailto:bonus@primavera-and.cz?subject=BONUS%20Faktura%20po%20splatnosti">bonus@primavera-and.cz</a>.</p>
+            <h3>{% trans "Request status: Overdue invoice" %}</h3>
+            <p>{% trans "Processing of your request has been suspended due to an unpaid overdue invoice." %}</p>
+            <p>{% trans "To resolve this, or if you have already paid the invoice, please contact your sales representative or write to" %} <a href="mailto:bonus@primavera-and.cz?subject=BONUS%20Overdue%20invoice">bonus@primavera-and.cz</a>.</p>
         </div>
     {% endif %}
 {% endif %}

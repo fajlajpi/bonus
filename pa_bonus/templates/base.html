@@ -1,26 +1,27 @@
-{% load static %}
+{% load static i18n %}
+{% get_current_language as CURRENT_LANG %}
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="{{ CURRENT_LANG }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bonusový program - {% block title %}Vítejte{% endblock %}</title>
+    <title>{% trans "Bonus Programme" %} - {% block title %}{% trans "Welcome" %}{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'style.css' %}">
 </head>
 <body>
     <header class="site-header">
         <div class="header-content">
-            <a href="{% url 'dashboard' %}" class="site-title">Bonusový program</a>
+            <a href="{% url 'dashboard' %}" class="site-title">{% trans "Bonus Programme" %}</a>
             <nav class="user-nav">
                 {% if user.is_authenticated %}
-                    Přihlášen jako <em>{{ user.username }}</em>
-                    <a href="{% url 'dashboard' %}">Přehled</a>
+                    {% blocktrans with username=user.username %}Logged in as <em>{{ username }}</em>{% endblocktrans %}
+                    <a href="{% url 'dashboard' %}">{% trans "Overview" %}</a>
                     <form action="{% url 'logout' %}" method="post">
                         {% csrf_token %}
-                        <button type="submit">Odhlásit</button>
+                        <button type="submit">{% trans "Log out" %}</button>
                     </form>
                 {% else %}
-                    <a href="{% url 'login' %}">Přihlásit se</a>
+                    <a href="{% url 'login' %}">{% trans "Log in" %}</a>
                 {% endif %}
             </nav>
         </div>

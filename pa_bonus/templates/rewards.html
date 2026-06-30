@@ -1,19 +1,23 @@
 {% extends 'base.html' %}
-{% load static %}
-{% block title %} Nabídka odměn {% endblock title %}
+{% load static i18n %}
+{% block title %}{% trans "Rewards catalogue" %}{% endblock title %}
 {% block content %}
-  <h1>Dostupné odměny:</h1>
+  <h1>{% trans "Available rewards:" %}</h1>
   <div class="points-summary">
-    <h3>Aktuální stav bodového konta</h3>
-    <p class="total-points">{{ user_balance }} bodů</p>
+    <h3>{% trans "Current points balance" %}</h3>
+    <p class="total-points">{% blocktrans with points=user_balance %}{{ points }} points{% endblocktrans %}</p>
   </div>
   <div class="intro-text">
-    <p>Nabídka Bonusového programu se může měnit v závislosti na dostupnosti odměn u nás i u dodavatelů. Odměny označené
-      <span class="availability-badge available">skladem</span> máme obvykle na skladě
-    Odměny označené <span class="availability-badge on_demand">na objednání</span> objednáváme až na základě Vaší žádosti.</p>
-    <p>V případě dotazů nás kontaktujte na emailu <a href="mailto:support@bonus.primavera-and.cz">support@bonus.primavera-and.cz</a>, 
-      nebo se obraťte na svého obchodního zástupce.</p>
-    <p>V současnosti dokončujeme nahrání kompletní nabídky, některé odměny tak stále ještě chybí.</p>
+    <p>{% trans "The Bonus Programme offer may change depending on the availability of rewards from us and our suppliers." %}
+      <span class="availability-badge available">{% trans "in stock" %}</span>
+      {% trans "means we usually have the item in stock." %}
+      <span class="availability-badge on_demand">{% trans "on order" %}</span>
+      {% trans "means we order it only once your request is received." %}
+    </p>
+    <p>{% trans "For any queries, contact us at" %} <a href="mailto:support@bonus.primavera-and.cz">support@bonus.primavera-and.cz</a>
+      {% trans "or speak to your sales representative." %}
+    </p>
+    <p>{% trans "We are currently completing the upload of our full catalogue — some rewards may still be missing." %}</p>
   </div>
   <form method="post">
     {% csrf_token %}
@@ -22,11 +26,11 @@
     <table class="rewards-table">
       <thead>
         <tr>
-          <th class="reward-image-col">Produkt</th>
-          <th class="reward-info-col">Informace</th>
-          <th class="reward-cost-col">Body</th>
-          <th class="reward-status-col">Dostupnost</th>
-          <th class="reward-quantity-col">Množství</th>
+          <th class="reward-image-col">{% trans "Product" %}</th>
+          <th class="reward-info-col">{% trans "Information" %}</th>
+          <th class="reward-cost-col">{% trans "Points" %}</th>
+          <th class="reward-status-col">{% trans "Availability" %}</th>
+          <th class="reward-quantity-col">{% trans "Quantity" %}</th>
         </tr>
       </thead>
       <tbody>
@@ -36,37 +40,37 @@
               {% if reward.image %}
                 <img src="{{ reward.image.url }}" alt="{{ reward.name }}" class="reward-image">
               {% else %}
-                <img src="{% static 'images/default.png' %}" alt="Default Image" class="reward-image">
+                <img src="{% static 'images/default.png' %}" alt="{% trans "Default image" %}" class="reward-image">
               {% endif %}
             </td>
             <td class="reward-info-cell">
               <h3 class="reward-name">{{ reward.name }}</h3>
               <p class="reward-description">{{ reward.description }}</p>
               <div class="reward-metadata">
-                <span class="reward-code">Kód: {{ reward.abra_code }}</span>
+                <span class="reward-code">{% trans "Code:" %} {{ reward.abra_code }}</span>
               </div>
             </td>
             <td class="reward-cost-cell">
               <div class="point-cost">{{ reward.point_cost }}</div>
-              <div>bodů</div>
+              <div>{% trans "points" %}</div>
             </td>
             <td class="reward-status-cell">
               <span class="availability-badge {{ reward.availability|lower }}">
                 {% if reward.availability == 'AVAILABLE' %}
-                  Skladem
+                  {% trans "In stock" %}
                 {% elif reward.availability == 'AVAILABLE_LAST_UNITS' %}
-                  Skladem poslední kusy
+                  {% trans "In stock — last units" %}
                 {% elif reward.availability == 'ON_DEMAND' %}
-                  Na objednání
+                  {% trans "On order" %}
                 {% elif reward.availability == 'UNAVAILABLE' %}
-                  Nedostupné
+                  {% trans "Unavailable" %}
                 {% endif %}
               </span>
             </td>
             <td class="reward-quantity-cell">
               {% if reward.availability != 'UNAVAILABLE' %}
                 <div class="quantity-input">
-                  <input class="reward-input" type="number" name="reward_quantity_{{ reward.id }}" id="reward_quantity_{{ reward.id }}" value="0" min="0" 
+                  <input class="reward-input" type="number" name="reward_quantity_{{ reward.id }}" id="reward_quantity_{{ reward.id }}" value="0" min="0"
                          {% if reward.availability == 'UNAVAILABLE' %}disabled{% endif %}>
                 </div>
               {% else %}
@@ -81,16 +85,15 @@
     </table>
   </div>
 
-  <!-- Live summary of total point cost -->
   <div id="live-total-container" class="points-summary" style="margin-top: 2rem;">
-    <h3>Celková hodnota žádosti</h3>
-    <span class="total-points" id="live-total">0 bodů</span> <span class="total-points">/ {{ user_balance }} k dispozici</span>
-    <p id="point-warning" style="display:none; color: var(--error-color); font-weight: bold;">Překročili jste stav bodového konta!</p>
+    <h3>{% trans "Total value of request" %}</h3>
+    <span class="total-points" id="live-total">0 {% trans "points" %}</span> <span class="total-points">/ {{ user_balance }} {% trans "available" %}</span>
+    <p id="point-warning" style="display:none; color: var(--error-color); font-weight: bold;">{% trans "You have exceeded your points balance!" %}</p>
   </div>
-  
-  <button id="submit-button" class="submit-button" type="submit">Vytvořit žádost o odměny</button>
+
+  <button id="submit-button" class="submit-button" type="submit">{% trans "Submit reward request" %}</button>
 {% else %}
-  <p>V tuto chvíli nejsou dostupné žádné odměny.</p>
+  <p>{% trans "No rewards are currently available." %}</p>
 {% endif %}
   </form>
   <script>
@@ -99,10 +102,10 @@
       const totalDisplay = document.getElementById('live-total');
       const warningText = document.getElementById('point-warning');
       const submitButton = document.getElementById('submit-button');
-  
-      const userBalance = {{ user_balance|default:0 }};  // Injected from Django context
+
+      const userBalance = {{ user_balance|default:0 }};
       let currentTotal = 0;
-  
+
       function calculateTotal() {
         currentTotal = 0;
         inputs.forEach(input => {
@@ -112,9 +115,9 @@
             currentTotal += quantity * pointCost;
           }
         });
-  
-        totalDisplay.textContent = currentTotal + ' bodů';
-  
+
+        totalDisplay.textContent = currentTotal + ' {% trans "points" %}';
+
         if (currentTotal > userBalance) {
           warningText.style.display = 'block';
           submitButton.disabled = true;
@@ -127,12 +130,12 @@
           submitButton.style.pointerEvents = 'auto';
         }
       }
-  
+
       inputs.forEach(input => {
         input.addEventListener('input', calculateTotal);
       });
-  
-      calculateTotal();  // initialize on load
+
+      calculateTotal();
     });
   </script>
 {% endblock %}

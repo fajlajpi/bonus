@@ -1,50 +1,50 @@
 {% extends "base.html" %}
-{% load pa_bonus_extras %}
+{% load pa_bonus_extras i18n %}
 
-{% block title %} Seznam žádostí o čerpání {% endblock title %}
+{% block title %}{% trans "Reward requests" %}{% endblock title %}
 
 {% block content %}
 <div class="history-container">
-    <h2>Žádosti o čerpání odměn</h2>
+    <h2>{% trans "Reward requests" %}</h2>
 
     {% if reward_requests %}
     <table class="transactions-table">
         <thead>
             <tr>
-                <th>Datum</th>
-                <th>Hodnota</th>
-                <th>Status</th>
-                <th>Poznámka</th>
-                <th>Detail</th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Value" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Note" %}</th>
+                <th>{% trans "Detail" %}</th>
             </tr>
         </thead>
         <tbody>
             {% for reward_request in reward_requests %}
             <tr>
                 <td>{{ reward_request.requested_at|czech_date }}</td>
-                <td>{{ reward_request.total_points }} bodů</td>
+                <td>{% blocktrans with points=reward_request.total_points %}{{ points }} points{% endblocktrans %}</td>
                 <td>
                     <span class="status-badge {{ reward_request.status|lower }}">
                         {% if reward_request.status == 'DRAFT' %}
-                            Koncept
+                            {% trans "Draft" %}
                         {% elif reward_request.status == 'PENDING' %}
-                            Čeká na potvrzení
+                            {% trans "Awaiting confirmation" %}
                         {% elif reward_request.status == 'ACCEPTED' %}
-                            Potvrzena
+                            {% trans "Accepted" %}
                         {% elif reward_request.status == 'SHIPPED' %}
-                            Expedováno
+                            {% trans "Shipped" %}
                         {% elif reward_request.status == 'PARTIALLY_SHIPPED' %}
-                            Částečně expedováno
+                            {% trans "Partially shipped" %}
                         {% elif reward_request.status == 'ORDERED_FROM_SUPPLIER' %}
-                            Objednáno od dodavatele
+                            {% trans "Ordered from supplier" %}
                         {% elif reward_request.status == 'REJECTED' %}
-                            Odmítnuta
+                            {% trans "Rejected" %}
                         {% elif reward_request.status == 'FINISHED' %}
-                            Dokončena
+                            {% trans "Finished" %}
                         {% elif reward_request.status == 'CANCELLED' %}
-                            Zrušena
+                            {% trans "Cancelled" %}
                         {% elif reward_request.status == 'OVERDUE_INVOICE' %}
-                            Faktura po splatnosti
+                            {% trans "Overdue invoice" %}
                         {% endif %}
                     </span>
                 </td>
@@ -54,14 +54,14 @@
                     {% endif %}
                 </td>
                 <td>
-                    <a href="{% url 'rewards_request_detail' reward_request.id %}" class="details-link">Detail</a>
+                    <a href="{% url 'rewards_request_detail' reward_request.id %}" class="details-link">{% trans "Detail" %}</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p>Žádné žádosti nenalezeny.</p>
+    <p>{% trans "No requests found." %}</p>
     {% endif %}
 </div>
 

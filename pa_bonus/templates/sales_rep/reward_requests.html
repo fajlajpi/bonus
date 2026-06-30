@@ -1,51 +1,50 @@
 {% extends "base.html" %}
-{% block title %}Žádosti o odměny — obchodní zástupce{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "Reward requests — sales representative" %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-  <h2>Žádosti o odměny (moje regiony)</h2>
+  <h2>{% trans "Reward requests (my regions)" %}</h2>
 
-  <!-- Status Filter -->
   <div class="filter-bar">
     <form method="get">
       <div class="filter-row">
         <div class="filter-group">
-          <label for="status">Filtrovat podle stavu</label>
+          <label for="status">{% trans "Filter by status" %}</label>
           <select name="status" id="status">
-            <option value="">Vše</option>
-            <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>Koncept</option>
-            <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>Čeká na zpracování</option>
-            <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>Přijato</option>
-            <option value="SHIPPED" {% if selected_status == 'SHIPPED' %}selected{% endif %}>Odesláno</option>
-            <option value="PARTIALLY_SHIPPED" {% if selected_status == 'PARTIALLY_SHIPPED' %}selected{% endif %}>Částečně odesláno</option>
-            <option value="ORDERED_FROM_SUPPLIER" {% if selected_status == 'ORDERED_FROM_SUPPLIER' %}selected{% endif %}>Objednáno u dodavatele</option>
-            <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>Zamítnuto</option>
-            <option value="FINISHED" {% if selected_status == 'FINISHED' %}selected{% endif %}>Dokončeno</option>
-            <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>Zrušeno</option>
+            <option value="">{% trans "All" %}</option>
+            <option value="DRAFT" {% if selected_status == 'DRAFT' %}selected{% endif %}>{% trans "Draft" %}</option>
+            <option value="PENDING" {% if selected_status == 'PENDING' %}selected{% endif %}>{% trans "Awaiting processing" %}</option>
+            <option value="ACCEPTED" {% if selected_status == 'ACCEPTED' %}selected{% endif %}>{% trans "Accepted" %}</option>
+            <option value="SHIPPED" {% if selected_status == 'SHIPPED' %}selected{% endif %}>{% trans "Shipped" %}</option>
+            <option value="PARTIALLY_SHIPPED" {% if selected_status == 'PARTIALLY_SHIPPED' %}selected{% endif %}>{% trans "Partially shipped" %}</option>
+            <option value="ORDERED_FROM_SUPPLIER" {% if selected_status == 'ORDERED_FROM_SUPPLIER' %}selected{% endif %}>{% trans "Ordered from supplier" %}</option>
+            <option value="REJECTED" {% if selected_status == 'REJECTED' %}selected{% endif %}>{% trans "Rejected" %}</option>
+            <option value="FINISHED" {% if selected_status == 'FINISHED' %}selected{% endif %}>{% trans "Finished" %}</option>
+            <option value="CANCELLED" {% if selected_status == 'CANCELLED' %}selected{% endif %}>{% trans "Cancelled" %}</option>
           </select>
         </div>
         <div class="filter-group">
-          <button type="submit" class="btn-filter">Filtrovat</button>
-          <a href="{% url 'salesrep_reward_requests' %}" class="btn-reset">Reset</a>
+          <button type="submit" class="btn-filter">{% trans "Filter" %}</button>
+          <a href="{% url 'salesrep_reward_requests' %}" class="btn-reset">{% trans "Reset" %}</a>
         </div>
       </div>
     </form>
   </div>
 
-  <!-- Requests Table -->
   <div class="table-container">
     <table class="transactions-table">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Klient</th>
-          <th>Zákaznické číslo</th>
-          <th>Region</th>
-          <th>Stav</th>
-          <th>Celkem bodů</th>
-          <th>Vytvořeno</th>
-          <th>Poznámka</th>
-          <th>Akce</th>
+          <th>{% trans "ID" %}</th>
+          <th>{% trans "Client" %}</th>
+          <th>{% trans "Customer number" %}</th>
+          <th>{% trans "Region" %}</th>
+          <th>{% trans "Status" %}</th>
+          <th>{% trans "Total points" %}</th>
+          <th>{% trans "Created" %}</th>
+          <th>{% trans "Note" %}</th>
+          <th>{% trans "Action" %}</th>
         </tr>
       </thead>
       <tbody>
@@ -58,7 +57,7 @@
           <td>
             <span class="status-badge {{ req.status|lower }}">{{ req.get_status_display }}</span>
           </td>
-          <td class="value negative">{{ req.total_points }} bodů</td>
+          <td class="value negative">{% blocktrans with points=req.total_points %}{{ points }} points{% endblocktrans %}</td>
           <td>{{ req.requested_at|date:"d.m.Y" }}</td>
           <td>
             {% if req.note %}
@@ -66,12 +65,12 @@
             {% endif %}
           </td>
           <td>
-            <a href="{% url 'salesrep_client_detail' req.user.pk %}" class="details-link">Zobrazit klienta</a>
+            <a href="{% url 'salesrep_client_detail' req.user.pk %}" class="details-link">{% trans "View client" %}</a>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="9">Žádné žádosti o odměny nenalezeny.</td>
+          <td colspan="9">{% trans "No reward requests found." %}</td>
         </tr>
         {% endfor %}
       </tbody>

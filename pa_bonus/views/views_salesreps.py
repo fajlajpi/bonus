@@ -12,6 +12,7 @@ Sales Reps are a middle layer between clients and managers. They can:
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+from django.utils.translation import gettext as _
 from django.views.generic import View, ListView
 from django.db.models import Sum, Count, Q, Value, DecimalField
 from django.db.models.functions import Coalesce
@@ -425,15 +426,14 @@ class SalesRepCreateRewardRequestView(SalesRepRequiredMixin, View):
                 reward_quantities[reward_id] = (reward, quantity)
 
         if not reward_quantities:
-            messages.warning(request, "No items selected.")
+            messages.warning(request, _("No items selected."))
             return redirect('salesrep_create_reward_request', pk=pk)
 
         client_balance = client.get_balance()
         if total_points > client_balance:
             messages.error(
                 request,
-                f"Client does not have enough points ({client_balance}) "
-                f"for this request ({total_points} required).",
+                _("Client does not have enough points (%(balance)s) for this request (%(required)s required).") % {'balance': client_balance, 'required': total_points},
             )
             return redirect('salesrep_create_reward_request', pk=pk)
 
@@ -475,7 +475,10 @@ class SalesRepCreateRewardRequestView(SalesRepRequiredMixin, View):
 
         messages.success(
             request,
-            f"Reward request created for {client.first_name} {client.last_name} "
-            f"({reward_request.total_points} points).",
+            _("Reward request created for %(first_name)s %(last_name)s (%(points)s points).") % {
+                'first_name': client.first_name,
+                'last_name': client.last_name,
+                'points': reward_request.total_points,
+            },
         )
         return redirect('salesrep_client_detail', pk=pk)

@@ -5,6 +5,7 @@ from django.views.generic import TemplateView, ListView, DetailView, View
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from pa_bonus.models import (PointsTransaction, UserContract, Reward, RewardRequest, RewardRequestItem,
                              UserContractGoal, InvoiceBrandTurnover)
 from pa_bonus.services.points import allocate_debit, expiration_schedule, expiring_points_total
@@ -209,7 +210,7 @@ class RewardsView(LoginRequiredMixin, View):
 
         # Backend check — don't allow creation if not enough points
         if total_points > user_balance:
-            messages.error(request, f"You do not have enough points ({user_balance}) to complete this request ({total_points} required).")
+            messages.error(request, _("You do not have enough points (%(balance)s) to complete this request (%(required)s required).") % {'balance': user_balance, 'required': total_points})
             return redirect('rewards')
 
         # Only now we create the request and items
@@ -224,7 +225,7 @@ class RewardsView(LoginRequiredMixin, View):
             )
 
         reward_request.save()  # Updates total_points field
-        messages.success(request, "Request saved successfully.")
+        messages.success(request, _("Request saved successfully."))
         return redirect('rewards_request_detail', pk=reward_request.pk)
 
 class RewardsRequestsView(LoginRequiredMixin, ListView):
@@ -290,7 +291,7 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
             # Verify that user still has enough points
             user_balance = request.user.get_balance()
             if reward_request.total_points > user_balance:
-                messages.error(request, f"Insufficient points: You have {user_balance} points but the request requires {reward_request.total_points} points.")
+                messages.error(request, _("Insufficient points: You have %(balance)s points but the request requires %(required)s points.") % {'balance': user_balance, 'required': reward_request.total_points})
                 return redirect('rewards_request_detail', pk=pk)
                 
             # Update the status to Pending
@@ -311,17 +312,11 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
             )
             allocate_debit(points_transaction)
 
-            messages.success(request, f"Request {reward_request.id} confirmed successfully.")
+            messages.success(request, _("Request %(id)s confirmed successfully.") % {'id': reward_request.id})
             return redirect('reward_requests')
         else:
-            messages.warning(request, f"Reward request was already submitted.")
+            messages.warning(request, _("Reward request was already submitted."))
             return redirect('reward_requests')
-
-class ExtraGoalsView(LoginRequiredMixin, TemplateView):
-    """
-    Displays the extra goals page (currently under construction).
-    """
-    template_name = 'extra_goals.html'
 
 class ExtraGoalsDetailView(LoginRequiredMixin, View):
     """

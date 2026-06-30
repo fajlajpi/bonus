@@ -57,6 +57,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'pa_bonus.context_processors.contact_info',
@@ -100,10 +101,6 @@ LANGUAGES = [
     ('cs', 'Czech'),
     ('pl', 'Polish'),
     ('sk', 'Slovak'),
-]
-
-LOCALE_PATHS = [
-    BASE_DIR / 'pa_bonus' / 'locale',
 ]
 
 TIME_ZONE = 'UTC'

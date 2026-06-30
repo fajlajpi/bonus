@@ -30,28 +30,28 @@ class FileUploadForm(forms.ModelForm):
         # Check file extension
         ext = file.name.split('.')[-1].lower()
         if ext not in ['xls','xlsx', 'csv']:
-            raise forms.ValidationError('Unsupported filetype')
-        
+            raise forms.ValidationError(_('Unsupported file type'))
+
         # Check file size (limit 15 MB)
         if file.size > 15 * 1024 * 1024:
-            raise forms.ValidationError('File too large (>15 MB)')
+            raise forms.ValidationError(_('File too large (>15 MB)'))
         
         return file
     
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
-        label="Email nebo uživatelské jméno",
+        label=_("Email or username"),
         widget=forms.TextInput(attrs={'autofocus': True}),
     )
     password = forms.CharField(
-        label="Heslo",
+        label=_("Password"),
         strip=False,
         widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
     )
-    
+
     error_messages = {
-        'invalid_login': "Zadejte prosím správné uživatelské jméno (nebo emailovou adresu) a heslo. ",
-        'inactive': "Tento účet je neaktivní.",
+        'invalid_login': _("Please enter a correct username (or email address) and password."),
+        'inactive': _("This account is inactive."),
     }
 
 class ClientCreationForm(forms.Form):

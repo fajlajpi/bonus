@@ -1,19 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Vytvořit žádost o odměnu pro {{ client.first_name }} {{ client.last_name }}{% endblock %}
+{% load i18n %}
+{% block title %}{% blocktrans with first_name=client.first_name last_name=client.last_name %}Create reward request for {{ first_name }} {{ last_name }}{% endblocktrans %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
   <div class="page-header">
-    <h2>Vytvořit žádost o odměnu</h2>
+    <h2>{% trans "Create reward request" %}</h2>
     <p class="page-description">
-      Pro klienta: <strong>{{ client.first_name }} {{ client.last_name }}</strong>
+      {% trans "For client:" %} <strong>{{ client.first_name }} {{ client.last_name }}</strong>
       ({{ client.user_number }})
-      · Dostupný zůstatek: <strong>{{ client_balance }} bodů</strong>
+      · {% trans "Available balance:" %} <strong>{% blocktrans with points=client_balance %}{{ points }} points{% endblocktrans %}</strong>
     </p>
   </div>
 
   <a href="{% url 'salesrep_client_detail' client.pk %}" class="details-link" style="display:inline-block; margin-bottom: 1rem;">
-    ← Zpět na detail klienta
+    ← {% trans "Back to client detail" %}
   </a>
 
   {% if rewards %}
@@ -21,34 +22,34 @@
     {% csrf_token %}
 
     <div class="dashboard-section">
-      <h3>Dostupné odměny</h3>
+      <h3>{% trans "Available rewards" %}</h3>
       <div class="table-container">
         <table class="transactions-table">
           <thead>
             <tr>
-              <th>Odměna</th>
-              <th>Značka</th>
-              <th>Cena v bodech</th>
-              <th>Dostupnost</th>
-              <th>Množství</th>
+              <th>{% trans "Reward" %}</th>
+              <th>{% trans "Brand" %}</th>
+              <th>{% trans "Point cost" %}</th>
+              <th>{% trans "Availability" %}</th>
+              <th>{% trans "Quantity" %}</th>
             </tr>
           </thead>
           <tbody>
             {% for reward in rewards %}
             <tr>
               <td>{{ reward.name }}</td>
-              <td>{{ reward.brand.name|default:"Libovolná" }}</td>
-              <td class="value">{{ reward.point_cost }} bodů</td>
+              <td>{{ reward.brand.name|default:"{% trans "Any" %}" }}</td>
+              <td class="value">{% blocktrans with points=reward.point_cost %}{{ points }} points{% endblocktrans %}</td>
               <td>
                 <span class="availability-badge {{ reward.availability|lower }}">
                   {% if reward.availability == 'AVAILABLE' %}
-                    Skladem
+                    {% trans "In stock" %}
                   {% elif reward.availability == 'AVAILABLE_LAST_UNITS' %}
-                    Skladem — poslední kusy
+                    {% trans "In stock — last units" %}
                   {% elif reward.availability == 'ON_DEMAND' %}
-                    Na objednávku
+                    {% trans "On order" %}
                   {% elif reward.availability == 'UNAVAILABLE' %}
-                    Nedostupné
+                    {% trans "Unavailable" %}
                   {% else %}
                     {{ reward.availability }}
                   {% endif %}
@@ -70,24 +71,23 @@
       </div>
     </div>
 
-    <!-- Optional note -->
     <div class="dashboard-section">
-      <h3>Poznámka (nepovinné)</h3>
+      <h3>{% trans "Note (optional)" %}</h3>
       <textarea name="rep_note"
                 rows="3"
                 class="form-control"
                 style="width: 100%; padding: 0.5rem;"
-                placeholder="Přidejte poznámku k žádosti (viditelná pro manažery)..."></textarea>
+                placeholder="{% trans "Add a note to the request (visible to managers)..." %}"></textarea>
     </div>
 
     <div class="form-actions" style="margin-top: 1rem;">
-      <button type="submit" class="btn-filter">Odeslat žádost o odměnu</button>
-      <a href="{% url 'salesrep_client_detail' client.pk %}" class="btn-reset" style="text-decoration:none;">Zrušit</a>
+      <button type="submit" class="btn-filter">{% trans "Submit reward request" %}</button>
+      <a href="{% url 'salesrep_client_detail' client.pk %}" class="btn-reset" style="text-decoration:none;">{% trans "Cancel" %}</a>
     </div>
   </form>
   {% else %}
   <div class="dashboard-section">
-    <p>Pro značky ze smlouvy tohoto klienta nejsou dostupné žádné odměny.</p>
+    <p>{% trans "No rewards are available for the brands in this client's contract." %}</p>
   </div>
   {% endif %}
 </div>

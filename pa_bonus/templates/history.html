@@ -1,31 +1,32 @@
 {% extends "base.html" %}
-{% load pa_bonus_extras %}
+{% load pa_bonus_extras i18n %}
 
-{% block title %} Historie transakcí {% endblock title %}
+{% block title %}{% trans "Transaction history" %}{% endblock title %}
 
 {% block content %}
 <div class="history-container">
-    <h2>Historie bodových transakcí</h2>
+    <h2>{% trans "Points transaction history" %}</h2>
 
     {% if transactions %}
     <div class="intro-text">
-        <p>Níže naleznete seznam Vašich bodových transakcí v rámci Bonusového programu. Body připisujeme se zpožděním 3 měsíců (fakturace v lednu = připsání v dubnu),
-            abychom umožnili zpracování případných reklamací a dobropisů. Transakce do systému nahráváme vždy na začátku měsíce, neobjevují se ihned.
+        <p>{% trans "Below you will find a list of your points transactions within the Bonus Programme. Points are credited with a 3-month delay (invoicing in January = credited in April), to allow time for processing of any complaints and credit notes. Transactions are uploaded to the system at the beginning of each month and do not appear immediately." %}</p>
+        <p>{% trans "Transactions already uploaded but waiting for the 3-month period to elapse are marked" %}
+            <span class="status-badge pending">{% trans "awaiting confirmation" %}</span>.
+            {% trans "A status of" %}
+            <span class="status-badge confirmed">{% trans "confirmed" %}</span>
+            {% trans "means the points have been credited / debited, but the reward request itself may still be awaiting processing." %}
         </p>
-        <p>Transakce, které už jsou v systému nahrané, ale čekají na uplynutí 3 měsíců, jsou označené <span class="status-badge pending">čeká na potvrzení</span>. Stav transakce
-            <span class="status-badge confirmed">potvrzeno</span> znamená, že jsme body připsali / strhli, ale samotná žádost o čerpání může ještě čekat na zpracování.
-        </p>
-        <p>Stav konkrétní žádosti zkontrolujte v sekci <a href="{% url 'reward_requests' %}">Žádosti o čerpání</a>.</p>
-      </div>
+        <p>{% trans "Check the status of a specific request in the" %} <a href="{% url 'reward_requests' %}">{% trans "Reward requests" %}</a> {% trans "section." %}</p>
+    </div>
     <table class="transactions-table">
         <thead>
             <tr>
-                <th>Datum</th>
-                <th>Značka</th>
-                <th>Hodnota</th>
-                <th>Typ</th>
-                <th>Status</th>
-                <th>Detail</th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Brand" %}</th>
+                <th>{% trans "Value" %}</th>
+                <th>{% trans "Type" %}</th>
+                <th>{% trans "Status" %}</th>
+                <th>{% trans "Detail" %}</th>
             </tr>
         </thead>
         <tbody>
@@ -34,45 +35,45 @@
                 <td>{{ transaction.date|czech_date }}</td>
                 <td>{{ transaction.brand.name }}</td>
                 <td class="value {% if transaction.value < 0 %}negative{% else %}positive{% endif %}">
-                    {{ transaction.value }} bodů
+                    {% blocktrans with points=transaction.value %}{{ points }} points{% endblocktrans %}
                 </td>
                 <td>
                     {% if transaction.type == 'STANDARD_POINTS' %}
-                        Standardní připsání bodů
+                        {% trans "Standard points credit" %}
                     {% elif transaction.type == 'REWARD_CLAIM' %}
-                        Žádost o odměnu
+                        {% trans "Reward request" %}
                     {% elif transaction.type == 'CREDIT_NOTE_ADJUST' %}
-                        Korekce dobropisu
+                        {% trans "Credit note adjustment" %}
                     {% elif transaction.type == 'EXTRA_POINTS' %}
-                        Extra body
+                        {% trans "Extra points" %}
                     {% elif transaction.type == 'ADJUSTMENT' %}
-                        Manuální korekce
+                        {% trans "Manual adjustment" %}
                     {% elif transaction.type == 'EXPIRATION' %}
-                        Konec platnosti bodů
+                        {% trans "Points expiration" %}
                     {% endif %}
                 </td>
                 <td>
                     <span class="status-badge {{ transaction.status|lower }}">
                         {% if transaction.status == 'PENDING' %}
-                            Čeká na potvrzení
+                            {% trans "Awaiting confirmation" %}
                         {% elif transaction.status == 'CONFIRMED' %}
-                            Potvrzeno
+                            {% trans "Confirmed" %}
                         {% elif transaction.status == 'CANCELLED' %}
-                            Zrušeno
+                            {% trans "Cancelled" %}
                         {% elif transaction.status == 'NO-CONTRACT' %}
-                            Transakce bez smlouvy
+                            {% trans "No contract" %}
                         {% endif %}
                     </span>
                 </td>
                 <td>
-                    <a href="{% url 'history_detail' transaction.id %}" class="details-link">Detail</a>
+                    <a href="{% url 'history_detail' transaction.id %}" class="details-link">{% trans "Detail" %}</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p>Žádné transakce nenalezeny.</p>
+    <p>{% trans "No transactions found." %}</p>
     {% endif %}
 </div>
 {% endblock %}

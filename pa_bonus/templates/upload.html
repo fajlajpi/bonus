@@ -1,20 +1,21 @@
 {% extends "base.html" %}
+{% load i18n %}
 
-{% block title %} Upload invoice data {% endblock title %}
+{% block title %}{% trans "Upload invoice data" %}{% endblock title %}
 
 {% block content %}
 <div class="upload-container">
-    <h2>Upload Transaction File</h2>
-    
+    <h2>{% trans "Upload transaction file" %}</h2>
+
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        
+
         {% if form.errors %}
         <div class="alert alert-danger">
-            Please correct the errors below.
+            {% trans "Please correct the errors below." %}
         </div>
         {% endif %}
-        
+
         <div class="form-group">
             {{ form.file.label_tag }}
             {{ form.file }}
@@ -24,13 +25,13 @@
             </div>
             {% endif %}
         </div>
-        
+
         <div class="help-text">
-            <p>Accepted formats: .xlsx, .xls, .csv</p>
-            <p>Maximum file size: 15MB</p>
+            <p>{% trans "Accepted formats: .xlsx, .xls, .csv" %}</p>
+            <p>{% trans "Maximum file size: 15 MB" %}</p>
         </div>
-        
-        <button type="submit" class="btn btn-primary">Upload</button>
+
+        <button type="submit" class="btn btn-primary">{% trans "Upload" %}</button>
     </form>
 </div>
 {% endblock %}

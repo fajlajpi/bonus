@@ -1,61 +1,66 @@
 {% extends "base.html" %}
-{% load pa_bonus_extras %}
+{% load pa_bonus_extras i18n %}
 
-{% block title %} Přehled {% endblock title %}
+{% block title %}{% trans "Overview" %}{% endblock title %}
 
 {% block content %}
 <div class="dashboard-container">
-    <h2>Přehled bonusového programu pro: {{ user.first_name }} {{ user.last_name }}</h2>
-    
+    <h2>{% blocktrans with first_name=user.first_name last_name=user.last_name %}Bonus Programme overview for: {{ first_name }} {{ last_name }}{% endblocktrans %}</h2>
+
     <div class="points-summary">
-        <h3>Aktuální stav bodového konta</h3>
-        <p class="total-points">{{ total_points }} bodů</p>
+        <h3>{% trans "Current points balance" %}</h3>
+        <p class="total-points">{% blocktrans with points=total_points %}{{ points }} points{% endblocktrans %}</p>
         {% if expiring_points > 0 %}
         <p class="expiring-points-warning">
-            V následujících 3 měsících skončí platnost <strong>{{ expiring_points }} bodů</strong>.
+            {% blocktrans with points=expiring_points %}<strong>{{ points }} points</strong> will expire in the next 3 months.{% endblocktrans %}
         </p>
         {% endif %}
         <p class="expiring-points-link">
-            <a href="{% url 'point_expiration' %}">Konec platnosti bodů</a>
+            <a href="{% url 'point_expiration' %}">{% trans "Points expiration" %}</a>
         </p>
     </div>
 
     {% if contract %}
     <div class="contract-details dashboard-section">
-        <h3>Bonusy za značky</h3>
+        <h3>{% trans "Brand bonuses" %}</h3>
         <ul>
         {% for bonus in brand_bonuses %}
-            <li><strong>{{ bonus.brand_id.name }}</strong>: {{ 1|divide:bonus.points_ratio }} Kč fakturace bez DPH na 1 bod</li>
+            <li>
+                <strong>{{ bonus.brand_id.name }}</strong>:
+                {% with ratio=1|divide:bonus.points_ratio %}
+                {% blocktrans %}{{ ratio }} CZK excl. VAT per 1 point{% endblocktrans %}
+                {% endwith %}
+            </li>
         {% endfor %}
         </ul>
     </div>
     {% else %}
-    <p>Bez aktivních členství.</p>
+    <p>{% trans "No active memberships." %}</p>
     {% endif %}
 
     {% if active_goal %}
     <div class="dashboard-section goal-summary-widget contract-details">
-        <h3>Aktuální cílový bonus</h3>
+        <h3>{% trans "Current target bonus" %}</h3>
         <div class="goal-period-info">
-            <p>Období: {{ active_goal.period_start|date:"d.m.Y" }} - {{ active_goal.period_end|date:"d.m.Y" }}</p>
+            <p>{% blocktrans with start=active_goal.period_start|date:"d.m.Y" end=active_goal.period_end|date:"d.m.Y" %}Period: {{ start }} - {{ end }}{% endblocktrans %}</p>
         </div>
-        
+
         <div class="goal-progress-summary">
             <div class="progress-info">
                 <div class="progress-row">
-                    <span>Cíl období:</span>
-                    <strong>{{ active_goal.target|floatformat:0 }} Kč</strong>
+                    <span>{% trans "Period target:" %}</span>
+                    <strong>{{ active_goal.target|floatformat:0 }} {% trans "CZK" %}</strong>
                 </div>
                 <div class="progress-row">
-                    <span>Aktuální obrat:</span>
-                    <strong>{{ active_goal.actual|floatformat:0 }} Kč</strong>
+                    <span>{% trans "Current turnover:" %}</span>
+                    <strong>{{ active_goal.actual|floatformat:0 }} {% trans "CZK" %}</strong>
                 </div>
                 <div class="progress-row">
-                    <span>Zbývá do cíle:</span>
-                    <strong>{{ active_goal.remaining|floatformat:0 }} Kč</strong>
+                    <span>{% trans "Remaining to target:" %}</span>
+                    <strong>{{ active_goal.remaining|floatformat:0 }} {% trans "CZK" %}</strong>
                 </div>
             </div>
-            
+
             <div class="summary-item">
                 <div class="progress-bar-container">
                     <div class="progress-bar" style="width: {{ active_goal.progress|floatformat:0 }}%">
@@ -64,10 +69,10 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="goal-action">
             <a href="{% url 'extra_goals_detail' %}" class="details-link">
-                Zobrazit všechny cíle
+                {% trans "View all goals" %}
             </a>
         </div>
     </div>
@@ -75,13 +80,13 @@
 
 
     <div class="quick-links">
-        <h3>Rychlé odkazy</h3>
+        <h3>{% trans "Quick links" %}</h3>
         <ul>
-            <li><a href="{% url 'history' %}">Historie bodových transakcí</a></li>
-            <li><a href="{% url 'point_expiration' %}">Konec platnosti bodů</a></li>
-            <li><a href="{% url 'rewards' %}">Nabídka odměn</a></li>
-            <li><a href="{% url 'reward_requests' %}">Žádosti o čerpání odměn</a></li>
-            <li><a href="{% url 'extra_goals_detail' %}">Extra cíle</a></li>
+            <li><a href="{% url 'history' %}">{% trans "Points transaction history" %}</a></li>
+            <li><a href="{% url 'point_expiration' %}">{% trans "Points expiration" %}</a></li>
+            <li><a href="{% url 'rewards' %}">{% trans "Rewards catalogue" %}</a></li>
+            <li><a href="{% url 'reward_requests' %}">{% trans "Reward requests" %}</a></li>
+            <li><a href="{% url 'extra_goals_detail' %}">{% trans "Extra goals" %}</a></li>
         </ul>
     </div>
 </div>
