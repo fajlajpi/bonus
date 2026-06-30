@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Bonus Programme 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-29 15:47+0200\n"
+"POT-Creation-Date: 2026-06-30 09:01+0200\n"
 "PO-Revision-Date: 2026-06-29 17:00+0200\n"
 "Last-Translator: Filip Huta <filip.huta@primavera-and.cz>\n"
 "Language-Team: Czech\n"
@@ -116,7 +116,7 @@ msgstr "Dostupné (poslední kusy)"
 msgid "On demand"
 msgstr "Na objednání"
 
-#: .\pa_bonus\models.py:641 .\pa_bonus\templates\rewards.html:66
+#: .\pa_bonus\models.py:641 .\pa_bonus\templates\rewards.html:65
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:52
 msgid "Unavailable"
 msgstr "Nedostupné"
@@ -658,7 +658,7 @@ msgid "Credited"
 msgstr "Připsáno"
 
 #: .\pa_bonus\templates\point_expiration.html:29
-#: .\pa_bonus\templates\rewards.html:31
+#: .\pa_bonus\templates\rewards.html:30
 #: .\pa_bonus\templates\sales_rep\client_detail.html:131
 #: .\pa_bonus\templates\sales_rep\client_detail.html:161
 #: .\pa_bonus\templates\sales_rep\client_detail.html:212
@@ -716,85 +716,79 @@ msgid "means we order it only once your request is received."
 msgstr "znamená, že odměnu objednáváme až po obdržení Vaší žádosti."
 
 #: .\pa_bonus\templates\rewards.html:17
-msgid "For any queries, contact us at"
-msgstr "V případě dotazů nás kontaktujte na"
-
-#: .\pa_bonus\templates\rewards.html:18
-msgid "or speak to your sales representative."
-msgstr "nebo se obraťte na svého obchodního zástupce."
-
-#: .\pa_bonus\templates\rewards.html:20
+#, python-format
 msgid ""
-"We are currently completing the upload of our full catalogue — some rewards "
-"may still be missing."
-msgstr ""
-"Právě dokončujeme nahrávání kompletního katalogu — některé odměny mohou "
-"stále chybět."
+"For any queries, contact us at <a href=\"mailto:"
+"%(support_email)s\">%(support_email)s</a>\n"
+"      or speak to your sales representative."
+msgstr "V případě jakýchkoli dotazů nás kontaktujte na <a href=\"mailto:"
+"%(support_email)s\">%(support_email)s</a>\n"
+" nebo kontaktujte svého obchodního zástupce."
 
-#: .\pa_bonus\templates\rewards.html:29
+#: .\pa_bonus\templates\rewards.html:28
 msgid "Product"
 msgstr "Produkt"
 
-#: .\pa_bonus\templates\rewards.html:30
+#: .\pa_bonus\templates\rewards.html:29
 msgid "Information"
 msgstr "Informace"
 
-#: .\pa_bonus\templates\rewards.html:32
+#: .\pa_bonus\templates\rewards.html:31
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:33
 msgid "Availability"
 msgstr "Dostupnost"
 
-#: .\pa_bonus\templates\rewards.html:33
+#: .\pa_bonus\templates\rewards.html:32
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:34
 msgid "Quantity"
 msgstr "Množství"
 
-#: .\pa_bonus\templates\rewards.html:43
+#: .\pa_bonus\templates\rewards.html:42
 msgid "Default image"
 msgstr "Výchozí obrázek"
 
-#: .\pa_bonus\templates\rewards.html:50
+#: .\pa_bonus\templates\rewards.html:49
 msgid "Code:"
 msgstr "Kód:"
 
-#: .\pa_bonus\templates\rewards.html:55 .\pa_bonus\templates\rewards.html:90
-#: .\pa_bonus\templates\rewards.html:119
+#: .\pa_bonus\templates\rewards.html:54 .\pa_bonus\templates\rewards.html:89
+#: .\pa_bonus\templates\rewards.html:118
 msgid "points"
 msgstr "bodů"
 
-#: .\pa_bonus\templates\rewards.html:60
+#: .\pa_bonus\templates\rewards.html:59
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:46
 msgid "In stock"
 msgstr "Skladem"
 
-#: .\pa_bonus\templates\rewards.html:62
+#: .\pa_bonus\templates\rewards.html:61
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:48
 msgid "In stock — last units"
 msgstr "Skladem — poslední kusy"
 
-#: .\pa_bonus\templates\rewards.html:64
+#: .\pa_bonus\templates\rewards.html:63
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:50
 msgid "On order"
 msgstr "Na objednání"
 
-#: .\pa_bonus\templates\rewards.html:89
+#: .\pa_bonus\templates\rewards.html:88
 msgid "Total value of request"
 msgstr "Celková hodnota žádosti"
 
-#: .\pa_bonus\templates\rewards.html:90
+#: .\pa_bonus\templates\rewards.html:89
 msgid "available"
 msgstr "k dispozici"
 
-#: .\pa_bonus\templates\rewards.html:91
+#: .\pa_bonus\templates\rewards.html:90
 msgid "You have exceeded your points balance!"
 msgstr "Překročili jste stav bodového konta!"
 
-#: .\pa_bonus\templates\rewards.html:94
+#: .\pa_bonus\templates\rewards.html:93
 #: .\pa_bonus\templates\sales_rep\create_reward_request.html:84
 msgid "Submit reward request"
-msgstr "Odeslat žádost o odměny"
+msgstr "Vytvořit žádost o odměny"
 
-#: .\pa_bonus\templates\rewards.html:96
+#: .\pa_bonus\templates\rewards.html:95
 msgid "No rewards are currently available."
 msgstr "Aktuálně nejsou dostupné žádné odměny."
 
@@ -1440,3 +1434,16 @@ msgstr "Žádost č. %(id)s byla úspěšně potvrzena."
 #: .\pa_bonus\views\views_users.py:318
 msgid "Reward request was already submitted."
 msgstr "Žádost o odměny již byla odeslána."
+
+#~ msgid "For any queries, contact us at"
+#~ msgstr "V případě dotazů nás kontaktujte na"
+
+#~ msgid "or speak to your sales representative."
+#~ msgstr "nebo se obraťte na svého obchodního zástupce."
+
+#~ msgid ""
+#~ "We are currently completing the upload of our full catalogue — some "
+#~ "rewards may still be missing."
+#~ msgstr ""
+#~ "Právě dokončujeme nahrávání kompletního katalogu — některé odměny mohou "
+#~ "stále chybět."

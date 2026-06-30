@@ -14,10 +14,9 @@
       <span class="availability-badge on_demand">{% trans "on order" %}</span>
       {% trans "means we order it only once your request is received." %}
     </p>
-    <p>{% trans "For any queries, contact us at" %} <a href="mailto:support@bonus.primavera-and.cz">support@bonus.primavera-and.cz</a>
-      {% trans "or speak to your sales representative." %}
+    <p>{% blocktrans with support_email=support_email %}For any queries, contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a>
+      or speak to your sales representative.{% endblocktrans %}
     </p>
-    <p>{% trans "We are currently completing the upload of our full catalogue — some rewards may still be missing." %}</p>
   </div>
   <form method="post">
     {% csrf_token %}
