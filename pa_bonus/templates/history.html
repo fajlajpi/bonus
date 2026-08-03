@@ -16,7 +16,11 @@
             <span class="status-badge confirmed">{% trans "confirmed" %}</span>
             {% trans "means the points have been credited / debited, but the reward request itself may still be awaiting processing." %}
         </p>
-        <p>{% trans "Check the status of a specific request in the" %} <a href="{% url 'reward_requests' %}">{% trans "Reward requests" %}</a> {% trans "section." %}</p>
+        <p>
+            {% url 'reward_requests' as requests_url %}
+            {% blocktrans %}Check the status of a specific request in the 
+            <a href="{{ requests_url }}">Reward requests</a> section.
+            {% endblocktrans %}</p>
     </div>
     <table class="transactions-table">
         <thead>

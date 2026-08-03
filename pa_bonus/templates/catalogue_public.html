@@ -1,13 +1,14 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %} Katalog odměn {% endblock title %}
+{% load static i18n %}
+{% block title %} {% trans "Katalog odměn" %} {% endblock title %}
 
 {% block content %}
 <div class="catalogue-container">
-  <h1>Katalog odměn</h1>
+  <h1>{% trans "Katalog odměn" %}</h1>
   <p class="catalogue-intro">
-    Prohlédněte si výběr z nabídky odměn, které můžete získat v našem bonusovém programu. 
-    Pro zjištění ceny a dostupnosti jednotlivých položek se prosím <a href="{% url 'login' %}">přihlaste</a> do vašeho účtu.
+    {% url 'login' as login_url %}
+    {% blocktrans %}Prohlédněte si výběr z nabídky odměn, které můžete získat v našem bonusovém programu. 
+    Pro zjištění ceny a dostupnosti jednotlivých položek se prosím <a href="{{ login_url }}">přihlaste</a> do vašeho účtu.{% endblocktrans %}
   </p>
 
   {% if rewards %}
@@ -33,10 +34,14 @@
     </div>
     
     <div class="catalogue-cta">
-      <p>Pro získání těchto a mnoha dalších odměn se <a href="{% url 'login' %}">přihlaste</a> do bonusového programu nebo <a href="{% url 'contact' %}">kontaktujte</a> svého obchodního zástupce.</p>
+      <p>
+        {% url 'login' as login_url %}
+        {% url 'contact' as contact_url %}
+        {% blocktrans %}Pro získání těchto a mnoha dalších odměn se <a href="{{ login_url }}">přihlaste</a> 
+        do bonusového programu, <a href="{{ contact_url }}">kontaktujte nás</a> nebo svého obchodního zástupce.{% endblocktrans %}</p>
     </div>
   {% else %}
-    <p>V tuto chvíli nejsou dostupné žádné odměny k zobrazení.</p>
+    <p>{% trans "V tuto chvíli nejsou dostupné žádné odměny k zobrazení." %}</p>
   {% endif %}
 </div>
 {% endblock %}

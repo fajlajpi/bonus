@@ -1,28 +1,29 @@
 {% extends "base.html" %}
+{% load static i18n %}
 
-{% block title %} Kontakt {% endblock title %}
+{% block title %} {% trans "Contact" %} {% endblock title %}
 
 {% block content %}
 <div class="contact-container">
-    <h1>Kontaktní informace</h1>
+    <h1>{% trans "Contact Information" %}</h1>
     
     <p class="contact-intro">
-        Potřebujete poradit s bonusovým programem nebo máte jiný dotaz? Neváhejte nás kontaktovat.
+       {% trans " Do you need advice with the bonus programme, do you have any other questions? Please don't hesitate to contact us." %}
     </p>
     
     <div class="contact-table-container">
         <table class="contact-table">
             <tbody>
                 <tr>
-                    <th>Technická podpora:</th>
+                    <th>{% trans "Technical support:" %}</th>
                     <td><a href="mailto:{{ support_email }}">{{ support_email }}</a></td>
                 </tr>
                 <tr>
-                    <th>Společnost:</th>
+                    <th>{% trans "Company:" %}</th>
                     <td>{{ company_name }}</td>
                 </tr>
                 <tr>
-                    <th>Adresa:</th>
+                    <th>{% trans "Address:" %}</th>
                     <td>{{ company_street }}, {{ company_zip }} {{ company_city }}</td>
                 </tr>
             </tbody>
