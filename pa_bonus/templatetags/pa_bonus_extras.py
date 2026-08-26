@@ -2,7 +2,20 @@ from django import template
 import datetime
 from django.utils.dateformat import format
 
+from pa_bonus.utilities import is_manager as _is_manager
+
 register = template.Library()
+
+
+@register.filter
+def is_manager(user):
+    """
+    True if the user is in the Managers group.
+
+    Wraps pa_bonus.utilities.is_manager so templates decide manager visibility
+    with exactly the same rule the views enforce.
+    """
+    return _is_manager(user)
 
 @register.filter
 def multiply(value, arg):

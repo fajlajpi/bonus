@@ -4,8 +4,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group
 import pandas as pd
 import os
 import tempfile
@@ -69,16 +68,9 @@ class TestUploadFileView:
         # Link brand bonus to the user contract
         self.user_contract.brandbonuses.add(self.brand_bonus)
         
-        # Create manager group and permission
-        content_type = ContentType.objects.get_for_model(FileUpload)
-        permission, _ = Permission.objects.get_or_create(
-            codename='can_manage',
-            name='Can manage file uploads',
-            content_type=content_type
-        )
-        
+        # Manager access is granted by membership of the Managers group
+        # alone - see pa_bonus.utilities.is_manager. No permission required.
         manager_group, _ = Group.objects.get_or_create(name='Managers')
-        manager_group.permissions.add(permission)
         self.user.groups.add(manager_group)
         
         self.factory = RequestFactory()
@@ -281,7 +273,19 @@ class TestRewardsView:
     
     def test_rewards_view_post_valid(self):
         self.client.login(username='testuser', password='password')
-        
+
+        # setup_method grants 1000 points, but this request costs
+        # 500 + (2 * 300) = 1100. Top the balance up so that this test
+        # exercises the happy path rather than the balance guard.
+        PointsTransaction.objects.create(
+            user=self.user,
+            value=500,
+            date=timezone.now().date(),
+            description="Top-up so the request is affordable",
+            type="STANDARD_POINTS",
+            status="CONFIRMED"
+        )
+
         response = self.client.post(
             reverse('rewards'),
             {
@@ -290,14 +294,31 @@ class TestRewardsView:
             },
             follow=True
         )
-        
+
         assert response.status_code == 200
-        
+
         # Check that a request was created
         request = RewardRequest.objects.filter(user=self.user).first()
         assert request is not None
         assert request.rewardrequestitem_set.count() == 2
-        assert request.total_points == 500 + (2 * 300) == 1100
+        assert request.total_points == 1100
+
+    def test_rewards_view_post_rejects_request_above_balance(self):
+        """A request costing more than the balance must not be created."""
+        self.client.login(username='testuser', password='password')
+
+        # Balance is 1000; this request costs 500 + (2 * 300) = 1100.
+        response = self.client.post(
+            reverse('rewards'),
+            {
+                f'reward_quantity_{self.reward1.id}': '1',
+                f'reward_quantity_{self.reward2.id}': '2'
+            },
+            follow=True
+        )
+
+        assert response.status_code == 200
+        assert RewardRequest.objects.filter(user=self.user).count() == 0
     
     def test_rewards_view_post_zero_quantity(self):
         self.client.login(username='testuser', password='password')

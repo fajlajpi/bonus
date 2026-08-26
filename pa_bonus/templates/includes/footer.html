@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n pa_bonus_extras %}
 <footer class="site-footer">
     <div class="footer-content">
         <div class="footer-info">
@@ -12,7 +12,7 @@
             {% if user.is_staff %}
                 <a href="{% url 'admin:index' %}">{% trans "Administration" %}</a>
             {% endif %}
-            {% if user.groups.all.0.name == 'Managers' %}
+            {% if user|is_manager %}
                 <a href="{% url 'manager_dashboard' %}">{% trans "Manager section" %}</a>
             {% endif %}
         </div>
