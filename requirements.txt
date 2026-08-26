@@ -7,7 +7,7 @@ bs4==0.0.2
 certifi==2026.4.22
 charset-normalizer==3.4.7
 colorama==0.4.6
-decouple==0.0.7
+python-decouple==3.8
 diff-match-patch==20241021
 Django==5.1.6
 django-import-export==4.3.7
