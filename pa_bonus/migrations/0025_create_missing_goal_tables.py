@@ -1,99 +1,57 @@
 """
-Recovery migration: creates pa_bonus_usercontractgoal and pa_bonus_goalevaluation
-which were never physically created in the database despite migrations 0011 and 0023
-being recorded as applied. Run after faking 0011-0024.
+Recovery migration for the goal tables.
 
-ON A NEW HOSTING, THIS MIGRATION CAUSES AN ERROR AND SHOULD BE FAKED
-python manage.py migrate pa_bonus 0025 --fake
+HISTORY
+-------
+On the original production database, migrations 0011 and 0023 were recorded as
+applied even though pa_bonus_usercontractgoal and pa_bonus_goalevaluation were
+never physically created. This migration existed to repair that specific
+database by creating the two tables outright.
 
+That made the migration set impossible to replay from zero: on a fresh database
+0011 and 0023 create the tables correctly, and this migration then failed with
+"relation pa_bonus_usercontractgoal already exists". The documented workaround
+was to run it with --fake on every new deployment.
+
+CURRENT BEHAVIOUR
+-----------------
+The table creation is now conditional. Each table is created only if it is
+genuinely absent from the database:
+
+  * Fresh database - 0011/0023 already built both tables, so this migration
+    inspects them, finds them present, and does nothing. No --fake required.
+  * Database in the historical broken state - the tables are missing, so they
+    are created here exactly as before. The recovery path still works.
+
+The models are already present in the migration state after 0011 and 0023, so
+this migration deliberately makes no state changes; it only reconciles the
+database with that state.
 """
-import django.db.models.deletion
-from django.conf import settings
-from django.db import migrations, models
+from django.db import migrations
+
+GOAL_MODELS = ('UserContractGoal', 'GoalEvaluation')
+
+
+def create_goal_tables_if_missing(apps, schema_editor):
+    """Create the goal tables only on databases where they are absent."""
+    connection = schema_editor.connection
+    existing_tables = set(connection.introspection.table_names())
+
+    for model_name in GOAL_MODELS:
+        model = apps.get_model('pa_bonus', model_name)
+        if model._meta.db_table not in existing_tables:
+            schema_editor.create_model(model)
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('pa_bonus', '0024_alter_rewardrequest_status'),
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
-        # Creates the table with ALL fields it should currently have
-        # (base fields from 0011 + extra fields added by 0023)
-        migrations.CreateModel(
-            name='UserContractGoal',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('goal_period_from', models.DateField()),
-                ('goal_period_to', models.DateField()),
-                ('goal_value', models.IntegerField()),
-                ('goal_base', models.IntegerField()),
-                ('allow_full_period_recovery', models.BooleanField(
-                    default=True,
-                    help_text='If True, missing early milestones can be recovered if full period goal is met',
-                )),
-                ('bonus_percentage', models.FloatField(
-                    default=0.5,
-                    help_text='Percentage of exceeded amount to award as points (0.5 = 50%)',
-                )),
-                ('evaluation_frequency', models.IntegerField(
-                    default=6,
-                    help_text='How often to evaluate progress (in months)',
-                )),
-                ('brands', models.ManyToManyField(to='pa_bonus.brand')),
-                ('user_contract', models.ForeignKey(
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name='extra_goals',
-                    to='pa_bonus.usercontract',
-                )),
-            ],
-            options={
-                'ordering': ['-goal_period_from'],
-            },
-        ),
-        migrations.CreateModel(
-            name='GoalEvaluation',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('evaluation_date', models.DateField()),
-                ('period_start', models.DateField()),
-                ('period_end', models.DateField()),
-                ('actual_turnover', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('target_turnover', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('baseline_turnover', models.DecimalField(decimal_places=2, max_digits=12)),
-                ('is_achieved', models.BooleanField(default=False)),
-                ('bonus_points', models.IntegerField(default=0)),
-                ('evaluation_type', models.CharField(
-                    choices=[
-                        ('MILESTONE', 'Milestone Evaluation'),
-                        ('RECOVERY', 'Full Period Recovery'),
-                        ('FINAL', 'Final Evaluation'),
-                    ],
-                    max_length=20,
-                )),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('evaluated_by', models.ForeignKey(
-                    null=True,
-                    on_delete=django.db.models.deletion.SET_NULL,
-                    to=settings.AUTH_USER_MODEL,
-                )),
-                ('goal', models.ForeignKey(
-                    on_delete=django.db.models.deletion.CASCADE,
-                    related_name='evaluations',
-                    to='pa_bonus.usercontractgoal',
-                )),
-                ('points_transaction', models.OneToOneField(
-                    blank=True,
-                    null=True,
-                    on_delete=django.db.models.deletion.SET_NULL,
-                    to='pa_bonus.pointstransaction',
-                )),
-            ],
-            options={
-                'ordering': ['-evaluation_date'],
-                'unique_together': {('goal', 'period_end')},
-            },
+        migrations.RunPython(
+            create_goal_tables_if_missing,
+            reverse_code=migrations.RunPython.noop,
         ),
     ]
