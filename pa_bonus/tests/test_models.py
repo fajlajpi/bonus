@@ -14,7 +14,7 @@ from unittest.mock import patch, MagicMock
 
 from pa_bonus.models import (
     User, Brand, UserContract, PointsTransaction, BrandBonus,
-    FileUpload, Reward, RewardRequest, RewardRequestItem, create_manager_group_and_permissions
+    FileUpload, Reward, RewardRequest, RewardRequestItem, create_manager_group
 )
 from pa_bonus.views import (
     upload_file,

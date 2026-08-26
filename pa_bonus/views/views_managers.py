@@ -1,5 +1,4 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import permission_required
 from django.contrib import messages
 from django.views.generic import ListView, View
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
@@ -15,7 +14,7 @@ from pa_bonus.tasks import process_uploaded_file, process_stock_file
 from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestItem, AbraSubmission,
                              PointsTransaction, EmailNotification, User, Region, UserContract,
                              InvoiceBrandTurnover, Brand, UserActivity, UserContractGoal, GoalEvaluation)
-from pa_bonus.utilities import ManagerGroupRequiredMixin, calculate_turnover_for_goal
+from pa_bonus.utilities import ManagerGroupRequiredMixin, manager_required, calculate_turnover_for_goal
 from pa_bonus.services.points import allocate_debit, void_debit
 
 from pa_bonus.exports import generate_telemarketing_export
@@ -223,7 +222,7 @@ class ManagerDashboardView(ManagerGroupRequiredMixin, View):
         return render(request, self.template_name, context)
     
     
-@permission_required('pa_bonus.add_fileupload', raise_exception=True)
+@manager_required
 def upload_file(request):
     """
     Handles file uploads for processing invoice data.
@@ -263,7 +262,7 @@ def upload_file(request):
     
     return render(request, 'upload.html', {'form': form})
 
-@permission_required('pa_bonus.change_reward', raise_exception=True)
+@manager_required
 def upload_stock(request):
     """
     Handles file uploads for processing stock data and updating reward availability.

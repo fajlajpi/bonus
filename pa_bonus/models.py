@@ -585,7 +585,7 @@ class BrandBonus(models.Model):
 
 class FileUpload(models.Model):
     """
-    Represents an uploaded file with invoice data. Includes a special permission can_manage.
+    Represents an uploaded file with invoice data.
 
     Attributes:
         file (File): The uploaded file.
@@ -612,9 +612,6 @@ class FileUpload(models.Model):
 
     class Meta:
         ordering = ['-uploaded_at']
-        permissions = [
-            ('can_manage', 'Can manage file uploads')
-        ]
 
     def __str__(self):
         return f'Upload {self.id} | {self.uploaded_at} | {self.status} | by {self.uploaded_by}'
@@ -795,33 +792,25 @@ class EmailNotification(models.Model):
     def __str__(self):
         return f"{self.subject} to {self.user.email} ({self.status})"
     
-# Utility function to create group and permissions
-def create_manager_group_and_permissions(*args, **options):
+# Utility function to create the Managers group
+def create_manager_group(*args, **options):
     """
-    Creates the 'Managers' group and assigns the 'can_manage' permission.
-    This function should be called after migrations, like in a data migration.
+    Ensure the 'Managers' group exists.
+
+    Manager access is granted by membership of this group alone - every manager
+    view goes through pa_bonus.utilities.is_manager, which tests only for
+    membership. The group therefore needs no Django permissions of its own.
+
+    This deliberately attaches no permissions. An earlier version tried to
+    attach a 'can_manage' permission here, but data migrations run before
+    Django's post_migrate step creates model permissions, so on a fresh database
+    the lookup always failed and left the group empty - silently, because the
+    error was swallowed. Nothing ever checked 'can_manage' either. Creating the
+    group is all that is required, and it is safe at any point in the migration
+    history.
     """
-    try:
-        #Create group
-        manager_group, created = Group.objects.get_or_create(name='Managers')
-        logger.info("Manager group created/retrieved")
-
-        #Get permission object
-        content_type = ContentType.objects.get_for_model(FileUpload)
-        can_manage_perm = Permission.objects.get(
-            codename='can_manage',
-            content_type=content_type,
-        )
-        logger.info("Can manage permission retrieved")
-
-        #Add permission to group
-        manager_group.permissions.add(can_manage_perm)
-        logger.info("Can manage permission assigned to Manager group")
-
-        print("Manager group and permissions setup successfully")
-    except Exception as e:
-        logger.error(f"Error creating Manager group and permissions: {e}", exc_info=True)
-        print(f"Error creating Manager group and permissions: {e}")
+    manager_group, created = Group.objects.get_or_create(name='Managers')
+    logger.info("Managers group %s", "created" if created else "already present")
 
 class Invoice(models.Model):
     """

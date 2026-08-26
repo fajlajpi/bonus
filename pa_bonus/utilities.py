@@ -1,9 +1,49 @@
 # UTILITY FUNCTIONS
+from functools import wraps
+
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
+
+MANAGER_GROUP_NAME = 'Managers'
+
+
+def is_manager(user):
+    """
+    Return True if the user belongs to the Managers group.
+
+    This is the single definition of "this user is a manager". Both the mixin
+    used by class-based views and the decorator used by function-based views
+    delegate to it, so the two entry points cannot drift apart.
+
+    Superuser status is deliberately not a bypass. Access to client data is
+    granted explicitly through group membership and nothing else.
+    """
+    return user.is_authenticated and user.groups.filter(name=MANAGER_GROUP_NAME).exists()
+
+
+def manager_required(view_func):
+    """
+    Restrict a function-based view to members of the Managers group.
+
+    Decorator counterpart to ManagerGroupRequiredMixin. Raises PermissionDenied
+    (403) instead of redirecting, which matches the behaviour of the
+    permission_required(..., raise_exception=True) decorators it replaced.
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not is_manager(request.user):
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped_view
+
 
 class ManagerGroupRequiredMixin(UserPassesTestMixin):
+    """Restricts access to users in the 'Managers' group."""
+
     def test_func(self):
-        return self.request.user.groups.filter(name='Managers').exists()
+        return is_manager(self.request.user)
+
 
 class SalesRepRequiredMixin(UserPassesTestMixin):
     """Restricts access to users in the 'Sales Reps' group."""
