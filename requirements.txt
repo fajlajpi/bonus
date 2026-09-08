@@ -1,44 +1,57 @@
-# Direct dependencies only.
-#
-# Transitive packages (asgiref, sqlparse, numpy, certifi, urllib3, soupsieve,
-# et_xmlfile, diff-match-patch, django-picklefield, ...) are deliberately NOT
-# listed: pip resolves them from the pins below.
-#
-# This file used to be a full `pip freeze` dump, which pinned Django's own
-# dependencies alongside Django. Upgrading Django then required hand-editing
-# those too, and missing one made the file uninstallable -
-# "django 6.0.8 depends on asgiref>=3.9.1" against a pinned asgiref==3.8.1.
-#
-# After changing anything here, verify with a clean install:
-#     python -m venv /tmp/checkenv
-#     /tmp/checkenv/bin/pip install -r requirements.txt
-#     /tmp/checkenv/bin/pip check
-#     /tmp/checkenv/bin/python -m pytest -q
-
-# --- framework ---
-Django==6.0.8
-django-import-export==4.3.7
-django-q2==1.11.1
-
-# --- database & configuration ---
-psycopg2==2.9.10
-python-decouple==3.8
-
-# --- data import / export ---
-pandas==2.2.3
-openpyxl==3.1.5
-tablib==3.8.0
-XlsxWriter==3.2.3
-
-# --- application ---
-pillow==11.1.0
-requests==2.33.1
-python-dateutil==2.9.0.post0
-
-# --- extract_template_strings.py (translation tooling) ---
-beautifulsoup4==4.14.3
-lxml==6.0.2
-
-# --- tests ---
-pytest==8.3.4
-pytest-django==4.10.0
+# Direct dependencies only.
+#
+# Transitive packages (asgiref, sqlparse, numpy, certifi, urllib3, soupsieve,
+# et_xmlfile, diff-match-patch, django-picklefield, ...) are deliberately NOT
+# listed: pip resolves them from the pins below.
+#
+# This file used to be a full `pip freeze` dump, which pinned Django's own
+# dependencies alongside Django. Upgrading Django then required hand-editing
+# those too, and missing one made the file uninstallable -
+# "django 6.0.8 depends on asgiref>=3.9.1" against a pinned asgiref==3.8.1.
+#
+# After changing anything here, verify with a clean install:
+#     python -m venv /tmp/checkenv
+#     /tmp/checkenv/bin/pip install -r requirements.txt
+#     /tmp/checkenv/bin/pip check
+#     /tmp/checkenv/bin/python -m pytest -q
+
+# --- framework ---
+Django==6.0.8
+django-import-export==4.3.7
+django-q2==1.11.1
+
+# --- database & configuration ---
+psycopg2==2.9.10
+python-decouple==3.8
+
+# --- data import / export ---
+pandas==2.2.3
+openpyxl==3.1.5
+tablib==3.8.0
+XlsxWriter==3.2.9
+
+# --- task queue broker ---
+# redis-py 3.5.3 (the version this file used to pin, still installed on the
+# Czech server) imports distutils and is therefore UNIMPORTABLE on Python 3.12+,
+# which silently breaks every async_task() call. redis-py 8.x is no good either:
+# it opens with a RESP3 HELLO that pre-6.0 Redis servers reject. 5.2.1 works
+# against both old and current servers on modern Python.
+redis==5.2.1
+
+# --- WSGI server (production) ---
+# Installed by hand on the servers until now, so a deployment was never
+# reproducible from this file alone. Installs but does not run on Windows.
+gunicorn==26.0.0
+
+# --- application ---
+pillow==11.1.0
+requests==2.33.1
+python-dateutil==2.9.0.post0
+
+# --- extract_template_strings.py (translation tooling) ---
+beautifulsoup4==4.14.3
+lxml==6.0.2
+
+# --- tests ---
+pytest==8.3.4
+pytest-django==4.10.0
