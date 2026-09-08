@@ -92,6 +92,7 @@
     {% endif %}
   </div>
 
+  {% if features.point_expiration %}
   <div class="dashboard-section">
     <h3>{% trans "Points expiration" %}</h3>
 
@@ -147,6 +148,7 @@
     <p>{% blocktrans with months=expiry_months %}This client has no points expiring in the next {{ months }} months.{% endblocktrans %}</p>
     {% endif %}
   </div>
+  {% endif %}
 
   <div class="dashboard-section">
     <h3>{% blocktrans with date_from=date_from|date:"d.m.Y" date_to=date_to|date:"d.m.Y" %}Turnover by brand ({{ date_from }} – {{ date_to }}){% endblocktrans %}</h3>

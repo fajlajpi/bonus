@@ -11,7 +11,7 @@
 <body>
     <header class="site-header">
         <div class="header-content">
-            <a href="{% url 'dashboard' %}" class="site-title">{% trans "Bonus Programme" %}</a>
+            <a href="{% url 'dashboard' %}" class="site-title">{{ programme_name }}</a>
             <nav class="user-nav">
                 {% if user.is_authenticated %}
                     {% blocktrans with username=user.username %}Logged in as <em>{{ username }}</em>{% endblocktrans %}

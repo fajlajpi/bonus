@@ -93,8 +93,8 @@
                                 <span class="brand-badge">{{ brand.name }}</span>
                             {% endfor %}
                         </td>
-                        <td class="text-right">{{ eval.target_turnover|floatformat:0 }} Kč</td>
-                        <td class="text-right">{{ eval.actual_turnover|floatformat:0 }} Kč</td>
+                        <td class="text-right">{{ eval.target_turnover|floatformat:0 }} {{ currency_symbol }}</td>
+                        <td class="text-right">{{ eval.actual_turnover|floatformat:0 }} {{ currency_symbol }}</td>
                         <td class="text-center">
                             {% with progress=eval.actual_turnover|divide:eval.target_turnover|multiply:100 %}
                                 <strong>{{ progress|floatformat:0 }}%</strong>

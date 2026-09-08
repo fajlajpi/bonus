@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
+from pa_bonus.features import FeatureRequiredMixin
 from django.contrib import messages
 from django.views.generic import TemplateView, ListView, DetailView, View
 from django.db.models import Q
@@ -129,7 +130,7 @@ class HistoryDetailView(LoginRequiredMixin, DetailView):
             user = self.request.user
         ).select_related('brand')
 
-class PointExpirationView(LoginRequiredMixin, TemplateView):
+class PointExpirationView(LoginRequiredMixin, FeatureRequiredMixin, TemplateView):
     """
     Shows the user exactly when and how many of their points will expire.
 
@@ -137,6 +138,8 @@ class PointExpirationView(LoginRequiredMixin, TemplateView):
     expiry date, soonest first, plus the total and the subset expiring within the
     next 3 months (matching the dashboard warning).
     """
+    feature_name = 'point_expiration'
+
     template_name = 'point_expiration.html'
     login_url = 'login'
 
@@ -318,11 +321,13 @@ class RewardsRequestConfirmationView(LoginRequiredMixin, View):
             messages.warning(request, _("Reward request was already submitted."))
             return redirect('reward_requests')
 
-class ExtraGoalsDetailView(LoginRequiredMixin, View):
+class ExtraGoalsDetailView(LoginRequiredMixin, FeatureRequiredMixin, View):
     """
     Displays detailed extra goals progress for the logged-in user.
     Shows current goals, evaluation periods, and progress tracking.
     """
+    feature_name = 'extra_goals'
+
     template_name = 'extra_goals_detail.html'
     login_url = 'login'
     

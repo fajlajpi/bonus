@@ -11,6 +11,7 @@ Sales Reps are a middle layer between clients and managers. They can:
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
+from pa_bonus.features import FeatureRequiredMixin
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from django.views.generic import View, ListView
@@ -320,12 +321,14 @@ class SalesRepClientDetailView(SalesRepRequiredMixin, View):
 # ---------------------------------------------------------------------------
 # Point end-of-validity overview
 # ---------------------------------------------------------------------------
-class SalesRepPointExpirationView(SalesRepRequiredMixin, View):
+class SalesRepPointExpirationView(SalesRepRequiredMixin, FeatureRequiredMixin, View):
     """
     Lists clients in the rep's region(s) who have points reaching the end of their
     validity within the next 3 months, with the per-client and total amounts, so
     the rep can proactively reach out before those points lapse.
     """
+    feature_name = 'point_expiration'
+
     template_name = 'sales_rep/point_expirations.html'
 
     def get(self, request):

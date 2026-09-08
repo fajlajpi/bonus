@@ -280,8 +280,8 @@ msgstr "Bonusy za značky"
 
 #: .\pa_bonus\templates\dashboard.html:31
 #, python-format
-msgid "%(ratio)s CZK excl. VAT per 1 point"
-msgstr "%(ratio)s Kč bez DPH za 1 bod"
+msgid "%(ratio)s %(currency)s excl. VAT per 1 point"
+msgstr "%(ratio)s %(currency)s bez DPH za 1 bod"
 
 #: .\pa_bonus\templates\dashboard.html:38
 msgid "No active memberships."

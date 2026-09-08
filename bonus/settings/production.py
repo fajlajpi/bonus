@@ -9,6 +9,14 @@ SECRET_KEY = config('SECRET_KEY')
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
+# Where this deployment keeps its files on disk. Two deployments on one server
+# MUST NOT share this: MEDIA_ROOT holds uploaded reward images, so a shared
+# directory would serve one country's uploads on the other country's site.
+# Separate databases do not protect against this - it is the filesystem.
+# Default reproduces the original single-deployment layout.
+DEPLOYMENT_ROOT = config('DEPLOYMENT_ROOT', default='/var/www/bonus')
+LOG_DIR = config('LOG_DIR', default=f'{DEPLOYMENT_ROOT}/logs')
+
 # Database
 DATABASES = {
     'default': {
@@ -45,9 +53,14 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 # Django Q settings - adjust workers based on server capacity
+# The queue name and Redis db index together namespace this deployment's task
+# queue. Two deployments sharing a Redis host with the same name and db would
+# consume each other's tasks - a Polish notification could be processed, and
+# sent, by the Czech worker. Any deployment sharing Redis with another MUST
+# override at least one of Q_CLUSTER_NAME or REDIS_DB.
 Q_CLUSTER = {
-    'name': 'bonus',
-    'workers': 2,
+    'name': config('Q_CLUSTER_NAME', default='bonus'),
+    'workers': config('Q_CLUSTER_WORKERS', default=2, cast=int),
     'recycle': 500,
     'timeout': 60,
     'compress': True,
@@ -56,9 +69,9 @@ Q_CLUSTER = {
     'cpu_affinity': 1,
     'label': 'Django Q2',
     'redis': {
-        'host': os.environ.get('REDIS_HOST', 'localhost'),
-        'port': 6379,
-        'db': 0,
+        'host': config('REDIS_HOST', default='localhost'),
+        'port': config('REDIS_PORT', default=6379, cast=int),
+        'db': config('REDIS_DB', default=0, cast=int),
     }
 }
 
@@ -81,13 +94,13 @@ LOGGING = {
         'file': {
             'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': '/var/www/bonus/logs/django_error.log',
+            'filename': f'{LOG_DIR}/django_error.log',
             'formatter': 'verbose',
         },
         'debug_file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/var/www/bonus/logs/django_debug.log',
+            'filename': f'{LOG_DIR}/django_debug.log',
             'formatter': 'verbose',
         },
         'console': {
@@ -121,9 +134,9 @@ LOGGING = {
 
 # Static files
 STATIC_URL = '/static/'
-STATIC_ROOT = '/var/www/bonus/static/'
+STATIC_ROOT = config('STATIC_ROOT', default=f'{DEPLOYMENT_ROOT}/static/')
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/www/bonus/media/'
+MEDIA_ROOT = config('MEDIA_ROOT', default=f'{DEPLOYMENT_ROOT}/media/')
 
 # CREDENTIALS FOR ABRA INTEGRATION
 ABRA_USERNAME    = config('ABRA_USERNAME')

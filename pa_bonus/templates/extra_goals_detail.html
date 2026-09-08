@@ -40,11 +40,11 @@
             <div class="goal-summary">
                 <div class="summary-item">
                     <span class="summary-label">{% trans "Total target:" %}</span>
-                    <span class="summary-value">{{ goal_data.goal.goal_value|floatformat:0 }} {% trans "CZK" %}</span>
+                    <span class="summary-value">{{ goal_data.goal.goal_value|floatformat:0 }} {{ currency_symbol }}</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">{% trans "Current turnover:" %}</span>
-                    <span class="summary-value">{{ goal_data.total_actual|floatformat:0 }} {% trans "CZK" %}</span>
+                    <span class="summary-value">{{ goal_data.total_actual|floatformat:0 }} {{ currency_symbol }}</span>
                 </div>
                 <div class="summary-item">
                     <span class="summary-label">{% trans "Total achieved:" %}</span>
@@ -87,11 +87,11 @@
                         <div class="period-details">
                             <div class="detail-row">
                                 <span>{% trans "Period target:" %}</span>
-                                <span>{{ period.target|floatformat:0 }} {% trans "CZK" %}</span>
+                                <span>{{ period.target|floatformat:0 }} {{ currency_symbol }}</span>
                             </div>
                             <div class="detail-row">
                                 <span>{% trans "Current turnover:" %}</span>
-                                <span>{{ period.actual|floatformat:0 }} {% trans "CZK" %}</span>
+                                <span>{{ period.actual|floatformat:0 }} {{ currency_symbol }}</span>
                             </div>
                             {% if period.status != 'future' %}
                             <div class="detail-row">

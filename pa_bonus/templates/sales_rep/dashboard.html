@@ -47,10 +47,12 @@
         <span class="button-icon">👥</span>
         <span class="button-text">{% trans "My clients" %}</span>
       </a>
+      {% if features.point_expiration %}
       <a href="{% url 'salesrep_point_expirations' %}" class="dashboard-button">
         <span class="button-icon">⏳</span>
         <span class="button-text">{% trans "Points expiration" %}</span>
       </a>
+      {% endif %}
       <a href="{% url 'salesrep_reward_requests' %}" class="dashboard-button">
         <span class="button-icon">🎁</span>
         <span class="button-text">{% trans "Reward requests" %}</span>

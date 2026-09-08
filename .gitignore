@@ -25,3 +25,10 @@ private.py
 
 # Local development settings file for environment variables
 settings.ini
+
+# Deployment environment file. This lives INSIDE the repo checkout on the
+# servers (systemd reads /var/www/<deployment>/repo/.env), so it must never be
+# committable: it holds SECRET_KEY, the database password and the ABRA token.
+.env
+.env.*
+!.env.example

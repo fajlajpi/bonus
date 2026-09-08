@@ -198,6 +198,7 @@
     </div>
 
     <!-- Goal Information Section (Optional) -->
+    {% if features.extra_goals %}
     <div class="form-section">
       <h3 class="section-title">
         <div class="form-check">
@@ -313,6 +314,7 @@
         </div>
       </div>
     </div>
+    {% endif %}
 
     <!-- Form Actions -->
     <div class="form-actions">
@@ -322,6 +324,7 @@
   </form>
 </div>
 
+{% if features.extra_goals %}
 <script>
 // Toggle goal fields visibility based on checkbox
 document.addEventListener('DOMContentLoaded', function() {
@@ -343,5 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
   createGoalCheckbox.addEventListener('change', toggleGoalFields);
 });
 </script>
+{% endif %}
 
 {% endblock %}

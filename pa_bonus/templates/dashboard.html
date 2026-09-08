@@ -10,6 +10,7 @@
     <div class="points-summary">
         <h3>{% trans "Current points balance" %}</h3>
         <p class="total-points">{% blocktrans with points=total_points %}{{ points }} points{% endblocktrans %}</p>
+        {% if features.point_expiration %}
         {% if expiring_points > 0 %}
         <p class="expiring-points-warning">
             {% blocktrans with points=expiring_points %}<strong>{{ points }} points</strong> will expire in the next 3 months.{% endblocktrans %}
@@ -18,6 +19,7 @@
         <p class="expiring-points-link">
             <a href="{% url 'point_expiration' %}">{% trans "Points expiration" %}</a>
         </p>
+        {% endif %}
     </div>
 
     {% if contract %}
@@ -28,7 +30,7 @@
             <li>
                 <strong>{{ bonus.brand_id.name }}</strong>:
                 {% with ratio=1|divide:bonus.points_ratio %}
-                {% blocktrans %}{{ ratio }} CZK excl. VAT per 1 point{% endblocktrans %}
+                {% blocktrans with currency=currency_symbol %}{{ ratio }} {{ currency }} excl. VAT per 1 point{% endblocktrans %}
                 {% endwith %}
             </li>
         {% endfor %}
@@ -38,7 +40,7 @@
     <p>{% trans "No active memberships." %}</p>
     {% endif %}
 
-    {% if active_goal %}
+    {% if features.extra_goals and active_goal %}
     <div class="dashboard-section goal-summary-widget contract-details">
         <h3>{% trans "Current target bonus" %}</h3>
         <div class="goal-period-info">
@@ -49,15 +51,15 @@
             <div class="progress-info">
                 <div class="progress-row">
                     <span>{% trans "Period target:" %}</span>
-                    <strong>{{ active_goal.target|floatformat:0 }} {% trans "CZK" %}</strong>
+                    <strong>{{ active_goal.target|floatformat:0 }} {{ currency_symbol }}</strong>
                 </div>
                 <div class="progress-row">
                     <span>{% trans "Current turnover:" %}</span>
-                    <strong>{{ active_goal.actual|floatformat:0 }} {% trans "CZK" %}</strong>
+                    <strong>{{ active_goal.actual|floatformat:0 }} {{ currency_symbol }}</strong>
                 </div>
                 <div class="progress-row">
                     <span>{% trans "Remaining to target:" %}</span>
-                    <strong>{{ active_goal.remaining|floatformat:0 }} {% trans "CZK" %}</strong>
+                    <strong>{{ active_goal.remaining|floatformat:0 }} {{ currency_symbol }}</strong>
                 </div>
             </div>
 
@@ -83,10 +85,10 @@
         <h3>{% trans "Quick links" %}</h3>
         <ul>
             <li><a href="{% url 'history' %}">{% trans "Points transaction history" %}</a></li>
-            <li><a href="{% url 'point_expiration' %}">{% trans "Points expiration" %}</a></li>
+            {% if features.point_expiration %}<li><a href="{% url 'point_expiration' %}">{% trans "Points expiration" %}</a></li>{% endif %}
             <li><a href="{% url 'rewards' %}">{% trans "Rewards catalogue" %}</a></li>
             <li><a href="{% url 'reward_requests' %}">{% trans "Reward requests" %}</a></li>
-            <li><a href="{% url 'extra_goals_detail' %}">{% trans "Extra goals" %}</a></li>
+            {% if features.extra_goals %}<li><a href="{% url 'extra_goals_detail' %}">{% trans "Extra goals" %}</a></li>{% endif %}
         </ul>
     </div>
 </div>

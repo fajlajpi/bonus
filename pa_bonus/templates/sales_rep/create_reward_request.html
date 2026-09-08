@@ -35,10 +35,11 @@
             </tr>
           </thead>
           <tbody>
+            {% trans "Any" as any_brand_label %}
             {% for reward in rewards %}
             <tr>
               <td>{{ reward.name }}</td>
-              <td>{{ reward.brand.name|default:"{% trans "Any" %}" }}</td>
+              <td>{{ reward.brand.name|default:any_brand_label }}</td>
               <td class="value">{% blocktrans with points=reward.point_cost %}{{ points }} points{% endblocktrans %}</td>
               <td>
                 <span class="availability-badge {{ reward.availability|lower }}">

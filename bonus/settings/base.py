@@ -10,8 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+from decimal import Decimal
 from pathlib import Path
 import os
+
+from decouple import config
 
 # MY SETTINGS
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -61,6 +64,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'pa_bonus.context_processors.contact_info',
+                'pa_bonus.context_processors.features',
             ],
         },
     },
@@ -108,6 +112,74 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
+
+
+# =============================================================================
+# DEPLOYMENT PROFILE
+# =============================================================================
+# Everything in this section differs between country deployments. Each value
+# reads from the deployment's settings.ini / .env, and every default reproduces
+# the original Czech deployment - so an existing deployment needs no config
+# changes and cannot change behaviour, while a new market overrides only what
+# actually differs for it.
+# =============================================================================
+
+# --- Identity -----------------------------------------------------------
+BONUS_PROGRAMME_NAME = config('BONUS_PROGRAMME_NAME', default='Bonusový Program')
+SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='bonus@primavera-and.cz')
+COMPANY_NAME = config('COMPANY_NAME', default='PRIMAVERA ANDORRANA s.r.o.')
+COMPANY_PHONE = config('COMPANY_PHONE', default='+420 778 799 900')
+COMPANY_STREET = config('COMPANY_STREET', default='Jinonická 804/80')
+COMPANY_CITY = config('COMPANY_CITY', default='Praha 5 – Košíře')
+COMPANY_ZIP = config('COMPANY_ZIP', default='158 00')
+
+# --- Money --------------------------------------------------------------
+# Currency is a business fact, not a translation: a point is worth a fixed
+# amount of a specific currency, so it must never be resolved through the
+# translation catalogue.
+# CURRENCY_CODE is the ISO code used for accounting and integrations;
+# CURRENCY_SYMBOL is what customers actually see on screen. They differ in most
+# markets (CZK/Kč, PLN/zł), so both are configured rather than derived.
+CURRENCY_CODE = config('CURRENCY_CODE', default='CZK')
+CURRENCY_SYMBOL = config('CURRENCY_SYMBOL', default='Kč')
+
+# VAT rate used to convert a VAT-inclusive point value into the VAT-exclusive
+# unit price sent to ABRA. Czechia 0.21, Poland 0.23.
+VAT_RATE = config('VAT_RATE', default='0.21', cast=Decimal)
+
+# --- Features -----------------------------------------------------------
+# Not every market runs every part of the programme. A disabled feature is
+# hidden from every audience - clients, sales reps and managers alike - so
+# nobody has to reason about a feature their market does not use.
+FEATURES = {
+    # Extra Goals: turnover targets with milestone bonuses.
+    'extra_goals': config('FEATURE_EXTRA_GOALS', default=True, cast=bool),
+    # Point expiration: expiry dates, warnings and expiry reports.
+    'point_expiration': config('FEATURE_POINT_EXPIRATION', default=True, cast=bool),
+    # SMS export: CSV generation for the smsbrana.cz bulk SMS gateway.
+    'sms_export': config('FEATURE_SMS_EXPORT', default=True, cast=bool),
+}
+
+# --- SMS export ---------------------------------------------------------
+# Only relevant where FEATURES['sms_export'] is on. The message body is a
+# str.format template; the placeholders available to it are listed in
+# SMSExportView. International dialling prefix is applied to local numbers.
+SMS_MESSAGE_TEMPLATE = config(
+    'SMS_MESSAGE_TEMPLATE',
+    default=(
+        'OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. '
+        'Cerpani a informace: https://bonus.primavera-and.cz/ '
+        'Odhlaseni: SMS STOP na +420778799900.'
+    ),
+)
+SMS_PHONE_COUNTRY_PREFIX = config('SMS_PHONE_COUNTRY_PREFIX', default='420')
+
+# --- ABRA document text -------------------------------------------------
+# Text written onto ABRA documents. It appears on real accounting records, so
+# it must be in the language of the market the deployment serves.
+ABRA_REWARD_LINE_PREFIX = config('ABRA_REWARD_LINE_PREFIX', default='Bonusový program EC/AE - ')
+ABRA_DISCOUNT_LINE_TEXT = config('ABRA_DISCOUNT_LINE_TEXT', default='Bonusový program - sleva')
+ABRA_DOCUMENT_DESCRIPTION = config('ABRA_DOCUMENT_DESCRIPTION', default='Bonusový program č. {request_id}')
 
 
 # Static files (CSS, JavaScript, Images)
@@ -168,6 +240,17 @@ PENTAHO_PASSWORD = os.getenv("PENTAHO_PASSWORD", "")
 # These rarely change, but can be overridden if needed:
 PENTAHO_CDA_PATH = "/public/PAA/karta-klienta/karta klienta.cda"
 PENTAHO_DATA_ACCESS_ID = "sqlFaktury"
+
+# Link managers follow to open a client's card in Pentaho reporting. Set to an
+# empty string on deployments without a Pentaho server and the link is hidden
+# instead of pointing at another country's reporting.
+PENTAHO_CLIENT_CARD_URL = config(
+    'PENTAHO_CLIENT_CARD_URL',
+    default=(
+        'https://report.primavera-and.cz:8080/pentaho/api/repos/'
+        '%3Apublic%3APAA%3Akarta-klienta%3Akarta%20klienta.wcdf/generatedContent'
+    ),
+)
 
 # =============================================================================
 # ABRA GEN ERP integration

@@ -210,7 +210,7 @@
               {% for brand_bonus in active_contract.brandbonuses.all %}
                 <li>
                   <strong>{{ brand_bonus.brand_id.name }}</strong>:
-                  {{ brand_bonus.points_ratio }} points per CZK
+                  {{ brand_bonus.points_ratio }} points per {{ currency_symbol }}
                 </li>
               {% empty %}
                 <li>No brand bonuses specified</li>
@@ -251,14 +251,14 @@
         {% endwith %}
       </div>
 
-      {% if active_contract.extra_goals.all %}
+      {% if features.extra_goals and active_contract.extra_goals.all %}
         <div class="info-card">
           <h4>Extra Goals</h4>
           <ul class="goal-list">
             {% for goal in active_contract.extra_goals.all %}
               <li>
                 <strong>{{ goal.goal_period_from|date:"m.Y" }} - {{ goal.goal_period_to|date:"m.Y" }}</strong>:
-                Goal: {{ goal.goal_value }} CZK, Base: {{ goal.goal_base }} CZK
+                Goal: {{ goal.goal_value }} {{ currency_symbol }}, Base: {{ goal.goal_base }} {{ currency_symbol }}
               </li>
             {% endfor %}
           </ul>
@@ -385,9 +385,9 @@
           {% for brand_data in brand_turnovers %}
             <tr class="{% if brand_data.in_contract %}contract-brand{% endif %}">
               <td>{{ brand_data.brand.name }}</td>
-              <td>{{ brand_data.invoice_turnover|floatformat:2 }} CZK</td>
-              <td>{{ brand_data.credit_turnover|floatformat:2 }} CZK</td>
-              <td>{{ brand_data.net_turnover|floatformat:2 }} CZK</td>
+              <td>{{ brand_data.invoice_turnover|floatformat:2 }} {{ currency_symbol }}</td>
+              <td>{{ brand_data.credit_turnover|floatformat:2 }} {{ currency_symbol }}</td>
+              <td>{{ brand_data.net_turnover|floatformat:2 }} {{ currency_symbol }}</td>
               <td class="value {% if brand_data.points < 0 %}negative{% else %}positive{% endif %}">
                 {{ brand_data.points }} pts
               </td>
@@ -408,9 +408,9 @@
           {% if brand_turnovers %}
             <tr class="summary-row">
               <td><strong>TOTAL</strong></td>
-              <td>{{ brand_turnovers|sum_attr:"invoice_turnover"|floatformat:2 }} CZK</td>
-              <td>{{ brand_turnovers|sum_attr:"credit_turnover"|floatformat:2 }} CZK</td>
-              <td>{{ brand_turnovers|sum_attr:"net_turnover"|floatformat:2 }} CZK</td>
+              <td>{{ brand_turnovers|sum_attr:"invoice_turnover"|floatformat:2 }} {{ currency_symbol }}</td>
+              <td>{{ brand_turnovers|sum_attr:"credit_turnover"|floatformat:2 }} {{ currency_symbol }}</td>
+              <td>{{ brand_turnovers|sum_attr:"net_turnover"|floatformat:2 }} {{ currency_symbol }}</td>
               <td class="value {% if point_totals.period_confirmed < 0 %}negative{% else %}positive{% endif %}">
                 <strong>{{ point_totals.period_confirmed }} pts</strong>
               </td>

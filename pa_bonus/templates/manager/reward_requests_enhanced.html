@@ -300,11 +300,13 @@
                                                         </button>
                                                         <div class="invoice-results" id="invoice-results-{{ request.user.pk }}" style="display:none; margin-top: 0.5rem;"></div>
                                                     </dd>
+                                                    {% if pentaho_client_card_url %}
                                                     <dt>Reporting:</dt>
                                                     <dd>
-                                                        <a href="https://report.primavera-and.cz:8080/pentaho/api/repos/%3Apublic%3APAA%3Akarta-klienta%3Akarta%20klienta.wcdf/generatedContent?kodZakaznika={{ request.user.user_number }}" 
+                                                        <a href="{{ pentaho_client_card_url }}?kodZakaznika={{ request.user.user_number }}" 
                                                            target="_blank" style="font-size: 0.85rem;">Open Full Report →</a>
                                                     </dd>
+                                                    {% endif %}
                                                 </dl>
                                             </div>
 
@@ -618,7 +620,7 @@ function copyOverdueInvoiceMessage(userId) {
     const stored = invoiceDataStore[userId];
     if (!stored) return;
     const invoiceList = stored.invoices
-        .map(inv => `${inv.date_issued} ... ${formatNumber(inv.amount_excl_vat)} CZK`)
+        .map(inv => `${inv.date_issued} ... ${formatNumber(inv.amount_excl_vat)} {{ currency_symbol }}`)
         .join(', ');
     const text = `Klient/ka ${stored.userName} (ZČ: ${stored.userNumber}) má žádost o bonus, kterou blokují faktury po splatnosti: ${invoiceList}. Prosím o kontrolu a uhrazení, abychom mohli bonus odeslat.`;
     navigator.clipboard.writeText(text)
@@ -715,7 +717,7 @@ function renderInvoiceResult(data, userNumber, userId) {
             <td><strong>${escapeHtml(inv.invoice_number)}</strong></td>
             <td>${escapeHtml(inv.date_issued)}</td>
             <td style="text-align:right; color:red; font-weight:bold;">
-                ${formatNumber(inv.amount_excl_vat)} CZK
+                ${formatNumber(inv.amount_excl_vat)} {{ currency_symbol }}
             </td>
         </tr>`
     ).join('');
@@ -723,7 +725,7 @@ function renderInvoiceResult(data, userNumber, userId) {
     return `<div class="invoice-result-warning">
                 <div class="invoice-result-header">
                     ⚠ <strong>${data.total_rows} unpaid invoice${data.total_rows > 1 ? 's' : ''}</strong>
-                    — Total: <span style="color:red; font-weight:bold;">${formatNumber(data.total_amount)} CZK</span>
+                    — Total: <span style="color:red; font-weight:bold;">${formatNumber(data.total_amount)} {{ currency_symbol }}</span>
                     &nbsp;<button type="button" class="btn-clipboard" onclick="copyOverdueInvoiceMessage('${escapeHtml(userId)}')">Kopírovat zprávu</button>
                 </div>
                 <table class="invoice-mini-table">

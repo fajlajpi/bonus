@@ -277,7 +277,7 @@ msgstr ""
 
 #: .\pa_bonus\templates\dashboard.html:31
 #, python-format
-msgid "%(ratio)s CZK excl. VAT per 1 point"
+msgid "%(ratio)s %(currency)s excl. VAT per 1 point"
 msgstr ""
 
 #: .\pa_bonus\templates\dashboard.html:38

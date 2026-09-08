@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.generic import ListView, View
@@ -15,6 +16,7 @@ from pa_bonus.models import (FileUpload, Reward, RewardRequest, RewardRequestIte
                              PointsTransaction, EmailNotification, User, Region, UserContract,
                              InvoiceBrandTurnover, Brand, UserActivity, UserContractGoal, GoalEvaluation)
 from pa_bonus.utilities import ManagerGroupRequiredMixin, manager_required, calculate_turnover_for_goal
+from pa_bonus.features import FeatureRequiredMixin
 from pa_bonus.services.points import allocate_debit, void_debit
 
 from pa_bonus.exports import generate_telemarketing_export
@@ -790,7 +792,7 @@ The Bonus Program Team
             )
 
 
-class SMSExportView(ManagerGroupRequiredMixin, View):
+class SMSExportView(ManagerGroupRequiredMixin, FeatureRequiredMixin, View):
     """
     Generates a CSV file for SMS notifications to clients.
     
@@ -798,6 +800,8 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
     to send monthly SMS notifications to clients about their point balances.
     Supports both standard and custom message templates with variable substitution.
     """
+    feature_name = 'sms_export'
+
     template_name = 'manager/sms_export.html'
     
     def get(self, request):
@@ -808,7 +812,10 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
         regions = Region.objects.filter(is_active=True).order_by('name')
         
         context = {
-            'regions': regions
+            'regions': regions,
+            # Shown as the default/preview text so managers see the message this
+            # deployment actually sends, not a hardcoded Czech one.
+            'sms_message_template': settings.SMS_MESSAGE_TEMPLATE,
         }
         
         return render(request, self.template_name, context)
@@ -850,11 +857,11 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
             # Get custom message template
             message_template = request.POST.get('custom_message_text', '')
             if not message_template:
-                # Fallback to default if custom template is empty
-                message_template = "OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+                # Fallback to this deployment's default if custom text is empty
+                message_template = settings.SMS_MESSAGE_TEMPLATE
         else:
-            # Default message template
-            message_template = "OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900."
+            # This deployment's default message template
+            message_template = settings.SMS_MESSAGE_TEMPLATE
         
         # Count for reporting
         total_sms = 0
@@ -871,9 +878,10 @@ class SMSExportView(ManagerGroupRequiredMixin, View):
             # Format phone number correctly
             phone = user.user_phone.strip()
             if not phone.startswith('+'):
-                # Add Czech prefix if not present
-                if not phone.startswith('420'):
-                    phone = '+420' + phone
+                # Add this deployment's dialling prefix if not already present
+                prefix = settings.SMS_PHONE_COUNTRY_PREFIX
+                if not phone.startswith(prefix):
+                    phone = '+' + prefix + phone
                 else:
                     phone = '+' + phone
             
@@ -1400,11 +1408,13 @@ class UserActivityDashboardView(ManagerGroupRequiredMixin, View):
         
         return render(request, self.template_name, context)
     
-class GoalEvaluationView(ManagerGroupRequiredMixin, View):
+class GoalEvaluationView(ManagerGroupRequiredMixin, FeatureRequiredMixin, View):
     """
     Allows managers to evaluate extra goals and award bonus points.
     Similar to transaction approval but for goal achievements.
     """
+    feature_name = 'extra_goals'
+
     template_name = 'manager/goal_evaluation.html'
     
     def _calculate_points_cap(self, goal):
@@ -1882,11 +1892,13 @@ class GoalEvaluationView(ManagerGroupRequiredMixin, View):
         
         return redirect('goal_evaluation')
     
-class GoalsOverviewView(ManagerGroupRequiredMixin, ListView):
+class GoalsOverviewView(ManagerGroupRequiredMixin, FeatureRequiredMixin, ListView):
     """
     Manager view showing overview of all extra goals with filtering and progress tracking.
     Now includes export functionality for full contract data and current period data.
     """
+    feature_name = 'extra_goals'
+
     template_name = 'manager/goals_overview.html'
     context_object_name = 'goal_data'
     paginate_by = 300

@@ -54,11 +54,17 @@ ROWTYPE_STORECARD = 3          # real storecard line
 BONBOD_CODE = "BONBOD"
 
 # VAT divisor for converting a point cost (which we treat as a VAT-inclusive
-# CZK value) into a VAT-exclusive unit price.
-VAT_DIVISOR = Decimal("1.21")
+# value in the deployment's currency) into a VAT-exclusive unit price.
+# Read at call time rather than import time so that each country deployment
+# applies its own rate - Czechia 21%, Poland 23%.
+def _vat_divisor() -> Decimal:
+    return Decimal("1") + Decimal(settings.VAT_RATE)
 
-# Text preceding Rowtype 2 bonus name
-ROWTYPE_TEXT_PRICE_PREFIX = "Bonusový program EC/AE - "
+
+# Text preceding Rowtype 2 bonus name. This is written onto real accounting
+# documents, so it comes from settings and is in the market's own language.
+def _reward_line_prefix() -> str:
+    return settings.ABRA_REWARD_LINE_PREFIX
 
 
 # ---------------------------------------------------------------------------
@@ -228,12 +234,13 @@ class AbraClient:
 
 def _round_excl_vat(point_cost: int) -> Decimal:
     """
-    Convert a points value to a CZK price excluding 21% VAT.
+    Convert a points value to a price excluding VAT, in the deployment's
+    currency and at the deployment's VAT rate.
 
     We use Decimal arithmetic with ROUND_HALF_UP to match what an accountant
     would expect on the cent. Floats here would drift; better safe.
     """
-    value = Decimal(point_cost) / VAT_DIVISOR
+    value = Decimal(point_cost) / _vat_divisor()
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
@@ -292,7 +299,7 @@ def _build_rows_for_request(storecards: dict[str, dict], items) -> list[dict]:
 
             rows.append({
                 "rowtype": ROWTYPE_TEXT_PRICE_QTY,
-                "text": ROWTYPE_TEXT_PRICE_PREFIX + code + " " + name,
+                "text": _reward_line_prefix() + code + " " + name,
                 "quantity": item.quantity,
                 "qunit": "ks",
                 "unitprice": float(unit_excl_vat),
@@ -301,7 +308,7 @@ def _build_rows_for_request(storecards: dict[str, dict], items) -> list[dict]:
             })
             rows.append({
                 "rowtype": ROWTYPE_TEXT_PRICE,
-                "text": "Bonusový program - sleva",
+                "text": settings.ABRA_DISCOUNT_LINE_TEXT,
                 "totalprice": float(-line_total),
                 "division_id": division_id,
                 "vatrate_id": vatrate_id,
@@ -382,7 +389,7 @@ def submit_reward_request(reward_request, items=None) -> SubmissionResult:
     rows = _build_rows_for_request(storecards, items)
     payload = {
         "firm_id": firm["id"],
-        "description": f"Bonusový program č. {reward_request.id}",
+        "description": settings.ABRA_DOCUMENT_DESCRIPTION.format(request_id=reward_request.id),
         "rows": rows,
     }
 

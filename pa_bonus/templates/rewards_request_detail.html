@@ -101,7 +101,7 @@
         <div class="status-info overdue-invoice">
             <h3>{% trans "Request status: Overdue invoice" %}</h3>
             <p>{% trans "Processing of your request has been suspended due to an unpaid overdue invoice." %}</p>
-            <p>{% trans "To resolve this, or if you have already paid the invoice, please contact your sales representative or write to" %} <a href="mailto:bonus@primavera-and.cz?subject=BONUS%20Overdue%20invoice">bonus@primavera-and.cz</a>.</p>
+            <p>{% trans "To resolve this, or if you have already paid the invoice, please contact your sales representative or write to" %} <a href="mailto:{{ support_email }}?subject=BONUS%20Overdue%20invoice">{{ support_email }}</a>.</p>
         </div>
     {% endif %}
 {% endif %}

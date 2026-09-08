@@ -48,14 +48,14 @@
         <label>Ukázka standardní zprávy:</label>
         <div class="sms-preview">
           <div class="sms-text" id="default_preview">
-            OS: Bonus Primavera Andorrana - na konte mate {počet bodů} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900.
+            {{ sms_message_template }}
           </div>
         </div>
       </div>
       
       <div class="form-group" id="custom_message_container" style="display: none;">
         <label for="custom_message_text">Vlastní text zprávy:</label>
-        <textarea name="custom_message_text" id="custom_message_text" rows="4" class="form-control" placeholder="Zadejte vlastní text zprávy...">OS: Bonus Primavera Andorrana - na konte mate {balance} bodu. Cerpani a informace: https://bonus.primavera-and.cz/ Odhlaseni: SMS STOP na +420778799900.</textarea>
+        <textarea name="custom_message_text" id="custom_message_text" rows="4" class="form-control" placeholder="Zadejte vlastní text zprávy...">{{ sms_message_template }}</textarea>
         <div class="character-counter">
           <span id="char_count">0</span> / 157 znaků (bez dosazení proměnných!)
           <span id="message_count" class="message-count">1</span> zpráva

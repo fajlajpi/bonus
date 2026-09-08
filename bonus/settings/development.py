@@ -43,8 +43,9 @@ ABRA_USERNAME    = private.abra_username
 ABRA_TOKEN       = private.abra_token
 
 # DJANGO Q FOR ASYNC TASKS
+# See the note in production.py: name + db namespace this deployment's queue.
 Q_CLUSTER = {
-    'name': 'bonus',
+    'name': config('Q_CLUSTER_NAME', default='bonus'),
     'workers': 4,
     'recycle': 500,
     'timeout': 60,
@@ -54,8 +55,8 @@ Q_CLUSTER = {
     'cpu_affinity': 1,
     'label': 'Django Q2',
     'redis': {
-        'host': 'localhost',
-        'port': 6379,
-        'db': 0,
+        'host': config('REDIS_HOST', default='localhost'),
+        'port': config('REDIS_PORT', default=6379, cast=int),
+        'db': config('REDIS_DB', default=0, cast=int),
     }
 }
