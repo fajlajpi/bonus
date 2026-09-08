@@ -9,10 +9,10 @@ charset-normalizer==3.4.7
 colorama==0.4.6
 python-decouple==3.8
 diff-match-patch==20241021
-Django==5.1.6
+Django==6.0.8
 django-import-export==4.3.7
 django-picklefield==3.3
-django-q2==1.7.6
+django-q2==1.11.1
 et_xmlfile==2.0.0
 idna==3.13
 iniconfig==2.0.0
