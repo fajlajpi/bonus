@@ -660,6 +660,7 @@ class ItemisedRewardsReport(BaseReport):
             "Point Cost (per unit)",
             "Total Point Cost",
             "Current Stock Status",
+            "Current Stock Quantity",
         ]
 
     def get_column_formats(self) -> dict[int, str]:
@@ -667,6 +668,7 @@ class ItemisedRewardsReport(BaseReport):
             9: NUMBER_FORMAT_INTEGER,
             10: NUMBER_FORMAT_INTEGER,
             11: NUMBER_FORMAT_INTEGER,
+            13: NUMBER_FORMAT_INTEGER,
         }
 
     def get_rows(self) -> list[list]:
@@ -702,6 +704,7 @@ class ItemisedRewardsReport(BaseReport):
                 item.point_cost,
                 item.quantity * item.point_cost,
                 item.reward.get_availability_display() if item.reward_id else "Custom item",
+                item.reward.stock if item.reward_id and item.reward.stock is not None else "",
             ])
 
         return rows

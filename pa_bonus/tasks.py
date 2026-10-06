@@ -531,7 +531,12 @@ def send_email_task(notification_id, recipient_email, subject, message):
         raise 
 
 def process_stock_file(upload_id):
-    """Process stock data file and update reward availability."""
+    """
+    Process stock data file, storing the stock quantity and updating reward availability.
+
+    Rewards with a manually set status (Reward.MANUAL_AVAILABILITY) only get their
+    stock quantity updated; their availability is left untouched.
+    """
     upload = FileUpload.objects.get(id=upload_id)
     logger.info(f"Starting to process stock upload {upload_id}")
     
@@ -571,19 +576,24 @@ def process_stock_file(upload_id):
                     # Get the reward
                     reward = Reward.objects.get(abra_code=code)
                     
-                    # Determine availability based on quantity
                     if quantity is None or pd.isna(quantity):
-                        availability = 'ON_DEMAND'
-                    elif quantity >= 6:
-                        availability = 'AVAILABLE'
-                    elif 1 <= quantity <= 5:
-                        availability = 'AVAILABLE_LAST_UNITS'
-                    else:  # quantity = 0
-                        availability = 'ON_DEMAND'
-                    
-                    # Update reward
-                    reward.availability = availability
-                    reward.save(update_fields=['availability'])
+                        stock = None
+                    else:
+                        stock = int(quantity)
+                    reward.stock = stock
+                    update_fields = ['stock']
+
+                    # Determine availability based on quantity, unless set manually
+                    if reward.availability not in Reward.MANUAL_AVAILABILITY:
+                        if stock is None or stock <= 0:
+                            reward.availability = 'ON_DEMAND'
+                        elif stock >= 6:
+                            reward.availability = 'AVAILABLE'
+                        else:  # 1 - 5
+                            reward.availability = 'AVAILABLE_LAST_UNITS'
+                        update_fields.append('availability')
+
+                    reward.save(update_fields=update_fields)
                     updated_count += 1
                     
                 except Reward.DoesNotExist:

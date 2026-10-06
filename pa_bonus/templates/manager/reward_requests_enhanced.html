@@ -340,6 +340,7 @@
                                                                 <span class="availability-badge availability-{{ item.reward.availability|lower }}">
                                                                     {{ item.reward.get_availability_display }}
                                                                 </span>
+                                                                {% if item.reward.stock is not None %}<small>({{ item.reward.stock }} pcs)</small>{% endif %}
                                                                 {% else %}
                                                                 <span class="availability-badge">—</span>
                                                                 {% endif %}

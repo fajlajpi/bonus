@@ -625,6 +625,8 @@ class Reward(models.Model):
         name (str): Name of the item (max 100 characters)
         point_cost (int): Point cost of the item.
         description (str): Description of the item.
+        availability (str): Availability status shown to clients. Set from stock uploads, except for manually set statuses (see MANUAL_AVAILABILITY).
+        stock (int): Quantity in stock as of the last stock upload (informational only, not decremented by requests).
         brand (Brand): Brand, in case the item is restricted to only clients with the same Brand in their UserContract (optional)
         in_showcase (bool): Whether the item should be displayed in the public catalogue showcase.
         is_active (bool): Whether the item is active.
@@ -635,13 +637,21 @@ class Reward(models.Model):
         ('AVAILABLE', _('Available')),
         ('AVAILABLE_LAST_UNITS', _('Available (last units)')),
         ('ON_DEMAND', _('On demand')),
+        ('TEMP_UNAVAILABLE', _('Temporarily unavailable')),
         ('UNAVAILABLE', _('Unavailable')),
     )
+    # Statuses set manually (supply disruption, discontinuation) that stock uploads never overwrite.
+    MANUAL_AVAILABILITY = ('TEMP_UNAVAILABLE', 'UNAVAILABLE')
+
     abra_code = models.CharField(max_length=30, unique=True)
     name = models.CharField(max_length=100)
     point_cost = models.IntegerField()
     description = models.TextField()
     availability = models.CharField(max_length=20, choices=AVAILABILITY_TYPE, default='ON_DEMAND')
+    stock = models.IntegerField(
+        null=True, blank=True,
+        help_text="Quantity in stock as of the last stock upload. Informational only — not decremented by reward requests.",
+    )
     brand = models.ForeignKey(Brand, null=True, blank=True, on_delete=models.SET_NULL)
 
     is_in_abra_storecards = models.BooleanField(

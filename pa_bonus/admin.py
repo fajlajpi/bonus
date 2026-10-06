@@ -78,6 +78,9 @@ def reward_availability_set_available(modeladmin, request, queryset):
 def reward_availability_set_on_demand(modeladmin, request, queryset):
     queryset.update(availability='ON_DEMAND')
 
+def reward_availability_set_temp_unavailable(modeladmin, request, queryset):
+    queryset.update(availability='TEMP_UNAVAILABLE')
+
 def reward_availability_set_unavailable(modeladmin, request, queryset):
     queryset.update(availability='UNAVAILABLE')
 
@@ -97,6 +100,7 @@ pending_transactions.short_description = "Mark selected transactions as pending"
 cancel_transactions.short_description = "Cancel selected transactions"
 reward_availability_set_available.short_description = "Set selected rewards as available"
 reward_availability_set_on_demand.short_description = "Set selected rewards as on demand"
+reward_availability_set_temp_unavailable.short_description = "Set selected rewards as temporarily unavailable"
 reward_availability_set_unavailable.short_description = "Set selected rewards as unavailable"
 reward_set_active.short_description = "Set selected rewards as active"
 reward_set_inactive.short_description = "Set selected rewards as inactive"
@@ -242,15 +246,16 @@ class RewardAdmin(ImportExportMixin, admin.ModelAdmin):
     resource_class = RewardResource
     list_display = (
         'abra_code', 'name', 'point_cost', 'brand',
-        'is_active', 'availability', 'in_showcase',
+        'is_active', 'availability', 'stock', 'in_showcase',
         'is_in_abra_storecards',
     )
-    list_filter = ('brand', 'is_active', 'is_in_abra_storecards')
+    list_filter = ('brand', 'is_active', 'availability', 'is_in_abra_storecards')
     search_fields = ('abra_code', 'name')
     readonly_fields = ('created_at',)
     actions = [
         reward_availability_set_available,
         reward_availability_set_on_demand,
+        reward_availability_set_temp_unavailable,
         reward_availability_set_unavailable,
         reward_set_active,
         reward_set_inactive,

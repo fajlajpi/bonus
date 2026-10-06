@@ -122,6 +122,11 @@ msgstr ""
 msgid "Unavailable"
 msgstr ""
 
+#: .\pa_bonus\models.py:639 .\pa_bonus\templates\rewards.html:65
+#: .\pa_bonus\templates\sales_rep\create_reward_request.html:53
+msgid "Temporarily unavailable"
+msgstr ""
+
 #: .\pa_bonus\models.py:682 .\pa_bonus\templates\reward_requests.html:29
 #: .\pa_bonus\templates\sales_rep\reward_requests.html:16
 msgid "Draft"

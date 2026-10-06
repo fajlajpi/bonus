@@ -49,6 +49,8 @@
                     {% trans "In stock — last units" %}
                   {% elif reward.availability == 'ON_DEMAND' %}
                     {% trans "On order" %}
+                  {% elif reward.availability == 'TEMP_UNAVAILABLE' %}
+                    {% trans "Temporarily unavailable" %}
                   {% elif reward.availability == 'UNAVAILABLE' %}
                     {% trans "Unavailable" %}
                   {% else %}

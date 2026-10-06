@@ -791,6 +791,10 @@ small {
   background-color: #FFD700;
   color: black;
   }
+  .availability-badge.temp_unavailable {
+  background-color: #FF8C00;
+  color: white;
+  }
   .availability-badge.unavailable {
   background-color: var(--error-color);
   color: white;
