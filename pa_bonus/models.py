@@ -72,11 +72,19 @@ class RegionRep(models.Model):
     
     class Meta:
         ordering = ['-date_from']
-        unique_together = [
-            # Ensure a user can't be assigned to the same region twice in active status
-            ('user', 'region', 'is_active'),
-            # Only one primary rep per region when active
-            ('region', 'is_primary', 'is_active'),
+        constraints = [
+            # A user can't be actively assigned to the same region twice
+            models.UniqueConstraint(
+                fields=['user', 'region'],
+                condition=models.Q(is_active=True),
+                name='unique_active_user_region',
+            ),
+            # Only one active primary rep per region (any number of non-primary reps)
+            models.UniqueConstraint(
+                fields=['region'],
+                condition=models.Q(is_active=True, is_primary=True),
+                name='unique_active_primary_per_region',
+            ),
         ]
     
     def __str__(self):
